@@ -2,15 +2,23 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState } from "react";
+import Home from "@/pages/Home";
+import FeaturePlaceholder from "@/pages/FeaturePlaceholder";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+
+  if (activeFeature) {
+    return <FeaturePlaceholder id={activeFeature} onBack={() => setActiveFeature(null)} />;
+  }
+
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/">
+        <Home onSelectFeature={(id) => setActiveFeature(id)} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -19,10 +27,8 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <Router />
+      <Toaster />
     </QueryClientProvider>
   );
 }
