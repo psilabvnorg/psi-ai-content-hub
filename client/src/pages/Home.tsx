@@ -9,7 +9,7 @@ import {
   FileVideo, Instagram, Facebook, Play,
   Image as ImageIcon
 } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const features = {
@@ -35,7 +35,7 @@ const features = {
 };
 
 export default function Home({ onSelectFeature }: { onSelectFeature: (id: string) => void }) {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   useEffect(() => {
