@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""
+Adjust Video Speed to Match Audio Duration
+
+This script speeds up or slows down a video to match a target duration,
+useful for syncing video with synthesized audio.
+"""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def get_video_duration(video_path):
+    """Get video duration in seconds using ffprobe."""
+    cmd = [
+        'ffprobe',
+        '-v', 'error',
+        '-show_entries', 'format=duration',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        str(video_path)
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return float(result.stdout.strip())
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting video duration: {e}")
+        sys.exit(1)
+
+
+def get_video_codec(video_path):
+    """Get video codec name using ffprobe."""
+    cmd = [
+        'ffprobe',
+        '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=codec_name',
+        '-of', 'default=noprint_wrappers=1:nokey=1',
+        str(video_path)
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting video codec: {e}")
+        return None
+
+
+def convert_av1_to_h264(input_video):
+    """Convert AV1 video to H.264 to avoid hardware decoding issues."""
+    output_video = input_video.parent / f"{input_video.stem}_h264.mp4"
+    
+    print(f"\n🔄 Converting AV1 to H.264 (this may take a while)...")
+    print("Using software decoding for AV1...")
+    
+    # Use explicit software AV1 decoder
+    cmd = [
+        'ffmpeg',
+        '-c:v', 'av1',  # Explicit software AV1 decoder
+        '-i', str(input_video),
+        '-c:v', 'mpeg4',  # Software encoder (most compatible)
+        '-q:v', '3',  # Good quality for mpeg4
+        '-c:a', 'copy',
+        '-y',
+        str(output_video)
+    ]
+    
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print(f"✅ Conversion complete: {output_video}")
+        return output_video
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error converting video:")
+        print(f"stderr: {e.stderr}")
+        sys.exit(1)
+
+
+def adjust_video_speed(input_video, output_video, target_duration=None, speed_factor=None):
+    """
+    Adjust video speed to match target duration or by a speed factor.
+    
+    Args:
+        input_video: Path to input video
+        output_video: Path to output video
+        target_duration: Target duration in seconds (optional)
+        speed_factor: Speed multiplier (optional, e.g., 1.33 for 33% faster)
+    """
+    input_path = Path(input_video)
+    if not input_path.exists():
+        print(f"Error: Input video not found: {input_video}")
+        sys.exit(1)
+    
+    # Check if video is AV1 and convert if needed
+    codec = get_video_codec(input_path)
+    print(f"Video codec: {codec}")
+    
+    if codec == 'av1':
+        print("\n⚠️  ERROR: AV1 codec detected!")
+        print("Your ffmpeg build has a broken AV1 decoder.")
+        print("\nSOLUTION: Re-download the video in H.264 format:")
+        print("  1. The download script has been updated to prefer H.264")
+        print("  2. Re-run: python scripts/download_youtube_video.py <URL>")
+        print("\nAlternatively, you can manually convert the video on another machine")
+        print("or use an online converter to H.264 format.")
+        sys.exit(1)
+    
+    # Get original duration
+    original_duration = get_video_duration(input_path)
+    print(f"Original video duration: {original_duration:.2f}s")
+    
+    # Calculate speed factor
+    if target_duration is not None:
+        speed_factor = original_duration / target_duration
+        print(f"Target duration: {target_duration:.2f}s")
+    elif speed_factor is None:
+        print("Error: Must specify either --target-duration or --speed-factor")
+        sys.exit(1)
+    
+    print(f"Speed factor: {speed_factor:.2f}x")
+    new_duration = original_duration / speed_factor
+    print(f"New duration: {new_duration:.2f}s")
+    
+    # Calculate setpts value (inverse of speed)
+    setpts_value = 1.0 / speed_factor
+    
+    # Build ffmpeg command - now using H.264 input (converted if needed)
+    cmd = [
+        'ffmpeg',
+        '-i', str(input_path),
+        '-filter:v', f'setpts={setpts_value}*PTS',
+        '-filter:a', f'atempo={speed_factor}' if speed_factor <= 2.0 else f'atempo=2.0,atempo={speed_factor/2.0}',
+        '-c:v', 'h264_nvenc',
+        '-b:v', '2M',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-y',  # Overwrite output
+        str(output_video)
+    ]
+    
+    # Handle atempo limitations (max 2.0)
+    if speed_factor > 2.0:
+        # Need to chain multiple atempo filters
+        atempo_chain = []
+        remaining_speed = speed_factor
+        while remaining_speed > 2.0:
+            atempo_chain.append('atempo=2.0')
+            remaining_speed /= 2.0
+        atempo_chain.append(f'atempo={remaining_speed}')
+        
+        cmd[7] = ','.join(atempo_chain)
+    
+    print(f"\nProcessing video...")
+    print(f"Command: {' '.join(cmd)}\n")
+    
+    try:
+        subprocess.run(cmd, check=True)
+        print(f"\n✅ Success! Video saved to: {output_video}")
+        
+        # Verify output duration
+        output_duration = get_video_duration(output_video)
+        print(f"Output duration: {output_duration:.2f}s")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Error processing video: {e}")
+        sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Adjust video speed to match target duration',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Speed up 80s video to 60s
+  python scripts/adjust_speed_video.py video.mp4 output.mp4 --target-duration 60
+  
+  # Speed up by 1.5x
+  python scripts/adjust_speed_video.py video.mp4 output.mp4 --speed-factor 1.5
+  
+  # Slow down to 2x length
+  python scripts/adjust_speed_video.py video.mp4 output.mp4 --speed-factor 0.5
+        """
+    )
+    
+    parser.add_argument(
+        'input_video',
+        help='Path to input video file'
+    )
+    
+    parser.add_argument(
+        'output_video',
+        help='Path to output video file'
+    )
+    
+    parser.add_argument(
+        '--target-duration',
+        type=float,
+        help='Target duration in seconds'
+    )
+    
+    parser.add_argument(
+        '--speed-factor',
+        type=float,
+        help='Speed multiplier (e.g., 1.5 for 50%% faster, 0.5 for 50%% slower)'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.target_duration is None and args.speed_factor is None:
+        parser.error("Must specify either --target-duration or --speed-factor")
+    
+    if args.target_duration is not None and args.speed_factor is not None:
+        parser.error("Cannot specify both --target-duration and --speed-factor")
+    
+    adjust_video_speed(
+        args.input_video,
+        args.output_video,
+        args.target_duration,
+        args.speed_factor
+    )
+
+
+if __name__ == "__main__":
+    main()
+
+# python scripts/adjust_speed_video.py "/home/psilab/TRANSCRIBE-AUDIO-TO-TEXT-WHISPER/temp/downloads/202512051057/video.mp4" output_adjust_speed.mp4 --target-duration 781

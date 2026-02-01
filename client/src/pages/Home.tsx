@@ -7,7 +7,7 @@ import {
   Mic, Languages, Search, Settings, 
   ChevronLeft, Menu, Sparkles, Wand2,
   FileVideo, Instagram, Facebook, Play,
-  Image as ImageIcon
+  Image as ImageIcon, Scissors, Gauge
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ const features = {
     { id: "dl-instagram", title: "IG Video Downloader", icon: Instagram, description: "Download Instagram videos as MP4" },
     { id: "dl-music", title: "Music Extractor", icon: Music, description: "Extract MP3 from any video file" },
     { id: "mp3-to-wav", title: "Audio Converter", icon: FileAudio, description: "Convert MP3 files to high-quality WAV" },
+    { id: "trim-video", title: "Trim Video", icon: Scissors, description: "Cut and trim video segments" },
+    { id: "adjust-speed", title: "Adjust Speed", icon: Gauge, description: "Change video playback speed" },
     { id: "thumbnail", title: "Thumbnail Creator", icon: ImageIcon, description: "AI-powered video thumbnail generation" },
     { id: "tts-fast", title: "Super Fast TTS", icon: Play, description: "Instant text-to-speech generation" },
     { id: "voice-clone", title: "Voice Clone", icon: Mic, description: "Clone KOL voices or create your own" },
