@@ -7,6 +7,15 @@ import {
   Scissors, Gauge, Loader2, CheckCircle2,
   Video, Music, Youtube, Facebook, Instagram
 } from "lucide-react";
+import VideoDownloader from "./tools/VideoDownloader";
+import AudioExtractor from "./tools/AudioExtractor";
+import AudioConverter from "./tools/AudioConverter";
+import VideoTrimmer from "./tools/VideoTrimmer";
+import SpeedAdjuster from "./tools/SpeedAdjuster";
+import TTSFast from "./tools/TTSFast";
+import VoiceClone from "./tools/VoiceClone";
+import SpeechToText from "./tools/SpeechToText";
+import ThumbnailCreator from "./tools/ThumbnailCreator";
 
 export default function FeaturePlaceholder({ 
   id, 
@@ -20,7 +29,25 @@ export default function FeaturePlaceholder({
   const [isSuccess, setIsSuccess] = useState(false);
   const [speed, setSpeed] = useState("1.0");
 
-  const title = id.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const getTitleFromId = (id: string): string => {
+    const titleMap: Record<string, string> = {
+      "dl-tiktok": "Download TikTok Video",
+      "dl-youtube": "Download YouTube Video",
+      "dl-facebook": "Download Facebook Video",
+      "dl-instagram": "Download Instagram Video",
+      "dl-music": "Extract Music from Video",
+      "mp3-to-wav": "Audio Converter",
+      "trim-video": "Trim Video",
+      "adjust-speed": "Adjust Speed",
+      "thumbnail": "Thumbnail Creator",
+      "tts-fast": "Super Fast TTS",
+      "voice-clone": "Voice Clone",
+      "stt": "Speech to Text",
+    };
+    return titleMap[id] || id.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  };
+
+  const title = getTitleFromId(id);
   
   const handleAction = () => {
     setIsLoading(true);
@@ -32,6 +59,37 @@ export default function FeaturePlaceholder({
     }, 2000);
   };
 
+  // Render actual tool components
+  const renderActualTool = () => {
+    switch(id) {
+      case "dl-youtube":
+      case "dl-tiktok":
+      case "dl-facebook":
+      case "dl-instagram":
+        return <VideoDownloader />;
+      case "dl-music":
+        return <AudioExtractor />;
+      case "mp3-to-wav":
+        return <AudioConverter />;
+      case "trim-video":
+        return <VideoTrimmer />;
+      case "adjust-speed":
+        return <SpeedAdjuster />;
+      case "tts-fast":
+        return <TTSFast />;
+      case "voice-clone":
+        return <VoiceClone />;
+      case "stt":
+        return <SpeechToText />;
+      case "thumbnail":
+        return <ThumbnailCreator />;
+      default:
+        return null;
+    }
+  };
+
+  const actualTool = renderActualTool();
+
   const renderToolUI = () => {
     if (id.startsWith("dl-") || id.includes("to-video")) {
       return (
@@ -40,7 +98,7 @@ export default function FeaturePlaceholder({
             <Input 
               placeholder="Paste URL here..." 
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
               className="h-12 pr-32 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
             />
             <Button 
@@ -97,7 +155,7 @@ export default function FeaturePlaceholder({
               max="2.0" 
               step="0.1" 
               value={speed}
-              onChange={(e) => setSpeed(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(e.target.value)}
               className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
             <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase">
@@ -164,22 +222,23 @@ export default function FeaturePlaceholder({
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-8">
-               <Wand2 className="w-8 h-8 text-blue-600" />
-            </div>
+
             <h1 className="text-3xl font-black text-zinc-900 dark:text-white mb-4 tracking-tight">
               {title}
             </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-10 leading-relaxed font-medium">
-              Professional-grade tools powered by AI and robust scripts. 
-              Enter your parameters below to begin processing.
-            </p>
+
             
-            <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900 overflow-hidden mb-12">
-              <CardContent className="p-8">
-                {renderToolUI()}
-              </CardContent>
-            </Card>
+            {actualTool ? (
+              <div className="w-full mb-12">
+                {actualTool}
+              </div>
+            ) : (
+              <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900 overflow-hidden mb-12">
+                <CardContent className="p-8">
+                  {renderToolUI()}
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid grid-cols-3 gap-8 w-full">
               <div className="flex flex-col items-center gap-2">

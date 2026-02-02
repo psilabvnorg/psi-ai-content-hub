@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Video, FileText, Book, Film, Youtube, 
-  Download, Music, FileAudio, Layout, 
+  Music, FileAudio, 
   Mic, Languages, Search, Settings, 
-  ChevronLeft, Menu, Sparkles, Wand2,
-  FileVideo, Instagram, Facebook, Play,
+  Menu, Sparkles, Wand2,
+  Instagram, Facebook, Play,
   Image as ImageIcon, Scissors, Gauge
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,35 +14,138 @@ import { cn } from "@/lib/utils";
 
 const features = {
   workflow: [
-    { id: "text-to-video", title: "Topic/Text to Video", icon: Video, description: "Generate short or long videos from text prompts" },
-    { id: "news-to-video", title: "News Link to Video", icon: FileText, description: "Convert news articles into engaging video content" },
-    { id: "book-to-video", title: "Book to Video", icon: Book, description: "Summarize chapters or full books into videos" },
-    { id: "movie-to-video", title: "Movie to Video", icon: Film, description: "Explain or summarize movies from MP4 files" },
-    { id: "clone-channel", title: "Clone YT Channel", icon: Youtube, description: "New voice, new images, same great content" },
+    { 
+      id: "text-to-video", 
+      title: "Topic/Text to Video", 
+      icon: Video, 
+      description: "Transform any topic or text into engaging vertical (TikTok, YouTube Shorts, FB Reels) or horizontal videos (YouTube). Perfect for news, education, reviews, tourism, sports, investment, self-help, philosophy, and psychology content."
+    },
+    { 
+      id: "news-to-video", 
+      title: "News Link to Video", 
+      icon: FileText, 
+      description: "Paste a news article URL (VnExpress, etc.) and instantly generate short or long-form videos. Ideal for news channels, educational content, and knowledge sharing across all major platforms."
+    },
+    { 
+      id: "book-to-video", 
+      title: "Book to Video", 
+      icon: Book, 
+      description: "Upload PDF or EPUB files to create video summaries. Generate chapter-by-chapter breakdowns or full book explanations for educational and review content."
+    },
+    { 
+      id: "movie-to-video", 
+      title: "Movie to Video", 
+      icon: Film, 
+      description: "Upload MP4 movie files to automatically generate engaging summaries and explanations. Perfect for film review channels and entertainment content creators."
+    },
+    { 
+      id: "clone-channel", 
+      title: "Clone YT Channel", 
+      icon: Youtube, 
+      description: "Paste any YouTube video URL to recreate it with a new voice, fresh images, and translated content. Convert English to Vietnamese or any language while maintaining the original message."
+    },
   ],
   tool: [
-    { id: "dl-tiktok", title: "TikTok Downloader", icon: Video, description: "Download TikTok videos as MP4" },
-    { id: "dl-youtube", title: "YouTube Downloader", icon: Youtube, description: "Download YouTube videos as MP4" },
-    { id: "dl-facebook", title: "FB Video Downloader", icon: Facebook, description: "Download Facebook videos as MP4" },
-    { id: "dl-instagram", title: "IG Video Downloader", icon: Instagram, description: "Download Instagram videos as MP4" },
-    { id: "dl-music", title: "Music Extractor", icon: Music, description: "Extract MP3 from any video file" },
-    { id: "mp3-to-wav", title: "Audio Converter", icon: FileAudio, description: "Convert MP3 files to high-quality WAV" },
-    { id: "trim-video", title: "Trim Video", icon: Scissors, description: "Cut and trim video segments" },
-    { id: "adjust-speed", title: "Adjust Speed", icon: Gauge, description: "Change video playback speed" },
-    { id: "thumbnail", title: "Thumbnail Creator", icon: ImageIcon, description: "AI-powered video thumbnail generation" },
-    { id: "tts-fast", title: "Super Fast TTS", icon: Play, description: "Instant text-to-speech generation" },
-    { id: "voice-clone", title: "Voice Clone", icon: Mic, description: "Clone KOL voices or create your own" },
-    { id: "stt", title: "Speech to Text", icon: Languages, description: "Convert audio to text in multiple languages" },
+    { 
+      id: "dl-tiktok", 
+      title: "Download TikTok Video", 
+      icon: Video, 
+      description: "Download any TikTok video in high quality MP4 format without watermarks"
+    },
+    { 
+      id: "dl-youtube", 
+      title: "Download YouTube Video", 
+      icon: Youtube, 
+      description: "Download YouTube videos in multiple resolutions up to 4K quality"
+    },
+    { 
+      id: "dl-facebook", 
+      title: "Download Facebook Video", 
+      icon: Facebook, 
+      description: "Extract and download Facebook videos and reels in original quality"
+    },
+    { 
+      id: "dl-instagram", 
+      title: "Download Instagram Video", 
+      icon: Instagram, 
+      description: "Download Instagram videos, reels, and IGTV content instantly"
+    },
+    { 
+      id: "dl-music", 
+      title: "Extract Music from Video", 
+      icon: Music, 
+      description: "Extract audio from any video file and save as high-quality MP3"
+    },
+    { 
+      id: "mp3-to-wav", 
+      title: "Audio Converter", 
+      icon: FileAudio, 
+      description: "Convert MP3 files to uncompressed WAV format for professional audio editing"
+    },
+    { 
+      id: "trim-video", 
+      title: "Trim Video", 
+      icon: Scissors, 
+      description: "Precisely cut and trim video segments with frame-accurate control"
+    },
+    { 
+      id: "adjust-speed", 
+      title: "Adjust Speed", 
+      icon: Gauge, 
+      description: "Change video playback speed from 0.5x to 2x for slow-motion or time-lapse effects"
+    },
+    { 
+      id: "thumbnail", 
+      title: "Thumbnail Creator", 
+      icon: ImageIcon, 
+      description: "AI-powered thumbnail generation from video frames or custom text prompts"
+    },
+    { 
+      id: "tts-fast", 
+      title: "Super Fast TTS", 
+      icon: Play, 
+      description: "Lightning-fast text-to-speech conversion with natural-sounding voices"
+    },
+    { 
+      id: "voice-clone", 
+      title: "Voice Clone", 
+      icon: Mic, 
+      description: "Clone celebrity voices (Trần Hà Linh, Khá Bảnh, Huấn Hoa Hồng, Elon Musk, Warren Buffet) or create your own custom voice model"
+    },
+    { 
+      id: "stt", 
+      title: "Speech to Text", 
+      icon: Languages, 
+      description: "Transcribe audio to text with multi-language support. Accepts WAV and MP3 files"
+    },
   ]
 };
 
 export default function Home({ onSelectFeature }: { onSelectFeature: (id: string) => void }) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
+
+  useEffect(() => {
+    // Restore scroll position when component mounts
+    const savedScrollPosition = sessionStorage.getItem('homeScrollPosition');
+    if (savedScrollPosition && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+      sessionStorage.removeItem('homeScrollPosition');
+    }
+  }, []);
+
+  const handleFeatureClick = (id: string) => {
+    // Save scroll position before navigating
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem('homeScrollPosition', scrollContainerRef.current.scrollTop.toString());
+    }
+    onSelectFeature(id);
+  };
 
   return (
     <div className="flex h-screen bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden font-sans">
@@ -68,7 +171,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
               {features.workflow.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => onSelectFeature(item.id)}
+                  onClick={() => handleFeatureClick(item.id)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all"
                   data-testid={`link-${item.id}`}
                 >
@@ -84,7 +187,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                 {features.tool.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => onSelectFeature(item.id)}
+                    onClick={() => handleFeatureClick(item.id)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all"
                     data-testid={`link-${item.id}`}
                   >
@@ -133,7 +236,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-16">
             
             {/* Workflows Section */}
@@ -150,7 +253,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                   <Card 
                     key={feature.id} 
                     className="group cursor-pointer border-none shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-300 bg-white dark:bg-zinc-900 overflow-hidden"
-                    onClick={() => onSelectFeature(feature.id)}
+                    onClick={() => handleFeatureClick(feature.id)}
                     data-testid={`card-workflow-${feature.id}`}
                   >
                     <CardContent className="p-8">
@@ -171,19 +274,24 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                 <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">Creative Tools</h2>
                 <p className="text-zinc-500 dark:text-zinc-400">Essential utilities for high-performance creators.</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {features.tool.map((tool) => (
                   <Card 
                     key={tool.id} 
-                    className="group cursor-pointer border border-zinc-100 dark:border-zinc-800/50 hover:border-blue-500 hover:ring-1 hover:ring-blue-500 transition-all bg-white dark:bg-zinc-900 shadow-none rounded-xl overflow-hidden"
-                    onClick={() => onSelectFeature(tool.id)}
+                    className="group cursor-pointer border border-zinc-100 dark:border-zinc-800/50 hover:border-blue-500 hover:ring-1 hover:ring-blue-500 transition-all bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md rounded-xl overflow-hidden"
+                    onClick={() => handleFeatureClick(tool.id)}
                     data-testid={`card-tool-${tool.id}`}
                   >
-                    <CardContent className="p-5 flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center mb-4 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 transition-all duration-300">
-                        <tool.icon className="w-6 h-6 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600" />
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-all duration-300">
+                          <tool.icon className="w-6 h-6 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-1.5 group-hover:text-blue-600 transition-colors">{tool.title}</h3>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">{tool.description}</p>
+                        </div>
                       </div>
-                      <h3 className="text-xs font-bold text-zinc-900 dark:text-white tracking-wide uppercase group-hover:text-blue-600 transition-colors">{tool.title}</h3>
                     </CardContent>
                   </Card>
                 ))}
