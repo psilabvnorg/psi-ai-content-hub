@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,7 +8,11 @@ import Home from "@/pages/Home";
 import FeaturePlaceholder from "@/pages/FeaturePlaceholder";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+// Check if running in Electron - use file:// protocol detection as backup
+const isElectron = typeof window !== 'undefined' && 
+  (window.location.protocol === 'file:' || !!(window as any).electronAPI?.isElectron);
+
+function AppRouter() {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
 
   if (activeFeature) {
@@ -27,7 +32,9 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <WouterRouter hook={isElectron ? useHashLocation : undefined}>
+        <AppRouter />
+      </WouterRouter>
       <Toaster />
     </QueryClientProvider>
   );

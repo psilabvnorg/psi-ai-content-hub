@@ -88,7 +88,7 @@ export default function SpeechToText() {
             <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-zinc-500 uppercase">Transcription</span>
-                <Button size="sm" variant="ghost" className="text-blue-600">
+                <Button size="sm" variant="download">
                   <Download className="w-4 h-4 mr-2" />
                   Download TXT
                 </Button>

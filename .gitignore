@@ -1,9 +1,58 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+# Dependencies
+node_modules/
 venv/
+
+# Build outputs
+dist/
+dist-electron/
+out/
+build/
+server/public
+release/
+
+# Logs
+*.log
 api.log
-.vscode
+python-api/api.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Temp files
+temp/
+*.tmp
+*.temp
+
+# Archives
+*.tar.gz
+*.zip
+
+# Vite
+vite.config.ts.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Electron
+*.asar
+
+# Database
+*.db
+*.sqlite

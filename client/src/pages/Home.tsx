@@ -200,7 +200,11 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
           </nav>
 
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+            <button 
+              onClick={() => handleFeatureClick("settings")}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              data-testid="link-settings"
+            >
               <Settings className="w-4 h-4" />
               Settings
             </button>

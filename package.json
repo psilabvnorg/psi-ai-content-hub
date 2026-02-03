@@ -1,15 +1,22 @@
 {
-  "name": "rest-express",
+  "name": "psi-ai-content-hub",
   "version": "1.0.0",
+  "description": "Desktop app for video downloading and audio/video processing",
+  "author": "AI Content Hub",
   "type": "module",
   "license": "MIT",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev:client": "vite dev --port 5000",
     "dev": "set NODE_ENV=development && tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "set NODE_ENV=production && node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "electron:dev": "concurrently --kill-others -s first \"npm:dev\" \"npm:electron:wait\"",
+    "electron:wait": "npx wait-on http://localhost:5000 && electron .",
+    "electron:build": "npm run build && electron-builder",
+    "electron:pack": "electron-builder --dir"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -56,6 +63,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.545.0",
     "memorystore": "^1.6.7",
+    "multer": "^2.0.2",
     "next-themes": "^0.4.6",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
@@ -84,6 +92,7 @@
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.18.0",
+    "@types/multer": "^1.4.13",
     "@types/node": "^20.19.0",
     "@types/passport": "^1.0.16",
     "@types/passport-local": "^1.0.38",
@@ -92,15 +101,47 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "drizzle-kit": "^0.31.4",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
     "esbuild": "^0.25.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "wait-on": "^7.2.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "build": {
+    "appId": "com.aicontenthub.app",
+    "productName": "AI Content Hub",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": false,
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": ["dmg"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    }
   }
 }

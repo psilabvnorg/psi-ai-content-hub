@@ -83,7 +83,7 @@ export default function ThumbnailCreator() {
             <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
               <img src={thumbnailUrl} alt="Generated thumbnail" className="w-full" />
               <div className="absolute top-3 right-3">
-                <Button size="sm" className="bg-white/90 hover:bg-white text-zinc-900 shadow-lg">
+                <Button size="sm" variant="download">
                   <Download className="w-4 h-4 mr-2" />
                   Download
                 </Button>

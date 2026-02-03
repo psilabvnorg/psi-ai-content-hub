@@ -1,29 +1,36 @@
 /**
  * Platform Detection and API Configuration
- * Handles different API endpoints for Web, Tauri, Android, and iOS
+ * Handles different API endpoints for Web, Electron, Android, and iOS
  */
 
-export type Platform = 'web' | 'tauri' | 'android' | 'ios';
+export type Platform = 'web' | 'electron' | 'android' | 'ios';
 
 /**
  * Detect the current platform
  */
 export function detectPlatform(): Platform {
-  // Check if running in Tauri
-  if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-    return 'tauri';
+  // Check if running in Electron first (highest priority)
+  if (typeof window !== 'undefined' && (window as any).electronAPI) {
+    return 'electron';
   }
   
-  // Check if running on mobile
+  // Check if running on actual mobile device (not emulated in desktop browser)
   if (typeof navigator !== 'undefined') {
     const userAgent = navigator.userAgent || (navigator as any).vendor || '';
     
-    if (/android/i.test(userAgent)) {
-      return 'android';
-    }
+    // Skip mobile detection if running in Electron or desktop browser
+    // Desktop browsers on Windows/Mac/Linux should return 'web'
+    const isDesktop = /Windows|Macintosh|Linux/.test(userAgent) && !/Mobile|Android/.test(userAgent);
     
-    if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
-      return 'ios';
+    if (!isDesktop) {
+      // Only check for mobile if not clearly a desktop
+      if (/android/i.test(userAgent) && /Mobile/.test(userAgent)) {
+        return 'android';
+      }
+      
+      if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+        return 'ios';
+      }
     }
   }
   
@@ -34,44 +41,22 @@ export function detectPlatform(): Platform {
  * Get the appropriate API URL based on platform
  */
 export function getApiUrl(): string {
-  const platform = detectPlatform();
-  
   // Check for environment variable override
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
   
-  switch (platform) {
-    case 'web':
-    case 'tauri':
-      // Use local Python API for web and desktop
-      return 'http://localhost:8000';
-    
-    case 'android':
-      // Android emulator uses 10.0.2.2 to access host machine
-      // In production, this should be your cloud API URL
-      return import.meta.env.PROD 
-        ? 'https://api.yourapp.com'  // Replace with your cloud API
-        : 'http://10.0.2.2:8000';
-    
-    case 'ios':
-      // iOS simulator can use localhost
-      // In production, this should be your cloud API URL
-      return import.meta.env.PROD
-        ? 'https://api.yourapp.com'  // Replace with your cloud API
-        : 'http://localhost:8000';
-    
-    default:
-      return 'http://localhost:8000';
-  }
+  // For desktop (Electron) and web, always use same origin (empty string)
+  // This works because the Express server serves both the API and the frontend
+  return '';
 }
 
 /**
- * Check if local API is available (Web/Tauri only)
+ * Check if local API is available (Web/Electron only)
  */
 export function isLocalApiAvailable(): boolean {
   const platform = detectPlatform();
-  return platform === 'web' || platform === 'tauri';
+  return platform === 'web' || platform === 'electron';
 }
 
 /**
@@ -147,7 +132,7 @@ export function getPlatformName(): string {
   switch (platform) {
     case 'web':
       return 'Web Browser';
-    case 'tauri':
+    case 'electron':
       return 'Desktop App';
     case 'android':
       return 'Android';

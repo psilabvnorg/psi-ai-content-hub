@@ -16,6 +16,7 @@ import TTSFast from "./tools/TTSFast";
 import VoiceClone from "./tools/VoiceClone";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
+import Settings from "./Settings";
 
 export default function FeaturePlaceholder({ 
   id, 
@@ -43,6 +44,7 @@ export default function FeaturePlaceholder({
       "tts-fast": "Super Fast TTS",
       "voice-clone": "Voice Clone",
       "stt": "Speech to Text",
+      "settings": "Settings",
     };
     return titleMap[id] || id.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   };
@@ -83,6 +85,8 @@ export default function FeaturePlaceholder({
         return <SpeechToText />;
       case "thumbnail":
         return <ThumbnailCreator />;
+      case "settings":
+        return <Settings />;
       default:
         return null;
     }
@@ -208,7 +212,7 @@ export default function FeaturePlaceholder({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center text-center max-w-xl mx-auto w-full pt-8">
         {isSuccess ? (
           <div className="animate-in zoom-in duration-300 flex flex-col items-center">
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-6">

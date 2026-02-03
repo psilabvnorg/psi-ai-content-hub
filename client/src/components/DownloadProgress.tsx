@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface ProgressData {
   status: 'waiting' | 'starting' | 'downloading' | 'processing' | 'converting' | 'complete' | 'error';
@@ -16,32 +16,62 @@ interface DownloadProgressProps {
   onError?: (error: string) => void;
 }
 
+const MAX_ERRORS = 2;
+const TIMEOUT_MS = 30000;
+
 export function DownloadProgress({ downloadId, onComplete, onError }: DownloadProgressProps) {
   const [progress, setProgress] = useState<ProgressData>({ status: 'waiting' });
+  const closedRef = useRef(false);
 
   useEffect(() => {
-    // Create EventSource for SSE
+    closedRef.current = false;
+    let errorCount = 0;
+    
+    const timeoutId = setTimeout(() => {
+      if (!closedRef.current) {
+        closedRef.current = true;
+        onError?.('Connection timeout');
+      }
+    }, TIMEOUT_MS);
+    
     const eventSource = new EventSource(`http://localhost:8000/api/progress/${downloadId}`);
 
     eventSource.onmessage = (event) => {
-      const data: ProgressData = JSON.parse(event.data);
-      setProgress(data);
+      if (closedRef.current) return;
+      
+      try {
+        const data: ProgressData = JSON.parse(event.data);
+        setProgress(data);
 
-      if (data.status === 'complete') {
-        onComplete?.();
-        eventSource.close();
-      } else if (data.status === 'error') {
-        onError?.(data.message || 'Download failed');
-        eventSource.close();
+        if (data.status === 'complete') {
+          clearTimeout(timeoutId);
+          closedRef.current = true;
+          eventSource.close();
+          onComplete?.();
+        } else if (data.status === 'error') {
+          clearTimeout(timeoutId);
+          closedRef.current = true;
+          eventSource.close();
+          onError?.(data.message || 'Failed');
+        }
+      } catch (e) {
+        console.error('Parse error:', e);
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      eventSource.close();
+    eventSource.onerror = () => {
+      errorCount++;
+      if (errorCount >= MAX_ERRORS && !closedRef.current) {
+        clearTimeout(timeoutId);
+        closedRef.current = true;
+        eventSource.close();
+        onError?.('Connection lost');
+      }
     };
 
     return () => {
+      clearTimeout(timeoutId);
+      closedRef.current = true;
       eventSource.close();
     };
   }, [downloadId, onComplete, onError]);
@@ -84,7 +114,6 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
           )}
         </div>
 
-        {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -97,7 +126,6 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
         </div>
       </div>
 
-      {/* Details */}
       <div className="text-xs text-gray-600 space-y-1">
         {progress.message && (
           <div className="text-sm">{progress.message}</div>

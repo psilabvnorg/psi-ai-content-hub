@@ -84,7 +84,7 @@ export function VideoDownloader() {
         <button
           onClick={handleDownload}
           disabled={!url || isDownloading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg border border-pink-600 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isDownloading ? 'Downloading...' : 'Download Video'}
         </button>
@@ -107,7 +107,7 @@ export function VideoDownloader() {
             <a
               href={`http://localhost:8000${result.download_url}`}
               download
-              className="inline-block mt-2 text-blue-600 hover:underline"
+              className="inline-block mt-2 text-pink-600 hover:text-pink-700 font-bold hover:underline"
             >
               Download File
             </a>

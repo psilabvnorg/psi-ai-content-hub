@@ -105,7 +105,7 @@ export default function VoiceClone() {
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-green-700 dark:text-green-400">Cloned Audio Ready</span>
-              <Button size="sm" variant="ghost" className="text-green-700 dark:text-green-400">
+              <Button size="sm" variant="download">
                 <Download className="w-4 h-4 mr-2" />
                 Download
               </Button>
