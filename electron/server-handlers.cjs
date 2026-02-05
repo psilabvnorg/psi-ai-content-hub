@@ -10,6 +10,15 @@ const os = require('os');
 
 const execAsync = promisify(exec);
 
+// TTS setup paths (Ollama-style: download on-demand)
+const APP_DATA = process.env.APPDATA || path.join(os.homedir(), '.config');
+const TTS_ROOT = process.env.VIE_NEU_TTS_ROOT
+  ? path.resolve(process.env.VIE_NEU_TTS_ROOT)
+  : path.join(APP_DATA, 'psi-ai-content-hub', 'vie-neu-tts');
+const TTS_MARKER = path.join(TTS_ROOT, 'tts_ready.json');
+const TTS_RUNNER = path.join(__dirname, 'tts-runner.mjs');
+const NODE_BIN = process.execPath;
+
 // Temp directory for downloads
 const TEMP_DIR = path.join(os.tmpdir(), 'psi_ai_content_hub');
 
@@ -52,6 +61,49 @@ function cleanupOldFiles() {
 
 // Run cleanup on startup
 cleanupOldFiles();
+
+function runFastTts(payload) {
+  if (!fs.existsSync(TTS_RUNNER)) {
+    return Promise.reject(new Error(`TTS runner not found at ${TTS_RUNNER}`));
+  }
+
+  return new Promise((resolve, reject) => {
+    const proc = spawn(NODE_BIN, [TTS_RUNNER], { 
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, VIE_NEU_TTS_ROOT: TTS_ROOT }
+    });
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    proc.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on('error', (err) => reject(err));
+
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(stderr || 'TTS process failed'));
+      }
+      try {
+        const result = JSON.parse(stdout.trim());
+        if (result.status !== 'success') {
+          return reject(new Error(result.detail || 'TTS process failed'));
+        }
+        resolve(result);
+      } catch (err) {
+        reject(new Error(`Failed to parse TTS output: ${err.message}`));
+      }
+    });
+
+    proc.stdin.write(JSON.stringify(payload));
+    proc.stdin.end();
+  });
+}
 
 // Handlers
 const handlers = {
@@ -123,6 +175,39 @@ const handlers = {
       filePath: outputFile,
       filename: path.basename(outputFile),
       format: outputFormat,
+    };
+  },
+
+  // Super Fast TTS
+  'tts-fast': async ({ text, voiceId, backbone, codec, device }) => {
+    if (!text || !String(text).trim()) throw new Error('text is required');
+
+    // Check if TTS is set up
+    if (!fs.existsSync(TTS_MARKER)) {
+      throw new Error('TTS_NOT_INSTALLED');
+    }
+
+    const outputFile = generateFilename('tts_fast', 'wav');
+
+    const result = await runFastTts({
+      text,
+      voice_id: voiceId,
+      backbone,
+      codec,
+      device,
+      output_path: outputFile,
+    });
+
+    return {
+      status: 'success',
+      filePath: outputFile,
+      filename: path.basename(outputFile),
+      duration: result.duration,
+      sampleRate: result.sample_rate,
+      processTime: result.process_time,
+      voiceId: result.voice_id,
+      backbone: result.backbone,
+      codec: result.codec,
     };
   },
 
@@ -298,6 +383,66 @@ const handlers = {
     const { stdout } = await execAsync('pip install yt-dlp', { timeout: 120000 });
     const { stdout: version } = await execAsync('yt-dlp --version');
     return { success: true, version: version.trim() };
+  },
+
+  // TTS Setup Status (Ollama-style)
+  'tts-status': async () => {
+    const runnerExists = fs.existsSync(TTS_RUNNER);
+    const ttsInstalled = fs.existsSync(TTS_MARKER);
+    const modelsExist = ttsInstalled;
+    
+    return {
+      ready: runnerExists && ttsInstalled && modelsExist,
+      runnerExists,
+      ttsInstalled,
+      modelsExist,
+      ttsPath: TTS_ROOT,
+    };
+  },
+
+  // Setup TTS (download models & dependencies)
+  'tts-setup': async ({ forceReinstall = false }) => {
+    if (!fs.existsSync(TTS_RUNNER)) {
+      throw new Error('TTS runner is missing. Please reinstall the app.');
+    }
+
+    if (forceReinstall && fs.existsSync(TTS_ROOT)) {
+      fs.rmSync(TTS_ROOT, { recursive: true, force: true });
+    }
+
+    await new Promise((resolve, reject) => {
+      const proc = spawn(NODE_BIN, [TTS_RUNNER, '--download'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, VIE_NEU_TTS_ROOT: TTS_ROOT }
+      });
+      let stderr = '';
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(stderr || 'TTS setup failed'));
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    return {
+      success: true,
+      message: 'TTS setup completed successfully',
+      ttsPath: TTS_ROOT,
+    };
+  },
+
+  // Cleanup TTS installation
+  'tts-cleanup': async () => {
+    if (fs.existsSync(TTS_ROOT)) {
+      fs.rmSync(TTS_ROOT, { recursive: true, force: true });
+      return { success: true, message: 'TTS cleaned up' };
+    }
+    return { success: true, message: 'TTS was not installed' };
   },
 };
 

@@ -53,6 +53,66 @@ function cleanupOldFiles() {
 // Run cleanup on startup
 cleanupOldFiles();
 
+// TTS setup paths (Ollama-style: download on-demand)
+const APP_DATA = process.env.APPDATA || path.join(os.homedir(), ".config");
+const TTS_ROOT = process.env.VIE_NEU_TTS_ROOT
+  ? path.resolve(process.env.VIE_NEU_TTS_ROOT)
+  : path.join(APP_DATA, "psi-ai-content-hub", "vie-neu-tts");
+const TTS_MARKER = path.join(TTS_ROOT, "tts_ready.json");
+const TTS_RUNNER = fs.existsSync(path.join(process.cwd(), "electron", "tts-runner.mjs"))
+  ? path.join(process.cwd(), "electron", "tts-runner.mjs")
+  : path.join(process.cwd(), "tts-runner.mjs");
+const NODE_BIN = process.execPath;
+
+async function runFastTts(payload: Record<string, any>) {
+  if (!fs.existsSync(TTS_RUNNER)) {
+    throw new Error(`TTS runner not found at ${TTS_RUNNER}`);
+  }
+
+  return new Promise<Record<string, any>>((resolve, reject) => {
+    const proc = spawn(NODE_BIN, [TTS_RUNNER], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        VIE_NEU_TTS_ROOT: TTS_ROOT,
+      },
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on("data", (data: Buffer) => {
+      stdout += data.toString();
+    });
+
+    proc.stderr.on("data", (data: Buffer) => {
+      stderr += data.toString();
+    });
+
+    proc.on("error", (err) => {
+      reject(err);
+    });
+
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        return reject(new Error(stderr || "TTS process failed"));
+      }
+      try {
+        const result = JSON.parse(stdout.trim());
+        if (result.status !== "success") {
+          return reject(new Error(result.detail || "TTS process failed"));
+        }
+        resolve(result);
+      } catch (err: any) {
+        reject(new Error(`Failed to parse TTS output: ${err.message}`));
+      }
+    });
+
+    proc.stdin.write(JSON.stringify(payload));
+    proc.stdin.end();
+  });
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -242,6 +302,136 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Audio conversion failed:", error);
       res.status(500).json({ detail: `Audio conversion failed: ${error.message}` });
+    }
+  });
+
+  // Super Fast TTS
+  app.post("/api/tts/fast", async (req: Request, res: Response) => {
+    try {
+      const { text, voice_id, backbone, codec, device } = req.body || {};
+
+      if (!text || !String(text).trim()) {
+        return res.status(400).json({ detail: "text is required" });
+      }
+
+      if (!fs.existsSync(TTS_MARKER)) {
+        return res.status(412).json({ detail: "TTS_NOT_INSTALLED" });
+      }
+
+      const outputFile = generateFilename("tts_fast", "wav");
+
+      const result = await runFastTts({
+        text,
+        voice_id,
+        backbone,
+        codec,
+        device,
+        output_path: outputFile,
+      });
+
+      res.json({
+        status: "success",
+        file_path: outputFile,
+        filename: path.basename(outputFile),
+        download_url: `/api/files/${path.basename(outputFile)}`,
+        duration: result.duration,
+        sample_rate: result.sample_rate,
+        process_time: result.process_time,
+        voice_id: result.voice_id,
+        backbone: result.backbone,
+        codec: result.codec,
+      });
+    } catch (error: any) {
+      console.error("TTS failed:", error);
+      res.status(500).json({ detail: `TTS failed: ${error.message}` });
+    }
+  });
+
+  // TTS Status Check
+  app.get("/api/tts/status", (req: Request, res: Response) => {
+    try {
+      const ttsInstalled = fs.existsSync(TTS_MARKER);
+      res.json({
+        ready: ttsInstalled,
+        ttsInstalled,
+        runnerExists: true, // Web mode always has runner
+        modelsExist: ttsInstalled,
+        ttsPath: TTS_ROOT,
+      });
+    } catch (error: any) {
+      console.error("Failed to check TTS status:", error);
+      res.status(500).json({ detail: "Failed to check TTS status" });
+    }
+  });
+
+  // TTS Setup - Download models
+  app.post("/api/tts/setup", async (req: Request, res: Response) => {
+    try {
+      const { forceReinstall } = req.body || {};
+      
+      if (!fs.existsSync(TTS_RUNNER)) {
+        return res.status(400).json({ detail: "TTS runner is missing. Please reinstall the app." });
+      }
+
+      if (forceReinstall && fs.existsSync(TTS_ROOT)) {
+        fs.rmSync(TTS_ROOT, { recursive: true, force: true });
+      }
+
+      // Start TTS download in background
+      const { spawn } = await import('child_process');
+      const proc = spawn(NODE_BIN, [TTS_RUNNER, '--download'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, VIE_NEU_TTS_ROOT: TTS_ROOT }
+      });
+
+      let stderr = '';
+      let isComplete = false;
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        isComplete = true;
+        if (code !== 0) {
+          console.error('TTS setup failed:', stderr);
+        }
+      });
+
+      // Wait for process to complete (with timeout of 30 minutes)
+      const startTime = Date.now();
+      const timeout = 30 * 60 * 1000; // 30 minutes
+      
+      const checkCompletion = () => {
+        return new Promise((resolve) => {
+          const interval = setInterval(() => {
+            if (isComplete) {
+              clearInterval(interval);
+              resolve(null);
+            }
+            if (Date.now() - startTime > timeout) {
+              clearInterval(interval);
+              proc.kill();
+              resolve(null);
+            }
+          }, 1000);
+        });
+      };
+
+      await checkCompletion();
+
+      if (stderr) {
+        return res.status(500).json({ detail: `TTS setup failed: ${stderr}` });
+      }
+
+      res.json({
+        success: true,
+        message: "TTS models downloaded successfully",
+        ttsPath: TTS_ROOT,
+      });
+    } catch (error: any) {
+      console.error("TTS setup failed:", error);
+      res.status(500).json({ detail: `TTS setup failed: ${error.message}` });
     }
   });
 

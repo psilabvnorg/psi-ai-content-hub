@@ -46,9 +46,12 @@ npm run electron:build
 
 - **Video Downloader** - YouTube, TikTok, Facebook, Instagram
 - **Audio Extractor** - Extract MP3/WAV from video files
+- **TTS Fast** - Vietnamese Text-to-Speech (on-demand download, Ollama-style)
 - **Video Trimmer** - Trim videos to specific time ranges
 - **Speed Adjuster** - Change playback speed (0.5x - 2x)
 - **Audio Converter** - Convert between audio formats
+
+> **Note**: TTS runs on Node only and downloads models on first use (~300MB-800MB depending on model). See [TTS_SETUP.md](TTS_SETUP.md)
 
 ## Project Structure
 
