@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VieNeu-TTS - Vietnamese Text-to-Speech</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Language Toggle -->
+    <div class="language-toggle">
+        <button id="lang-toggle-btn" class="lang-btn" data-lang="vi">
+            <span class="flag">🇻🇳</span>
+            <span class="lang-text">VN</span>
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <header class="header">
+            <h1 id="app-title">VieNeu-TTS</h1>
+            <p id="app-subtitle">Vietnamese Text-to-Speech with Instant Voice Cloning</p>
+        </header>
+
+        <!-- Voice Selector Section -->
+        <section class="voice-section">
+            <h2 id="voice-section-title">Chọn giọng nói</h2>
+            <div class="voice-dropdown-wrapper">
+                <select id="voice-select" class="voice-select">
+                    <option value="" disabled selected id="voice-placeholder">Chọn giọng nói...</option>
+                    <!-- Voice options will be dynamically loaded here -->
+                </select>
+                <div class="voice-info" id="voice-info" style="display: none;">
+                    <span class="voice-info-icon" id="voice-info-icon">👨</span>
+                    <span class="voice-info-text" id="voice-info-text"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Text Input Section -->
+        <section class="text-section">
+            <h2 id="text-section-title">Nhập văn bản</h2>
+            <div class="text-input-wrapper">
+                <textarea 
+                    id="text-input" 
+                    class="text-input" 
+                    placeholder="Nhập văn bản bạn muốn chuyển thành giọng nói..."
+                    maxlength="500"
+                ></textarea>
+                <div class="char-counter">
+                    <span id="char-count">0</span>/<span id="max-chars">500</span>
+                </div>
+                <div class="warning-message" id="warning-message" style="display: none;">
+                    <span id="warning-text"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Generate Button -->
+        <section class="generate-section">
+            <button id="generate-btn" class="generate-btn" disabled>
+                <span class="btn-icon">🎤</span>
+                <span id="generate-btn-text">Tạo giọng nói</span>
+            </button>
+            <div class="loading-spinner" id="loading-spinner" style="display: none;">
+                <div class="spinner"></div>
+                <p id="loading-text">Đang tạo giọng nói...</p>
+            </div>
+        </section>
+
+        <!-- Audio Player Section -->
+        <section class="audio-section" id="audio-section" style="display: none;">
+            <h2 id="audio-section-title">Kết quả</h2>
+            <div class="audio-player-wrapper">
+                <audio id="audio-player" controls></audio>
+                <div class="audio-actions">
+                    <button id="download-btn" class="action-btn">
+                        <span class="btn-icon">⬇️</span>
+                        <span id="download-btn-text">Tải xuống</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sample Audio Section -->
+        <section class="samples-section">
+            <h2 id="samples-section-title">Các mẫu âm thanh</h2>
+            <p id="samples-description">Nghe các mẫu giọng nói có sẵn</p>
+            <div class="samples-grid" id="samples-grid">
+                <!-- Sample cards will be dynamically loaded here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2025 VieNeu-TTS | <span id="footer-text">Made with ❤️ for the Vietnamese TTS community</span></p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

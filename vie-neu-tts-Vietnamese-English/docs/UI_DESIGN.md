@@ -1,0 +1,28 @@
+## Components
+- LanguageToggle
+  - Props: currentLang, onToggle
+  - State: language ('vi' | 'en')
+  - Position: fixed top-right corner
+  - Display: Flag icons or VN/EN text button
+- VoiceSelector
+  - Props: voices[] (id, name, description, thumbnail), language
+  - State: selectedVoiceId
+  - Displays localized voice names and descriptions
+- TextInput
+  - Props: maxChars (500), placeholder (localized)
+  - State: text, charCount
+  - Display character counter below input (e.g., "250/500")
+  - Warning message when text exceeds 500 chars:
+    - Vietnamese
+    - English:
+- GenerateButton
+  - Disabled states: invalid form, generating
+  - Label: "Generate" / "Tạo giọng nói"
+- AudioPlayer
+  - Props: src, autoPlay
+  - Localized controls and labels (localized messages)
+- Persist last selection/text/language preference in localStorage
+- Language preference saved and restored on revisit
+- All UI labels, placeholders, messages, and errors localized
+  - Props: samples[] (id, title, src), language
+  - Displays localized sample titles and descriptions
