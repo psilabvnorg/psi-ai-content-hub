@@ -15,6 +15,18 @@ env.cacheDir = CACHE_DIR;
 env.allowLocalModels = true;
 env.allowRemoteModels = true;
 
+function emitProgress(stage, message, percent = null) {
+  const progressData = {
+    type: 'progress',
+    stage,
+    message,
+    percent,
+    timestamp: new Date().toISOString(),
+  };
+  process.stderr.write('[TTS Runner] Progress: ' + JSON.stringify(progressData) + '\n');
+  process.stderr.write(JSON.stringify(progressData) + '\n');
+}
+
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -64,8 +76,12 @@ async function loadPipeline() {
 async function downloadModels() {
   ensureDir(TTS_ROOT);
   ensureDir(CACHE_DIR);
+  emitProgress('initializing', 'Preparing to download models...', 0);
+  emitProgress('downloading', 'Downloading TTS model...', 25);
   const tts = await loadPipeline();
+  emitProgress('testing', 'Testing model...', 75);
   await tts('Xin chào');
+  emitProgress('complete', 'Model setup complete', 100);
   fs.writeFileSync(
     MARKER_FILE,
     JSON.stringify({ modelId: MODEL_ID, downloadedAt: new Date().toISOString() }, null, 2)
@@ -73,6 +89,8 @@ async function downloadModels() {
 }
 
 async function generateAudio(payload) {
+  process.stderr.write('[TTS Runner] Starting audio generation\n');
+  process.stderr.write('[TTS Runner] Text length: ' + (payload.text?.length || 0) + '\n');
   const text = (payload.text || '').trim();
   if (!text) {
     throw new Error('text is required');
@@ -84,19 +102,31 @@ async function generateAudio(payload) {
   ensureDir(TTS_ROOT);
   ensureDir(CACHE_DIR);
 
+  emitProgress('initializing', 'Initializing TTS pipeline...', 10);
   const tts = await loadPipeline();
+  process.stderr.write('[TTS Runner] Pipeline loaded\n');
+  
+  emitProgress('loading', 'Model loaded, processing text...', 30);
   const result = await tts(text);
+  process.stderr.write('[TTS Runner] Text processed, audio generated\n');
+  
+  emitProgress('generating', 'Generating audio waveform...', 60);
   const audio = result.audio;
   const sampleRate = result.sampling_rate || 24000;
+  process.stderr.write('[TTS Runner] Audio length: ' + audio.length + ' samples at ' + sampleRate + ' Hz\n');
 
+  emitProgress('writing', 'Writing audio file...', 80);
   writeWav(payload.output_path, audio, sampleRate);
+  process.stderr.write('[TTS Runner] Audio file written to: ' + payload.output_path + '\n');
 
   fs.writeFileSync(
     MARKER_FILE,
     JSON.stringify({ modelId: MODEL_ID, downloadedAt: new Date().toISOString() }, null, 2)
   );
 
-  return {
+  emitProgress('complete', 'Audio generation complete', 100);
+
+  const resultData = {
     status: 'success',
     output_path: payload.output_path,
     duration: Math.round((audio.length / sampleRate) * 100) / 100,
@@ -104,6 +134,8 @@ async function generateAudio(payload) {
     process_time: null,
     model_id: MODEL_ID,
   };
+  process.stderr.write('[TTS Runner] Generation complete: ' + JSON.stringify(resultData) + '\n');
+  return resultData;
 }
 
 function parseArgs() {
@@ -118,6 +150,7 @@ async function main() {
   if (args.downloadOnly) {
     await downloadModels();
     process.stdout.write(JSON.stringify({ status: 'success' }));
+    process.exit(0);
     return;
   }
 
@@ -133,6 +166,7 @@ async function main() {
 
   const result = await generateAudio(payload);
   process.stdout.write(JSON.stringify(result));
+  process.exit(0);
 }
 
 main().catch((err) => {

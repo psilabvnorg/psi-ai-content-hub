@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Progress And Logging"
+  short_description: "Require task progress and full logging"
+  default_prompt: "Implement progress reporting and logging for background tasks, including UI logs, terminal output, file logs, and Settings log cleanup."

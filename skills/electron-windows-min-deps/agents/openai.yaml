@@ -1,0 +1,4 @@
+interface:
+  display_name: "Electron Windows Stability"
+  short_description: "Keep Windows builds stable and dependencies minimal"
+  default_prompt: "Review and implement Electron desktop changes with Windows compatibility, minimal new dependencies, and low install friction."

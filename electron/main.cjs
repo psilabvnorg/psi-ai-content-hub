@@ -9,7 +9,8 @@ let ipcClient = null;
 let pendingRequests = new Map();
 let requestId = 0;
 
-const isDev = !app.isPackaged && process.env.NODE_ENV === 'development';
+// Check if dev server is running on port 5000
+const isDev = !app.isPackaged;
 
 // Setup IPC handlers
 function setupIpcHandlers() {
@@ -35,6 +36,9 @@ function setupIpcHandlers() {
   });
 }
 
+// Long-running operations that need extended timeout (5 minutes)
+const LONG_RUNNING_OPS = new Set(['tts-fast', 'tts-fast-progress', 'tts-setup', 'download-video', 'ytdlp-update', 'ytdlp-install']);
+
 // Send message to server and wait for reply
 function sendToServer(name, args) {
   return new Promise((resolve, reject) => {
@@ -48,13 +52,14 @@ function sendToServer(name, args) {
     
     serverProcess.send({ type: 'request', id, name, args });
     
-    // Timeout after 60 seconds
+    // Use 5 minute timeout for long-running ops, 60s for others
+    const timeout = LONG_RUNNING_OPS.has(name) ? 300000 : 60000;
     setTimeout(() => {
       if (pendingRequests.has(id)) {
         pendingRequests.delete(id);
         reject(new Error('Request timeout'));
       }
-    }, 60000);
+    }, timeout);
   });
 }
 

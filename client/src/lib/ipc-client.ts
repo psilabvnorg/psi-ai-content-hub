@@ -57,6 +57,21 @@ export const ipcApi = {
       codec?: string;
     }>('tts-fast', { text, ...(options || {}) }),
 
+  ttsFastProgress: (text: string, options?: { voiceId?: string; backbone?: string; codec?: string; device?: string }) =>
+    send<{ status: string; ttsId: string; message: string }>('tts-fast-progress', { text, ...(options || {}) }),
+
+  getTtsProgress: (ttsId: string) =>
+    send<{ 
+      status: string; 
+      message?: string; 
+      percent?: number; 
+      filePath?: string; 
+      filename?: string;
+      downloadUrl?: string;
+      duration?: number;
+      sampleRate?: number;
+    }>('get-tts-progress', { ttsId }),
+
   trimVideo: (videoPath: string, startTime: string, endTime?: string, duration?: string) =>
     send<{ status: string; filePath: string; filename: string }>('trim-video', { videoPath, startTime, endTime, duration }),
   

@@ -19,6 +19,7 @@ if (!fs.existsSync(TEMP_DIR)) {
 
 // Progress tracking for downloads
 const progressStore: Map<string, any> = new Map();
+const ttsProgressStore: Map<string, any> = new Map();
 
 // Configure multer for file uploads
 const upload = multer({
@@ -64,7 +65,7 @@ const TTS_RUNNER = fs.existsSync(path.join(process.cwd(), "electron", "tts-runne
   : path.join(process.cwd(), "tts-runner.mjs");
 const NODE_BIN = process.execPath;
 
-async function runFastTts(payload: Record<string, any>) {
+async function runFastTts(payload: Record<string, any>, onProgress?: (progress: any) => void) {
   if (!fs.existsSync(TTS_RUNNER)) {
     throw new Error(`TTS runner not found at ${TTS_RUNNER}`);
   }
@@ -86,7 +87,21 @@ async function runFastTts(payload: Record<string, any>) {
     });
 
     proc.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
+      const chunk = data.toString();
+      stderr += chunk;
+      
+      // Try to parse progress JSON from stderr
+      const lines = chunk.split('\n').filter(line => line.trim());
+      for (const line of lines) {
+        try {
+          const progress = JSON.parse(line);
+          if (progress.type === 'progress' && onProgress) {
+            onProgress(progress);
+          }
+        } catch (e) {
+          // Not JSON, regular stderr
+        }
+      }
     });
 
     proc.on("error", (err) => {
@@ -98,7 +113,13 @@ async function runFastTts(payload: Record<string, any>) {
         return reject(new Error(stderr || "TTS process failed"));
       }
       try {
-        const result = JSON.parse(stdout.trim());
+        // Parse only the last line of stdout (final JSON result)
+        const lines = stdout.trim().split('\n').filter(line => line.trim());
+        const lastLine = lines[lines.length - 1];
+        if (!lastLine) {
+          return reject(new Error('No output from TTS process'));
+        }
+        const result = JSON.parse(lastLine);
         if (result.status !== "success") {
           return reject(new Error(result.detail || "TTS process failed"));
         }
@@ -111,6 +132,59 @@ async function runFastTts(payload: Record<string, any>) {
     proc.stdin.write(JSON.stringify(payload));
     proc.stdin.end();
   });
+}
+
+// Background task for TTS generation
+async function runTtsFastTask(ttsId: string, text: string, options: Record<string, any> = {}) {
+  console.log('[TTS Task] Starting background TTS generation');
+  console.log('[TTS Task] TTS ID:', ttsId);
+  console.log('[TTS Task] Text length:', text.length);
+  try {
+    const outputFile = generateFilename("tts_fast", "wav");
+    console.log('[TTS Task] Output file:', outputFile);
+
+    const onProgress = (progress: any) => {
+      const progressData = {
+        status: progress.stage,
+        message: progress.message,
+        percent: progress.percent || 0,
+      };
+      console.log('[TTS Task] Progress update:', progressData);
+      ttsProgressStore.set(ttsId, progressData);
+    };
+
+    const result = await runFastTts({
+      text,
+      voice_id: options.voice_id,
+      backbone: options.backbone,
+      codec: options.codec,
+      device: options.device,
+      output_path: outputFile,
+    }, onProgress);
+
+    const completeData = {
+      status: "complete",
+      message: "Audio generation complete!",
+      percent: 100,
+      filePath: outputFile,
+      filename: path.basename(outputFile),
+      downloadUrl: `/api/files/${path.basename(outputFile)}`,
+      duration: result.duration,
+      sampleRate: result.sample_rate,
+      processTime: result.process_time,
+    };
+
+    console.log('[TTS Task] Generation complete:', completeData);
+    ttsProgressStore.set(ttsId, completeData);
+  } catch (error: any) {
+    console.error('[TTS Task] Generation failed:', error);
+    const errorData = {
+      status: "error",
+      message: error.message || "TTS generation failed",
+      percent: 0,
+    };
+    ttsProgressStore.set(ttsId, errorData);
+  }
 }
 
 export async function registerRoutes(
@@ -162,6 +236,40 @@ export async function registerRoutes(
     };
     
     const interval = setInterval(sendProgress, 500);
+    sendProgress();
+    
+    req.on("close", () => {
+      clearInterval(interval);
+    });
+  });
+
+  // SSE TTS Progress endpoint
+  app.get("/api/tts/progress/:ttsId", (req: Request, res: Response) => {
+    const ttsId = req.params.ttsId as string;
+    
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    
+    const sendProgress = () => {
+      const progress = ttsProgressStore.get(ttsId);
+      if (progress) {
+        res.write(`data: ${JSON.stringify(progress)}\n\n`);
+        
+        if (progress.status === "complete" || progress.status === "error") {
+          setTimeout(() => {
+            ttsProgressStore.delete(ttsId);
+          }, 5000);
+          res.end();
+          return;
+        }
+      } else {
+        res.write(`data: ${JSON.stringify({ status: "waiting", message: "Initializing...", percent: 0 })}\n\n`);
+      }
+    };
+    
+    const interval = setInterval(sendProgress, 300);
     sendProgress();
     
     req.on("close", () => {
@@ -344,6 +452,44 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("TTS failed:", error);
       res.status(500).json({ detail: `TTS failed: ${error.message}` });
+    }
+  });
+
+  // TTS Fast with Progress - starts in background
+  app.post("/api/tts/fast/progress", async (req: Request, res: Response) => {
+    console.log('[API] POST /api/tts/fast/progress called');
+    try {
+      const { text, voice_id, backbone, codec, device } = req.body || {};
+      console.log('[API] Text length:', text?.length);
+
+      if (!text || !String(text).trim()) {
+        return res.status(400).json({ detail: "text is required" });
+      }
+
+      if (!fs.existsSync(TTS_MARKER)) {
+        return res.status(412).json({ detail: "TTS_NOT_INSTALLED" });
+      }
+
+      const ttsId = `tts_${Date.now()}`;
+      console.log('[API] Created TTS ID:', ttsId);
+      
+      ttsProgressStore.set(ttsId, {
+        status: "starting",
+        message: "Initializing TTS...",
+        percent: 0,
+      });
+
+      // Start TTS generation in background
+      runTtsFastTask(ttsId, text, { voice_id, backbone, codec, device });
+
+      res.json({
+        status: "started",
+        tts_id: ttsId,
+        message: "TTS generation started. Use /api/tts/progress/{tts_id} to track progress.",
+      });
+    } catch (error: any) {
+      console.error("TTS start failed:", error);
+      res.status(500).json({ detail: `TTS start failed: ${error.message}` });
     }
   });
 

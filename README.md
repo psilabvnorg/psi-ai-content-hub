@@ -1,5 +1,25 @@
 # PSI AI Content Hub
 
+
+## Scripts
+
+- `npm run dev` - Start Express server only
+- `npm run electron:dev` - Start server + Electron
+- `npm run build` - Build for production
+- `npm run electron:build` - Build Electron installer
+- `npm run electron:pack` - Build unpacked (for testing)
+
+
+**Windows (winget):**
+```bash
+winget install yt-dlp
+winget install ffmpeg
+```
+
+**Windows (manual):**
+- yt-dlp: https://github.com/yt-dlp/yt-dlp/releases
+- ffmpeg: https://ffmpeg.org/download.html
+
 Desktop application for video/audio downloading, conversion, and processing tools.
 
 ## Tech Stack

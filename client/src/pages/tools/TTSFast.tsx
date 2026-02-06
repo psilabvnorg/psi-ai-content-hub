@@ -6,6 +6,7 @@ import { Loader2, Download, Volume2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { isElectron, ipcApi } from "@/lib/ipc-client";
 import { API_URL } from "@/lib/api";
+import { TTSProgress } from "@/components/TTSProgress";
 
 export default function TTSFast() {
   const [text, setText] = useState("");
@@ -17,6 +18,7 @@ export default function TTSFast() {
   const [ttsStatus, setTtsStatus] = useState<any>(null);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [ttsId, setTtsId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Check TTS status on mount (Electron only)
@@ -100,6 +102,10 @@ export default function TTSFast() {
   const handleGenerate = async () => {
     if (!text.trim()) return;
     
+    console.log('[TTS] Starting generation...');
+    console.log('[TTS] Mode:', isElectron() ? 'Electron' : 'Web');
+    console.log('[TTS] Text length:', text.length);
+    
     setIsProcessing(true);
     if (audioUrl && audioUrl.startsWith("blob:")) {
       URL.revokeObjectURL(audioUrl);
@@ -107,23 +113,18 @@ export default function TTSFast() {
     setAudioUrl(null);
     setDownloadName(null);
     setMeta(null);
+    setTtsId(null);
 
     try {
       if (isElectron()) {
-        const result = await ipcApi.ttsFast(text);
-        const fileData = await ipcApi.readFileBase64(result.filePath);
-        const byteCharacters = atob(fileData.data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "audio/wav" });
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
-        setDownloadName(fileData.filename);
-        setMeta({ duration: result.duration, processTime: result.processTime });
+        console.log('[TTS] Using Electron mode with progress');
+        const result = await ipcApi.ttsFastProgress(text);
+        console.log('[TTS] Got TTS ID:', result.ttsId);
+        setTtsId(result.ttsId);
+        // Keep isProcessing true while progress is shown
       } else {
-        const response = await fetch(`${API_URL}/api/tts/fast`, {
+        console.log('[TTS] Using Web mode with progress');
+        const response = await fetch(`${API_URL}/api/tts/fast/progress`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
@@ -135,19 +136,12 @@ export default function TTSFast() {
         }
 
         const data = await response.json();
-        const audioResponse = await fetch(`${API_URL}${data.download_url}`);
-        if (!audioResponse.ok) {
-          throw new Error("Failed to fetch generated audio");
-        }
-        const blob = await audioResponse.blob();
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
-        setDownloadName(data.filename);
-        setMeta({ duration: data.duration, processTime: data.process_time });
+        console.log('[TTS] Got TTS ID:', data.tts_id);
+        setTtsId(data.tts_id);
+        // Keep isProcessing true while progress is shown
       }
-
-      toast({ title: "Success", description: "Audio generated successfully!" });
     } catch (error: any) {
+      console.error('[TTS] Generation failed:', error);
       // Handle TTS not installed error
       if (error.message === 'TTS_NOT_INSTALLED') {
         toast({ 
@@ -158,12 +152,58 @@ export default function TTSFast() {
         if (isElectron()) {
           await checkTtsStatus();
         }
+        setIsProcessing(false);
         return;
       }
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleTTSComplete = async (data: { filePath?: string; filename?: string; downloadUrl?: string; duration?: number }) => {
+    console.log('[TTS] Generation complete!', data);
+    try {
+      if (isElectron()) {
+        console.log('[TTS] Reading file from path:', data.filePath);
+        const fileData = await ipcApi.readFileBase64(data.filePath!);
+        const byteCharacters = atob(fileData.data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "audio/wav" });
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        setDownloadName(data.filename || fileData.filename);
+        setMeta({ duration: data.duration });
+      } else {
+        console.log('[TTS] Fetching audio from URL:', data.downloadUrl);
+        const audioResponse = await fetch(`${API_URL}${data.downloadUrl}`);
+        if (!audioResponse.ok) {
+          throw new Error("Failed to fetch generated audio");
+        }
+        const blob = await audioResponse.blob();
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        setDownloadName(data.filename || "tts.wav");
+        setMeta({ duration: data.duration });
+      }
+      console.log('[TTS] Audio ready for playback');
+      toast({ title: "Success", description: "Audio generated successfully!" });
+    } catch (error: any) {
+      console.error('[TTS] Failed to load audio:', error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+      setTtsId(null);
+    }
+  };
+
+  const handleTTSError = (error: string) => {
+    console.error('[TTS] Progress error:', error);
+    toast({ title: "Error", description: error, variant: "destructive" });
+    setIsProcessing(false);
+    setTtsId(null);
   };
 
   const handleDownload = () => {
@@ -246,6 +286,15 @@ export default function TTSFast() {
           )}
           Generate Speech
         </Button>
+
+        {/* Show progress bar */}
+        {ttsId && (
+          <TTSProgress
+            ttsId={ttsId}
+            onComplete={handleTTSComplete}
+            onError={handleTTSError}
+          />
+        )}
 
         {audioUrl && (
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">

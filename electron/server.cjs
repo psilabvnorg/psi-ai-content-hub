@@ -1,9 +1,16 @@
 /**
  * Server process - runs in background and handles requests via Node IPC
  */
+
+// FORCE CLEAR REQUIRE CACHE FOR HANDLERS
+const handlerPath = require.resolve('./server-handlers.cjs');
+delete require.cache[handlerPath];
+console.log('[Server] Cleared require cache for:', handlerPath);
+
 const { handlers, setBroadcast } = require('./server-handlers.cjs');
 
 console.log('Server process starting...');
+console.log('[Server] CODE VERSION: 2026-02-06-05:20 - CACHE BUSTING ENABLED');
 
 // Broadcast function to send push messages to main process
 function broadcast(name, data) {
