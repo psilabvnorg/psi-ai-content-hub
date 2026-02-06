@@ -16,7 +16,9 @@
     "electron:dev": "concurrently --kill-others -s first \"npm:dev\" \"npm:electron:wait\"",
     "electron:wait": "npx wait-on http://localhost:5000 && electron .",
     "electron:build": "npm run build && electron-builder",
-    "electron:pack": "electron-builder --dir"
+    "electron:pack": "electron-builder --dir",
+    "voiceclone:setup": "uv venv .venv && uv pip install --python .venv\\\\Scripts\\\\python.exe --index-url https://download.pytorch.org/whl/cu124 torch==2.4.0+cu124 torchaudio==2.4.0+cu124 f5-tts fastapi uvicorn",
+    "voiceclone:server": ".venv\\\\Scripts\\\\python.exe electron\\\\voice-clone-server.py --listen --port 8188"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -126,7 +128,10 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "shared/voice-clone/voices.json",
+      "F5-TTS-Vietnamese/fast_api/static/samples/**/*",
+      "F5-TTS-Vietnamese/original_voice_ref/**/*"
     ],
     "asar": false,
     "win": {

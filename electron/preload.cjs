@@ -26,6 +26,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('server:push', handler);
     return () => ipcRenderer.removeListener('server:push', handler);
   },
+
+  // Voice Clone runtime
+  voiceCloneStatus: () => ipcRenderer.invoke('voice-clone:status'),
+  voiceCloneSetup: () => ipcRenderer.invoke('voice-clone:setup'),
+  voiceCloneClean: () => ipcRenderer.invoke('voice-clone:clean'),
+  onVoiceCloneSetupProgress: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('voice-clone:setup-progress', handler);
+    return () => ipcRenderer.removeListener('voice-clone:setup-progress', handler);
+  },
 });
 
 console.log('Preload script loaded');

@@ -31,6 +31,8 @@ export default function Settings() {
   const [ffmpegStatus, setFfmpegStatus] = useState<ToolStatus | null>(null);
   const [updatingYtdlp, setUpdatingYtdlp] = useState(false);
   const [installingYtdlp, setInstallingYtdlp] = useState(false);
+  const [cleaningVenv, setCleaningVenv] = useState(false);
+  const [vcStatus, setVcStatus] = useState<{ runtime_ready: boolean; server_running: boolean; venv_path?: string; model_path?: string } | null>(null);
   const { toast } = useToast();
 
   const fetchStorageInfo = async () => {
@@ -82,7 +84,36 @@ export default function Settings() {
   useEffect(() => {
     fetchStorageInfo();
     fetchToolsStatus();
+    fetchVcStatus();
   }, []);
+
+  const fetchVcStatus = async () => {
+    if (window.electronAPI) {
+      try {
+        const s = await window.electronAPI.voiceCloneStatus();
+        setVcStatus(s);
+      } catch {
+        setVcStatus(null);
+      }
+    }
+  };
+
+  const handleCleanVenv = async () => {
+    if (!confirm("This will delete the Voice Clone virtual environment (~3 GB). You'll need to run Setup Runtime again. Continue?")) return;
+    setCleaningVenv(true);
+    try {
+      if (window.electronAPI) {
+        const result = await window.electronAPI.voiceCloneClean();
+        toast({ title: "Success", description: result.message });
+        await fetchVcStatus();
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setCleaningVenv(false);
+    }
+  };
 
   const handleCleanup = async () => {
     if (!confirm("Are you sure you want to delete all temporary files?")) return;
@@ -262,6 +293,63 @@ export default function Settings() {
               </div>
             )}
           </div>
+
+          {/* Voice Clone Runtime */}
+          {isElectron() && (
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {vcStatus?.runtime_ready ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-500" />
+                  )}
+                  <div>
+                    <h4 className="font-medium">Voice Clone Runtime</h4>
+                    <p className="text-sm text-zinc-500">Python venv with PyTorch + F5-TTS (~3 GB)</p>
+                  </div>
+                </div>
+                {vcStatus?.runtime_ready && vcStatus?.server_running && (
+                  <span className="text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded">
+                    Server Running
+                  </span>
+                )}
+              </div>
+              <Button
+                onClick={handleCleanVenv}
+                disabled={cleaningVenv}
+                variant="destructive"
+                size="sm"
+              >
+                {cleaningVenv ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Cleaning...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4 mr-2" />Clean Virtual Environment</>
+                )}
+              </Button>
+              <p className="text-xs text-zinc-400">
+                Removes .venv folder for a fresh install. Use Setup Runtime in Voice Clone page afterwards.
+              </p>
+              {vcStatus?.venv_path && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex items-center gap-2 p-2 bg-zinc-50 dark:bg-zinc-900 rounded border">
+                    <FolderOpen className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-zinc-500">Virtual Environment</p>
+                      <code className="text-xs break-all">{vcStatus.venv_path}</code>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-zinc-50 dark:bg-zinc-900 rounded border">
+                    <FolderOpen className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-zinc-500">ML Models (F5-TTS)</p>
+                      <code className="text-xs break-all">{vcStatus.model_path}</code>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

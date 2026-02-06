@@ -1,4 +1,0 @@
-interface:
-  display_name: "Model On Demand Packaging"
-  short_description: "Keep ML models downloaded only when needed"
-  default_prompt: "Plan and implement on-demand model downloads, storage, and packaging exclusions to keep the app lightweight."
