@@ -14,6 +14,10 @@ interface ElectronAPI {
   voiceCloneSetup: () => Promise<{ success: boolean; error?: string }>;
   voiceCloneClean: () => Promise<{ success: boolean; message: string }>;
   onVoiceCloneSetupProgress: (callback: (data: { status: string; percent: number; message?: string; logs?: string[] }) => void) => () => void;
+  // Fast TTS runtime
+  ttsFastStatus: () => Promise<{ runtime_ready: boolean; server_running: boolean; vieneu_root: string }>;
+  ttsFastStartServer: () => Promise<{ success: boolean; message?: string; error?: string }>;
+  ttsFastStopServer: () => Promise<{ success: boolean; message: string }>;
 }
 
 declare global {

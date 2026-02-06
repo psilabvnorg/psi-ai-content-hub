@@ -43,34 +43,6 @@ export const ipcApi = {
   
   convertAudio: (audioPath: string, outputFormat: 'mp3' | 'wav') =>
     send<{ status: string; filePath: string; filename: string }>('convert-audio', { audioPath, outputFormat }),
-  
-  ttsFast: (text: string, options?: { voiceId?: string; backbone?: string; codec?: string; device?: string }) =>
-    send<{
-      status: string;
-      filePath: string;
-      filename: string;
-      duration?: number;
-      sampleRate?: number;
-      processTime?: number;
-      voiceId?: string;
-      backbone?: string;
-      codec?: string;
-    }>('tts-fast', { text, ...(options || {}) }),
-
-  ttsFastProgress: (text: string, options?: { voiceId?: string; backbone?: string; codec?: string; device?: string }) =>
-    send<{ status: string; ttsId: string; message: string }>('tts-fast-progress', { text, ...(options || {}) }),
-
-  getTtsProgress: (ttsId: string) =>
-    send<{ 
-      status: string; 
-      message?: string; 
-      percent?: number; 
-      filePath?: string; 
-      filename?: string;
-      downloadUrl?: string;
-      duration?: number;
-      sampleRate?: number;
-    }>('get-tts-progress', { ttsId }),
 
   trimVideo: (videoPath: string, startTime: string, endTime?: string, duration?: string) =>
     send<{ status: string; filePath: string; filename: string }>('trim-video', { videoPath, startTime, endTime, duration }),
@@ -96,23 +68,6 @@ export const ipcApi = {
   ytdlpUpdate: () => send<{ success: boolean; version: string }>('ytdlp-update'),
   
   ytdlpInstall: () => send<{ success: boolean; version: string }>('ytdlp-install'),
-  
-  // TTS Setup (Ollama-style)
-  ttsStatus: () => send<{ 
-    ready: boolean; 
-    runnerExists: boolean; 
-    ttsInstalled: boolean; 
-    modelsExist: boolean;
-    ttsPath: string;
-  }>('tts-status'),
-  
-  ttsSetup: (forceReinstall = false) => send<{ 
-    success: boolean; 
-    message: string; 
-    ttsPath: string;
-  }>('tts-setup', { forceReinstall }),
-  
-  ttsCleanup: () => send<{ success: boolean; message: string }>('tts-cleanup'),
 };
 
 export default ipcApi;

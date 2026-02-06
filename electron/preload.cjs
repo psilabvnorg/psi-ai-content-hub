@@ -36,6 +36,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('voice-clone:setup-progress', handler);
     return () => ipcRenderer.removeListener('voice-clone:setup-progress', handler);
   },
+
+  // Fast TTS runtime
+  ttsFastStatus: () => ipcRenderer.invoke('tts-fast:status'),
+  ttsFastStartServer: () => ipcRenderer.invoke('tts-fast:start-server'),
+  ttsFastStopServer: () => ipcRenderer.invoke('tts-fast:stop-server'),
 });
 
 console.log('Preload script loaded');

@@ -6,6 +6,7 @@ const fs = require('fs');
 let mainWindow;
 let serverProcess;
 let voiceCloneServerProcess;
+let ttsFastServerProcess;
 let ipcClient = null;
 let pendingRequests = new Map();
 let requestId = 0;
@@ -56,6 +57,23 @@ function getVoicesJsonPath() {
     return path.join(app.getAppPath(), 'shared', 'voice-clone', 'voices.json');
   }
   return path.join(process.cwd(), 'shared', 'voice-clone', 'voices.json');
+}
+
+function getTtsFastServerPath() {
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), 'electron', 'tts-fast-server.py');
+  }
+  return path.join(process.cwd(), 'electron', 'tts-fast-server.py');
+}
+
+function getVieNeuTtsRoot() {
+  if (process.env.VIENEU_TTS_ROOT) {
+    return process.env.VIENEU_TTS_ROOT;
+  }
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), 'VieNeu-TTS-Fast-Vietnamese');
+  }
+  return path.join(process.cwd(), 'VieNeu-TTS-Fast-Vietnamese');
 }
 
 function runCommand(cmd, args, opts = {}) {
@@ -171,6 +189,45 @@ async function startVoiceCloneServer() {
   });
 }
 
+async function startTtsFastServer() {
+  const venvDir = getVenvDir();
+  const marker = path.join(venvDir, '.ready.json');
+  if (!fs.existsSync(marker)) {
+    console.log('[TtsFast] Runtime not set up yet — skipping auto-start. Use Voice Clone setup first.');
+    return;
+  }
+
+  const pythonPath = path.join(venvDir, 'Scripts', 'python.exe');
+  const serverPath = getTtsFastServerPath();
+  const vieneuRoot = getVieNeuTtsRoot();
+
+  if (!fs.existsSync(serverPath)) {
+    console.error('[TtsFast] Server script not found:', serverPath);
+    return;
+  }
+
+  console.log('[TtsFast] Starting server:', serverPath);
+  console.log('[TtsFast] Python:', pythonPath);
+  console.log('[TtsFast] VieNeu root:', vieneuRoot);
+
+  ttsFastServerProcess = spawn(
+    pythonPath,
+    [serverPath, '--listen', '--port', '8189'],
+    {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        VIENEU_TTS_ROOT: vieneuRoot,
+      },
+    }
+  );
+
+  ttsFastServerProcess.on('exit', (code, signal) => {
+    console.log('[TtsFast] Server exited:', code, signal);
+    ttsFastServerProcess = null;
+  });
+}
+
 // Setup IPC handlers
 function setupIpcHandlers() {
   ipcMain.handle('dialog:open', async (event, options) => {
@@ -225,6 +282,42 @@ function setupIpcHandlers() {
       return { success: true, message: 'Virtual environment removed.' };
     }
     return { success: true, message: 'No virtual environment found.' };
+  });
+
+  // Fast TTS: check server status
+  ipcMain.handle('tts-fast:status', async () => {
+    const venvDir = getVenvDir();
+    const marker = path.join(venvDir, '.ready.json');
+    const runtimeReady = fs.existsSync(marker);
+    const serverRunning = ttsFastServerProcess !== null;
+    return {
+      runtime_ready: runtimeReady,
+      server_running: serverRunning,
+      vieneu_root: getVieNeuTtsRoot(),
+    };
+  });
+
+  // Fast TTS: start server if not running
+  ipcMain.handle('tts-fast:start-server', async () => {
+    if (ttsFastServerProcess) {
+      return { success: true, message: 'Server already running' };
+    }
+    try {
+      await startTtsFastServer();
+      return { success: true, message: 'Server started' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // Fast TTS: stop server
+  ipcMain.handle('tts-fast:stop-server', async () => {
+    if (ttsFastServerProcess) {
+      ttsFastServerProcess.kill();
+      ttsFastServerProcess = null;
+      return { success: true, message: 'Server stopped' };
+    }
+    return { success: true, message: 'Server was not running' };
   });
 
   // Voice Clone: install runtime (venv + deps), then start server
@@ -322,7 +415,7 @@ function setupIpcHandlers() {
 }
 
 // Long-running operations that need extended timeout (5 minutes)
-const LONG_RUNNING_OPS = new Set(['tts-fast', 'tts-fast-progress', 'tts-setup', 'download-video', 'ytdlp-update', 'ytdlp-install']);
+const LONG_RUNNING_OPS = new Set(['download-video', 'ytdlp-update', 'ytdlp-install']);
 
 // Send message to server and wait for reply
 function sendToServer(name, args) {
@@ -464,6 +557,9 @@ app.whenReady().then(async () => {
 
   // Start Voice Clone Python server (REST-only)
   startVoiceCloneServer();
+
+  // Start Fast TTS Python server (REST-only)
+  startTtsFastServer();
   
   // Wait a bit for server to initialize
   await new Promise(r => setTimeout(r, 500));
@@ -494,6 +590,11 @@ app.on('before-quit', () => {
     console.log('Killing Voice Clone server process');
     voiceCloneServerProcess.kill();
     voiceCloneServerProcess = null;
+  }
+  if (ttsFastServerProcess) {
+    console.log('Killing Fast TTS server process');
+    ttsFastServerProcess.kill();
+    ttsFastServerProcess = null;
   }
 });
 
