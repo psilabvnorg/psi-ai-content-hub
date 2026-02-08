@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+yt-dlp
+PyYAML
+huggingface_hub
+numpy
+soundfile
+openai-whisper
+torch
+torchaudio

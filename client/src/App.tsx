@@ -7,10 +7,10 @@ import { useState } from "react";
 import Home from "@/pages/Home";
 import FeaturePlaceholder from "@/pages/FeaturePlaceholder";
 import NotFound from "@/pages/not-found";
+import { LanguageProvider } from "@/i18n/i18n";
 
-// Check if running in Electron - use file:// protocol detection as backup
-const isElectron = typeof window !== 'undefined' && 
-  (window.location.protocol === 'file:' || !!(window as any).electronAPI?.isElectron);
+// Check if running in Electron - file:// protocol indicates desktop shell
+const isElectron = typeof window !== "undefined" && window.location.protocol === "file:";
 
 function AppRouter() {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
@@ -32,10 +32,12 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WouterRouter hook={isElectron ? useHashLocation : undefined}>
-        <AppRouter />
-      </WouterRouter>
-      <Toaster />
+      <LanguageProvider>
+        <WouterRouter hook={isElectron ? useHashLocation : undefined}>
+          <AppRouter />
+        </WouterRouter>
+        <Toaster />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

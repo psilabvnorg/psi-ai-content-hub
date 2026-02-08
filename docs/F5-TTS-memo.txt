@@ -1,2 +1,0 @@
-1. Tạo file cho transcription
-2. Tạo file gọi f5-tts infer cli để gen audio từ input audio và transcription

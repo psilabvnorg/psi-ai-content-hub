@@ -4,13 +4,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Volume2, AlertCircle, Settings2 } from "lucide-react";
-
-const TTS_FAST_API = "http://127.0.0.1:8189";
+import { useI18n } from "@/i18n/i18n";
+import { API_URL } from "@/lib/api";
 const MAX_CHARS = 3000;
 
 type Voice = { id: string; name: string; description?: string };
-type SampleVoice = { id: string; filename: string; url: string };
-type SampleText = { id: string; filename: string; preview: string };
 
 type ProgressData = {
   status: string;
@@ -24,14 +22,6 @@ type ProgressData = {
 };
 
 type StatusData = {
-  model_loaded?: boolean;
-  vieneu_exists?: boolean;
-  config_exists?: boolean;
-  deps_ok?: boolean;
-  deps_missing?: string[];
-  voices_ready?: boolean;
-  runtime_ready?: boolean;
-  server_running?: boolean;
   server_unreachable?: boolean;
 };
 
@@ -62,20 +52,16 @@ async function consumeSseStream(response: Response, onMessage: (data: ProgressDa
 }
 
 export default function TTSFast() {
+  const { t } = useI18n();
   const [text, setText] = useState("");
-  const [mode, setMode] = useState<"preset" | "custom">("preset");
+  const mode: "preset" = "preset";
   const [selectedVoice, setSelectedVoice] = useState("");
-  const [selectedSampleVoice, setSelectedSampleVoice] = useState("");
-  const [selectedSampleText, setSelectedSampleText] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [sampleVoices, setSampleVoices] = useState<SampleVoice[]>([]);
-  const [sampleTexts, setSampleTexts] = useState<SampleText[]>([]);
   const [status, setStatus] = useState<StatusData | null>(null);
   const [modelConfigs, setModelConfigs] = useState<ModelConfig | null>(null);
   const [selectedBackbone, setSelectedBackbone] = useState("");
   const [selectedCodec, setSelectedCodec] = useState("");
-  const [isSetupLoading, setIsSetupLoading] = useState(false);
-  const [isDepsInstalling, setIsDepsInstalling] = useState(false);
+  const [isModelDownloading, setIsModelDownloading] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -89,10 +75,7 @@ export default function TTSFast() {
   const overLimit = charCount > MAX_CHARS;
 
   const serverUnreachable = status?.server_unreachable === true;
-  const runtimeNotReady = status?.runtime_ready === false;
-  const depsNotOk = status && status.deps_ok === false;
-  const modelReady = status?.model_loaded === true;
-  const statusReady = status?.model_loaded && status?.voices_ready && status?.deps_ok;
+  const statusReady = status?.server_unreachable !== true;
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -100,48 +83,27 @@ export default function TTSFast() {
 
   // --- Data fetching ---
   const fetchStatus = async () => {
-    if (window.electronAPI) {
-      try {
-        const ipcStatus = await window.electronAPI.ttsFastStatus();
-        if (!ipcStatus.runtime_ready) {
-          setStatus({ model_loaded: false, runtime_ready: false, server_running: false });
-          return;
-        }
-        if (!ipcStatus.server_running) {
-          await window.electronAPI.ttsFastStartServer();
-          await new Promise(r => setTimeout(r, 2000));
-        }
-      } catch { /* fall through */ }
-    }
     try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/status`);
-      const data = await res.json();
-      setStatus(data);
+      const res = await fetch(`${API_URL}/api/system/status`);
+      if (!res.ok) throw new Error("status");
+      setStatus({ server_unreachable: false });
     } catch {
-      setStatus({ model_loaded: false, server_unreachable: true });
+      setStatus({ server_unreachable: true });
     }
   };
 
   const fetchVoices = async () => {
     try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/voices`);
+      const res = await fetch(`${API_URL}/api/tools/tts/voices`);
       const data = await res.json();
       setVoices(data.voices || []);
     } catch { /* */ }
   };
 
-  const fetchSamples = async () => {
-    try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/samples`);
-      const data = await res.json();
-      setSampleVoices(data.sample_voices || []);
-      setSampleTexts(data.sample_texts || []);
-    } catch { /* */ }
-  };
 
   const fetchModelConfigs = async () => {
     try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/model/configs`);
+      const res = await fetch(`${API_URL}/api/tools/tts/model/configs`);
       const data = await res.json();
       setModelConfigs(data);
       const bbKeys = Object.keys(data.backbones || {});
@@ -154,67 +116,29 @@ export default function TTSFast() {
   useEffect(() => {
     fetchStatus();
     fetchVoices();
-    fetchSamples();
     fetchModelConfigs();
   }, []);
 
-  // --- Setup Runtime (shared venv via Electron IPC, same as VoiceClone) ---
-  const runSetup = async () => {
-    setIsSetupLoading(true);
+  // --- Download Model ---
+  const runModelDownload = async () => {
+    if (!selectedBackbone || !selectedCodec) return;
+    setIsModelDownloading(true);
     setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Setting up runtime..." });
-
-    if (window.electronAPI) {
-      const cleanup = window.electronAPI.onVoiceCloneSetupProgress((data: ProgressData) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-      try {
-        const result = await window.electronAPI.voiceCloneSetup();
-        if (!result.success) {
-          setProgress({ status: "error", percent: 0, message: result.error || "Setup failed" });
-        }
-      } catch (err) {
-        console.warn("[TTSFast] IPC setup failed:", err);
-        setProgress({ status: "error", percent: 0, message: "Setup failed unexpectedly." });
-      } finally {
-        cleanup();
-        setIsSetupLoading(false);
-        fetchStatus();
-      }
-      return;
-    }
-
-    // Web fallback
+    setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.downloading_model") });
     try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/setup`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/tools/tts/model/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backbone: selectedBackbone, codec: selectedCodec }),
+      });
       await consumeSseStream(res, (data) => {
         setProgress(data);
         if (data.logs) setLogs(data.logs);
       });
     } catch {
-      setProgress({ status: "error", percent: 0, message: "Server not reachable." });
+        setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.failed_download_model") });
     } finally {
-      setIsSetupLoading(false);
-      fetchStatus();
-    }
-  };
-
-  // --- Install VieNeu-TTS deps ---
-  const runInstallDeps = async () => {
-    setIsDepsInstalling(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Installing VieNeu-TTS dependencies..." });
-    try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/install-deps`, { method: "POST" });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch {
-      setProgress({ status: "error", percent: 0, message: "Server not reachable." });
-    } finally {
-      setIsDepsInstalling(false);
+      setIsModelDownloading(false);
       fetchStatus();
     }
   };
@@ -224,9 +148,9 @@ export default function TTSFast() {
     if (!selectedBackbone || !selectedCodec) return;
     setIsModelLoading(true);
     setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Loading model..." });
+    setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.loading_model") });
     try {
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/model/load`, {
+      const res = await fetch(`${API_URL}/api/tools/tts/model/load`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ backbone: selectedBackbone, codec: selectedCodec, device: "auto" }),
@@ -236,7 +160,7 @@ export default function TTSFast() {
         if (data.logs) setLogs(data.logs);
       });
     } catch {
-      setProgress({ status: "error", percent: 0, message: "Failed to load model." });
+      setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.failed_load_model") });
     } finally {
       setIsModelLoading(false);
       fetchStatus();
@@ -247,24 +171,19 @@ export default function TTSFast() {
   const handleGenerate = async () => {
     if (!text.trim() || overLimit) return;
     if (mode === "preset" && !selectedVoice) return;
-    if (mode === "custom" && (!selectedSampleVoice || !selectedSampleText)) return;
+    if (mode === "custom") return;
 
     setIsGenerating(true);
-    setProgress({ status: "starting", percent: 0, message: "Starting generation..." });
+    setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.starting_generation") });
     setLogs([]);
     setAudioUrl(null);
     setDownloadName(null);
     setAudioDuration(null);
 
     try {
-      const payload: Record<string, unknown> = { text, mode };
-      if (mode === "preset") payload.voice_id = selectedVoice;
-      else {
-        payload.sample_voice_id = selectedSampleVoice;
-        payload.sample_text_id = selectedSampleText;
-      }
+      const payload: Record<string, unknown> = { text, mode, voice_id: selectedVoice };
 
-      const res = await fetch(`${TTS_FAST_API}/tts-fast/start`, {
+      const res = await fetch(`${API_URL}/api/tools/tts/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -272,7 +191,7 @@ export default function TTSFast() {
       const data = await res.json();
       const taskId = data.task_id;
 
-      const es = new EventSource(`${TTS_FAST_API}/tts-fast/progress/${taskId}`);
+      const es = new EventSource(`${API_URL}/api/tools/tts/progress/${taskId}`);
       es.onmessage = (event) => {
         const p: ProgressData = JSON.parse(event.data);
         setProgress(p);
@@ -280,8 +199,12 @@ export default function TTSFast() {
         if (p.status === "complete") {
           es.close();
           setIsGenerating(false);
-          setAudioUrl(`${TTS_FAST_API}/tts-fast/download/${taskId}`);
-          setDownloadName(p.filename || "tts.wav");
+          fetch(`${API_URL}/api/tools/tts/download/${taskId}`)
+            .then((r) => r.json())
+            .then((r) => {
+              setAudioUrl(`${API_URL}${r.download_url}`);
+              setDownloadName(r.filename || "tts.wav");
+            });
           setAudioDuration(p.duration || null);
         }
         if (p.status === "error") {
@@ -292,10 +215,10 @@ export default function TTSFast() {
       es.onerror = () => {
         es.close();
         setIsGenerating(false);
-        setProgress({ status: "error", percent: 0, message: "Lost connection to TTS server" });
+        setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.lost_connection") });
       };
     } catch {
-      setProgress({ status: "error", percent: 0, message: "TTS server not reachable." });
+        setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.server_not_reachable") });
       setIsGenerating(false);
     }
   };
@@ -316,61 +239,19 @@ export default function TTSFast() {
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
 
-        {/* Setup Warning — like VoiceClone */}
-        {!statusReady && !serverUnreachable && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Fast TTS Not Ready</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {runtimeNotReady
-                    ? "Python runtime not set up yet. Click 'Setup Runtime' to create the virtual environment and install dependencies."
-                    : depsNotOk
-                    ? `Missing dependencies: ${status?.deps_missing?.join(", ")}. Click 'Install Dependencies' to fix.`
-                    : !modelReady
-                    ? "Model not loaded yet. Select backbone/codec below and click 'Load Model'."
-                    : "Setup incomplete."}
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {runtimeNotReady && (
-                    <Button size="sm" className="bg-amber-600 hover:bg-amber-700" onClick={runSetup} disabled={isSetupLoading}>
-                      {isSetupLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Setup Runtime
-                    </Button>
-                  )}
-                  {!runtimeNotReady && depsNotOk && (
-                    <Button size="sm" variant="outline" onClick={runInstallDeps} disabled={isDepsInstalling}>
-                      {isDepsInstalling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Install Dependencies
-                    </Button>
-                  )}
-                  <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    Refresh Status
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Server unreachable */}
         {serverUnreachable && (
           <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 space-y-3">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
               <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-300">Server Not Reachable</p>
+                <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("tool.tts_fast.server_unreachable")}</p>
                 <p className="text-xs text-red-700 dark:text-red-400">
-                  Fast TTS server is not running on port 8189. Setup the runtime first, then the server will start automatically.
+                  {t("tool.tts_fast.server_unreachable_desc")}
                 </p>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-amber-600 hover:bg-amber-700" onClick={runSetup} disabled={isSetupLoading}>
-                    {isSetupLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Setup Runtime
-                  </Button>
                   <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    Retry
+                    {t("tool.tts_fast.retry")}
                   </Button>
                 </div>
               </div>
@@ -379,21 +260,21 @@ export default function TTSFast() {
         )}
 
         {/* Model Loading Section */}
-        {!serverUnreachable && !runtimeNotReady && !depsNotOk && !modelReady && modelConfigs && (
+        {!serverUnreachable && modelConfigs && (
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 space-y-3">
             <div className="flex items-start gap-3">
               <Settings2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div className="flex-1 space-y-3">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Load TTS Model</p>
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">{t("tool.tts_fast.load_model")}</p>
                 <p className="text-xs text-blue-700 dark:text-blue-400">
-                  Select backbone and codec, then load the model before generating speech.
+                  {t("tool.tts_fast.load_desc")}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase">Backbone</label>
+                    <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.backbone")}</label>
                     <Select value={selectedBackbone} onValueChange={setSelectedBackbone}>
                       <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                        <SelectValue placeholder="Select backbone..." />
+                        <SelectValue placeholder={t("tool.tts_fast.backbone")} />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.keys(modelConfigs.backbones).map((k) => (
@@ -403,10 +284,10 @@ export default function TTSFast() {
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase">Codec</label>
+                    <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.codec")}</label>
                     <Select value={selectedCodec} onValueChange={setSelectedCodec}>
                       <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                        <SelectValue placeholder="Select codec..." />
+                        <SelectValue placeholder={t("tool.tts_fast.codec")} />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.keys(modelConfigs.codecs).map((k) => (
@@ -416,10 +297,16 @@ export default function TTSFast() {
                     </Select>
                   </div>
                 </div>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleLoadModel} disabled={isModelLoading || !selectedBackbone || !selectedCodec}>
-                  {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Load Model
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelDownloading || !selectedBackbone || !selectedCodec}>
+                    {isModelDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {t("tool.tts_fast.download_model")}
+                  </Button>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleLoadModel} disabled={isModelLoading || !selectedBackbone || !selectedCodec}>
+                    {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {t("tool.tts_fast.load_model_btn")}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -427,85 +314,48 @@ export default function TTSFast() {
 
         {/* Mode Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">Mode</label>
-          <div className="flex gap-2">
-            <Button size="sm" variant={mode === "preset" ? "default" : "outline"} onClick={() => setMode("preset")}>Preset Voice</Button>
-            <Button size="sm" variant={mode === "custom" ? "default" : "outline"} onClick={() => setMode("custom")}>Custom Voice</Button>
-          </div>
+          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.select_voice")}</label>
+          <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+            <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <SelectValue placeholder={t("tool.tts_fast.choose_preset")} />
+            </SelectTrigger>
+            <SelectContent>
+              {voices.map((v) => (
+                <SelectItem key={v.id} value={v.id}>{v.name} {v.description ? `— ${v.description}` : ""}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-
-        {/* Voice Selection */}
-        {mode === "preset" && (
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">Select Voice</label>
-            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-              <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <SelectValue placeholder="Choose a preset voice..." />
-              </SelectTrigger>
-              <SelectContent>
-                {voices.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>{v.name} {v.description ? `— ${v.description}` : ""}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Custom Voice Selection */}
-        {mode === "custom" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-500 uppercase">Sample Voice</label>
-              <Select value={selectedSampleVoice} onValueChange={setSelectedSampleVoice}>
-                <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                  <SelectValue placeholder="Choose sample voice..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sampleVoices.map((sv) => (<SelectItem key={sv.id} value={sv.id}>{sv.id}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-500 uppercase">Sample Text</label>
-              <Select value={selectedSampleText} onValueChange={setSelectedSampleText}>
-                <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                  <SelectValue placeholder="Choose sample text..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sampleTexts.map((st) => (<SelectItem key={st.id} value={st.id}>{st.id} — {st.preview}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
 
         {/* Text Input */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">Text to Speak</label>
+          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.text_to_speak")}</label>
           <Textarea
-            placeholder="Enter text to convert to speech..."
+            placeholder={t("tool.tts_fast.text_ph")}
             value={text}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[120px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 resize-none"
           />
-          <p className={`text-xs ${overLimit ? "text-red-500" : "text-zinc-400"}`}>{charCount}/{MAX_CHARS} characters</p>
+          <p className={`text-xs ${overLimit ? "text-red-500" : "text-zinc-400"}`}>
+            {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
+          </p>
         </div>
 
         {/* Generate Button */}
         <Button
           className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
           onClick={handleGenerate}
-          disabled={isGenerating || !text.trim() || overLimit || !statusReady || (mode === "preset" && !selectedVoice) || (mode === "custom" && (!selectedSampleVoice || !selectedSampleText))}
+          disabled={isGenerating || !text.trim() || overLimit || !statusReady || !selectedVoice}
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Volume2 className="w-5 h-5 mr-2" />}
-          Generate Speech
+          {t("tool.tts_fast.generate")}
         </Button>
 
         {/* Progress */}
         {progress && progress.status !== "waiting" && (
           <div className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{progress.message || "Processing..."}</span>
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{progress.message || t("tool.tts_fast.processing")}</span>
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
             </div>
             <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2 overflow-hidden">
@@ -523,14 +373,14 @@ export default function TTSFast() {
         {audioUrl && (
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-green-700 dark:text-green-400">Audio Ready</span>
+              <span className="text-sm font-bold text-green-700 dark:text-green-400">{t("tool.tts_fast.audio_ready")}</span>
               <Button size="sm" variant="outline" onClick={handleDownload}>
                 <Download className="w-4 h-4 mr-2" />
-                Download
+                {t("tool.common.download")}
               </Button>
             </div>
             {audioDuration !== null && (
-              <div className="text-xs text-green-700 dark:text-green-400">Duration: {audioDuration}s</div>
+              <div className="text-xs text-green-700 dark:text-green-400">{t("tool.tts_fast.duration", { seconds: audioDuration })}</div>
             )}
             <audio controls className="w-full h-10">
               <source src={audioUrl} type="audio/wav" />

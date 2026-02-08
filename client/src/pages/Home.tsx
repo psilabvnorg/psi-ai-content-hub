@@ -7,122 +7,137 @@ import {
   Mic, Languages, Search, Settings, 
   Menu, Sparkles, Wand2,
   Instagram, Facebook, Play,
-  Image as ImageIcon, Scissors, Gauge
+  Image as ImageIcon, Scissors, Gauge, Terminal
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/i18n";
+import type { I18nKey } from "@/i18n/translations";
 
 const features = {
   workflow: [
     { 
-      id: "text-to-video", 
-      title: "Topic/Text to Video", 
-      icon: Video, 
-      description: "Transform any topic or text into engaging vertical (TikTok, YouTube Shorts, FB Reels) or horizontal videos (YouTube). Perfect for news, education, reviews, tourism, sports, investment, self-help, philosophy, and psychology content."
+      id: "reup-youtube",
+      titleKey: "feature.workflow.reup_youtube.title" as I18nKey,
+      icon: Youtube,
+      descriptionKey: "feature.workflow.reup_youtube.desc" as I18nKey,
     },
     { 
-      id: "news-to-video", 
-      title: "News Link to Video", 
-      icon: FileText, 
-      description: "Paste a news article URL (VnExpress, etc.) and instantly generate short or long-form videos. Ideal for news channels, educational content, and knowledge sharing across all major platforms."
+      id: "text-to-video",
+      titleKey: "feature.workflow.text_to_video.title" as I18nKey,
+      icon: Video,
+      descriptionKey: "feature.workflow.text_to_video.desc" as I18nKey,
     },
     { 
-      id: "book-to-video", 
-      title: "Book to Video", 
-      icon: Book, 
-      description: "Upload PDF or EPUB files to create video summaries. Generate chapter-by-chapter breakdowns or full book explanations for educational and review content."
+      id: "news-to-video",
+      titleKey: "feature.workflow.news_to_video.title" as I18nKey,
+      icon: FileText,
+      descriptionKey: "feature.workflow.news_to_video.desc" as I18nKey,
     },
     { 
-      id: "movie-to-video", 
-      title: "Movie to Video", 
-      icon: Film, 
-      description: "Upload MP4 movie files to automatically generate engaging summaries and explanations. Perfect for film review channels and entertainment content creators."
+      id: "book-to-video",
+      titleKey: "feature.workflow.book_to_video.title" as I18nKey,
+      icon: Book,
+      descriptionKey: "feature.workflow.book_to_video.desc" as I18nKey,
     },
     { 
-      id: "clone-channel", 
-      title: "Clone YT Channel", 
-      icon: Youtube, 
-      description: "Paste any YouTube video URL to recreate it with a new voice, fresh images, and translated content. Convert English to Vietnamese or any language while maintaining the original message."
+      id: "movie-to-video",
+      titleKey: "feature.workflow.movie_to_video.title" as I18nKey,
+      icon: Film,
+      descriptionKey: "feature.workflow.movie_to_video.desc" as I18nKey,
+    },
+    { 
+      id: "clone-channel",
+      titleKey: "feature.workflow.clone_channel.title" as I18nKey,
+      icon: Youtube,
+      descriptionKey: "feature.workflow.clone_channel.desc" as I18nKey,
     },
   ],
   tool: [
     { 
-      id: "dl-tiktok", 
-      title: "Download TikTok Video", 
-      icon: Video, 
-      description: "Download any TikTok video in high quality MP4 format without watermarks"
+      id: "dl-tiktok",
+      titleKey: "feature.tool.dl_tiktok.title" as I18nKey,
+      icon: Video,
+      descriptionKey: "feature.tool.dl_tiktok.desc" as I18nKey,
     },
     { 
-      id: "dl-youtube", 
-      title: "Download YouTube Video", 
-      icon: Youtube, 
-      description: "Download YouTube videos in multiple resolutions up to 4K quality"
+      id: "dl-youtube",
+      titleKey: "feature.tool.dl_youtube.title" as I18nKey,
+      icon: Youtube,
+      descriptionKey: "feature.tool.dl_youtube.desc" as I18nKey,
     },
     { 
-      id: "dl-facebook", 
-      title: "Download Facebook Video", 
-      icon: Facebook, 
-      description: "Extract and download Facebook videos and reels in original quality"
+      id: "dl-facebook",
+      titleKey: "feature.tool.dl_facebook.title" as I18nKey,
+      icon: Facebook,
+      descriptionKey: "feature.tool.dl_facebook.desc" as I18nKey,
     },
     { 
-      id: "dl-instagram", 
-      title: "Download Instagram Video", 
-      icon: Instagram, 
-      description: "Download Instagram videos, reels, and IGTV content instantly"
+      id: "dl-instagram",
+      titleKey: "feature.tool.dl_instagram.title" as I18nKey,
+      icon: Instagram,
+      descriptionKey: "feature.tool.dl_instagram.desc" as I18nKey,
     },
     { 
-      id: "dl-music", 
-      title: "Extract Music from Video", 
-      icon: Music, 
-      description: "Extract audio from any video file and save as high-quality MP3"
+      id: "dl-music",
+      titleKey: "feature.tool.dl_music.title" as I18nKey,
+      icon: Music,
+      descriptionKey: "feature.tool.dl_music.desc" as I18nKey,
     },
     { 
-      id: "mp3-to-wav", 
-      title: "Audio Converter", 
-      icon: FileAudio, 
-      description: "Convert MP3 files to uncompressed WAV format for professional audio editing"
+      id: "mp3-to-wav",
+      titleKey: "feature.tool.mp3_to_wav.title" as I18nKey,
+      icon: FileAudio,
+      descriptionKey: "feature.tool.mp3_to_wav.desc" as I18nKey,
     },
     { 
-      id: "trim-video", 
-      title: "Trim Video", 
-      icon: Scissors, 
-      description: "Precisely cut and trim video segments with frame-accurate control"
+      id: "trim-video",
+      titleKey: "feature.tool.trim_video.title" as I18nKey,
+      icon: Scissors,
+      descriptionKey: "feature.tool.trim_video.desc" as I18nKey,
     },
     { 
-      id: "adjust-speed", 
-      title: "Adjust Speed", 
-      icon: Gauge, 
-      description: "Change video playback speed from 0.5x to 2x for slow-motion or time-lapse effects"
+      id: "adjust-speed",
+      titleKey: "feature.tool.adjust_speed.title" as I18nKey,
+      icon: Gauge,
+      descriptionKey: "feature.tool.adjust_speed.desc" as I18nKey,
     },
     { 
-      id: "thumbnail", 
-      title: "Thumbnail Creator", 
-      icon: ImageIcon, 
-      description: "AI-powered thumbnail generation from video frames or custom text prompts"
+      id: "thumbnail",
+      titleKey: "feature.tool.thumbnail.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
     },
     { 
-      id: "tts-fast", 
-      title: "Super Fast TTS", 
-      icon: Play, 
-      description: "Lightning-fast text-to-speech conversion with natural-sounding voices"
+      id: "tts-fast",
+      titleKey: "feature.tool.tts_fast.title" as I18nKey,
+      icon: Play,
+      descriptionKey: "feature.tool.tts_fast.desc" as I18nKey,
     },
     { 
-      id: "voice-clone", 
-      title: "Voice Clone", 
-      icon: Mic, 
-      description: "Clone celebrity voices (Trần Hà Linh, Khá Bảnh, Huấn Hoa Hồng, Elon Musk, Warren Buffet) or create your own custom voice model"
+      id: "voice-clone",
+      titleKey: "feature.tool.voice_clone.title" as I18nKey,
+      icon: Mic,
+      descriptionKey: "feature.tool.voice_clone.desc" as I18nKey,
     },
     { 
-      id: "stt", 
-      title: "Speech to Text", 
-      icon: Languages, 
-      description: "Transcribe audio to text with multi-language support. Accepts WAV and MP3 files"
+      id: "stt",
+      titleKey: "feature.tool.stt.title" as I18nKey,
+      icon: Languages,
+      descriptionKey: "feature.tool.stt.desc" as I18nKey,
+    },
+    {
+      id: "backend-console",
+      titleKey: "feature.tool.backend_console.title" as I18nKey,
+      icon: Terminal,
+      descriptionKey: "feature.tool.backend_console.desc" as I18nKey,
     },
   ]
 };
 
 export default function Home({ onSelectFeature }: { onSelectFeature: (id: string) => void }) {
   const isMobile = useIsMobile();
+  const { t } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -162,12 +177,12 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Wand2 className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-white">AI Studio</span>
+            <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-white">{t("app.name")}</span>
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
             <div className="py-4">
-              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Workflows</p>
+              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">{t("nav.workflows")}</p>
               {features.workflow.map((item) => (
                 <button
                   key={item.id}
@@ -176,13 +191,13 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                   data-testid={`link-${item.id}`}
                 >
                   <item.icon className="w-4 h-4" />
-                  {item.title}
+                  {t(item.titleKey)}
                 </button>
               ))}
             </div>
 
             <div className="py-4 border-t border-zinc-100 dark:border-zinc-800 mt-2">
-              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Tools</p>
+              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">{t("nav.tools")}</p>
               <div className="grid grid-cols-1 gap-1">
                 {features.tool.map((item) => (
                   <button
@@ -192,7 +207,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                     data-testid={`link-${item.id}`}
                   >
                     <item.icon className="w-4 h-4" />
-                    {item.title}
+                    {t(item.titleKey)}
                   </button>
                 ))}
               </div>
@@ -206,7 +221,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
               data-testid="link-settings"
             >
               <Settings className="w-4 h-4" />
-              Settings
+              {t("nav.settings")}
             </button>
           </div>
         </div>
@@ -226,7 +241,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">Dashboard</h1>
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">{t("app.dashboard")}</h1>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="hidden sm:flex">
@@ -234,7 +249,7 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 h-9 text-xs font-bold shadow-lg shadow-blue-500/20">
               <Sparkles className="w-3.5 h-3.5 mr-2" />
-              Upgrade Pro
+              {t("app.upgrade_pro")}
             </Button>
           </div>
         </header>
@@ -247,10 +262,10 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             <section>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">AI Workflows</h2>
-                  <p className="text-zinc-500 dark:text-zinc-400">Complete end-to-end video generation pipelines.</p>
+                  <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{t("home.section.workflows")}</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">{t("home.section.workflows_desc")}</p>
                 </div>
-                <Button variant="link" className="text-blue-600 font-bold hidden md:flex">View All</Button>
+                <Button variant="link" className="text-blue-600 font-bold hidden md:flex">{t("app.view_all")}</Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {features.workflow.map((feature) => (
@@ -264,8 +279,8 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                       <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 ease-out shadow-sm group-hover:shadow-blue-500/40">
                         <feature.icon className="w-7 h-7 text-blue-600 dark:text-blue-400 group-hover:text-white" />
                       </div>
-                      <h3 className="text-xl font-black mb-3 text-zinc-900 dark:text-white tracking-tight group-hover:text-blue-600 transition-colors">{feature.title}</h3>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">{feature.description}</p>
+                      <h3 className="text-xl font-black mb-3 text-zinc-900 dark:text-white tracking-tight group-hover:text-blue-600 transition-colors">{t(feature.titleKey)}</h3>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">{t(feature.descriptionKey)}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -275,8 +290,8 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             {/* Tools Section */}
             <section className="pb-12">
               <div className="mb-8">
-                <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">Creative Tools</h2>
-                <p className="text-zinc-500 dark:text-zinc-400">Essential utilities for high-performance creators.</p>
+                <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{t("home.section.tools")}</h2>
+                <p className="text-zinc-500 dark:text-zinc-400">{t("home.section.tools_desc")}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {features.tool.map((tool) => (
@@ -292,8 +307,8 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                           <tool.icon className="w-6 h-6 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-1.5 group-hover:text-blue-600 transition-colors">{tool.title}</h3>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">{tool.description}</p>
+                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-1.5 group-hover:text-blue-600 transition-colors">{t(tool.titleKey)}</h3>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">{t(tool.descriptionKey)}</p>
                         </div>
                       </div>
                     </CardContent>

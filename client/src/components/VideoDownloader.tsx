@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { DownloadProgress } from './DownloadProgress';
+import { useI18n } from "@/i18n/i18n";
 
 export function VideoDownloader() {
-  const [url, setUrl] = useState('');
-  const [platform, setPlatform] = useState<'youtube' | 'tiktok' | 'facebook' | 'instagram'>('youtube');
+  const { t } = useI18n();
+  type Platform = "youtube" | "tiktok" | "facebook" | "instagram";
+  type DownloadResult = {
+    title?: string;
+    duration?: number;
+    download_url?: string;
+  };
+  const [url, setUrl] = useState("");
+  const [platform, setPlatform] = useState<Platform>("youtube");
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<DownloadResult | null>(null);
 
   const handleDownload = async () => {
     if (!url) return;
@@ -15,9 +23,9 @@ export function VideoDownloader() {
     setResult(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/download/video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:8000/api/download/video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, platform })
       });
 
@@ -31,34 +39,34 @@ export function VideoDownloader() {
         setResult(data);
       }
     } catch (error) {
-      console.error('Download failed:', error);
+      console.error("Download failed:", error);
       setIsDownloading(false);
     }
   };
 
   const handleComplete = () => {
     setIsDownloading(false);
-    console.log('Download complete!');
+    console.log("Download complete!");
   };
 
   const handleError = (error: string) => {
     setIsDownloading(false);
-    alert(`Download failed: ${error}`);
+    alert(t("tool.video_dl.failed", { error }));
   };
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">Video Downloader</h2>
+      <h2 className="text-2xl font-bold mb-4">{t("tool.video_dl.title")}</h2>
 
       <div className="space-y-4">
         {/* URL Input */}
         <div>
-          <label className="block text-sm font-medium mb-2">Video URL</label>
+          <label className="block text-sm font-medium mb-2">{t("tool.video_dl.url")}</label>
           <input
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://youtube.com/watch?v=..."
+            placeholder={t("tool.video_dl.placeholder")}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             disabled={isDownloading}
           />
@@ -66,10 +74,10 @@ export function VideoDownloader() {
 
         {/* Platform Select */}
         <div>
-          <label className="block text-sm font-medium mb-2">Platform</label>
+          <label className="block text-sm font-medium mb-2">{t("tool.video_dl.platform")}</label>
           <select
             value={platform}
-            onChange={(e) => setPlatform(e.target.value as any)}
+            onChange={(e) => setPlatform(e.target.value as Platform)}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             disabled={isDownloading}
           >
@@ -86,7 +94,7 @@ export function VideoDownloader() {
           disabled={!url || isDownloading}
           className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg border border-pink-600 shadow-md hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {isDownloading ? 'Downloading...' : 'Download Video'}
+          {isDownloading ? t("tool.video_dl.downloading") : t("tool.video_dl.download")}
         </button>
 
         {/* Progress Display */}
@@ -101,15 +109,15 @@ export function VideoDownloader() {
         {/* Result Display */}
         {result && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">Download Complete!</h3>
-            <p className="text-sm text-gray-700">Title: {result.title}</p>
-            <p className="text-sm text-gray-700">Duration: {result.duration}s</p>
+            <h3 className="font-semibold text-green-800 mb-2">{t("tool.video_dl.complete")}</h3>
+            <p className="text-sm text-gray-700">{t("tool.video_dl.title_label", { title: result.title ?? "-" })}</p>
+            <p className="text-sm text-gray-700">{t("tool.video_dl.duration", { seconds: result.duration ?? 0 })}</p>
             <a
               href={`http://localhost:8000${result.download_url}`}
               download
               className="inline-block mt-2 text-pink-600 hover:text-pink-700 font-bold hover:underline"
             >
-              Download File
+              {t("tool.video_dl.download_file")}
             </a>
           </div>
         )}

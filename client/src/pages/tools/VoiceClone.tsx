@@ -4,8 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mic, Loader2, Download, AlertCircle } from "lucide-react";
-
-const VOICE_CLONE_API = "http://127.0.0.1:8188";
+import { useI18n } from "@/i18n/i18n";
+import { API_URL } from "@/lib/api";
 const MAX_CHARS = 500;
 
 type Voice = {
@@ -16,9 +16,9 @@ type Voice = {
   gender?: string;
 };
 
-type Sample = {
-  id: string;
-  filename: string;
+
+type StatusData = {
+  server_unreachable?: boolean;
 };
 
 type ProgressData = {
@@ -31,7 +31,7 @@ type ProgressData = {
   duration?: number;
 };
 
-async function consumeSseStream(response: Response, onMessage: (data: any) => void) {
+async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
   const reader = response.body?.getReader();
   if (!reader) return;
   const decoder = new TextDecoder("utf-8");
@@ -57,12 +57,11 @@ async function consumeSseStream(response: Response, onMessage: (data: any) => vo
 }
 
 export default function VoiceClone() {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [samples, setSamples] = useState<Sample[]>([]);
-  const [status, setStatus] = useState<any>(null);
-  const [isSetupLoading, setIsSetupLoading] = useState(false);
+  const [status, setStatus] = useState<StatusData | null>(null);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -77,7 +76,8 @@ export default function VoiceClone() {
 
   const charCount = text.length;
   const overLimit = charCount > MAX_CHARS;
-  const statusReady = status?.model_ready && status?.voices_ready;
+  const serverUnreachable = status?.server_unreachable === true;
+  const statusReady = !serverUnreachable;
 
   // Auto-scroll logs to bottom
   useEffect(() => {
@@ -87,103 +87,42 @@ export default function VoiceClone() {
   }, [logs]);
 
   const fetchStatus = async () => {
-    // In Electron, check runtime status via IPC first
-    if (window.electronAPI) {
-      try {
-        const ipcStatus = await window.electronAPI.voiceCloneStatus();
-        if (!ipcStatus.runtime_ready) {
-          setStatus({ model_ready: false, voices_ready: false, runtime_ready: false });
-          return;
-        }
-      } catch {}
-    }
     try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/status`);
-      const data = await res.json();
-      setStatus(data);
+      const res = await fetch(`${API_URL}/api/system/status`);
+      if (!res.ok) throw new Error("status");
+      setStatus({ server_unreachable: false });
     } catch {
-      setStatus({ model_ready: false });
+      setStatus({ server_unreachable: true });
     }
   };
 
   const fetchVoices = async () => {
     try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/voices`);
+      const res = await fetch(`${API_URL}/api/tools/voice-clone/voices`);
       const data = await res.json();
       setVoices(data.voices || []);
     } catch {}
   };
 
-  const fetchSamples = async () => {
-    try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/samples`);
-      const data = await res.json();
-      setSamples(data.samples || []);
-    } catch {}
-  };
 
   useEffect(() => {
     fetchStatus();
     fetchVoices();
-    fetchSamples();
   }, []);
-
-  const runSetup = async () => {
-    setIsSetupLoading(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Setting up runtime..." });
-
-    // In Electron, use IPC to install runtime via main process
-    if (window.electronAPI) {
-      const cleanup = window.electronAPI.onVoiceCloneSetupProgress((data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-      try {
-        const result = await window.electronAPI.voiceCloneSetup();
-        if (!result.success) {
-          setProgress({ status: "error", percent: 0, message: result.error || "Setup failed" });
-        }
-      } catch (err) {
-        console.warn("[VoiceClone] IPC setup failed:", err);
-        setProgress({ status: "error", percent: 0, message: "Setup failed unexpectedly." });
-      } finally {
-        cleanup();
-        setIsSetupLoading(false);
-        fetchStatus();
-      }
-      return;
-    }
-
-    // Fallback: call Python server directly (web mode)
-    try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/setup`, { method: "POST" });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch (err) {
-      console.warn("[VoiceClone] Setup request failed:", err);
-      setProgress({ status: "error", percent: 0, message: "Setup server not reachable. Is the voice clone server running?" });
-    } finally {
-      setIsSetupLoading(false);
-      fetchStatus();
-    }
-  };
 
   const runModelDownload = async () => {
     setIsModelLoading(true);
     setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Downloading model..." });
+    setProgress({ status: "starting", percent: 0, message: t("tool.stt.downloading_model", { model: "F5-TTS" }) });
     try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/model`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/tools/voice-clone/model`, { method: "POST" });
       await consumeSseStream(res, (data) => {
         setProgress(data);
         if (data.logs) setLogs(data.logs);
       });
     } catch (err) {
       console.warn("[VoiceClone] Model download request failed:", err);
-      setProgress({ status: "error", percent: 0, message: "Voice clone server not reachable." });
+        setProgress({ status: "error", percent: 0, message: t("tool.voice_clone.server_not_reachable") });
     } finally {
       setIsModelLoading(false);
       fetchStatus();
@@ -193,13 +132,13 @@ export default function VoiceClone() {
   const handleGenerate = async () => {
     if (!text.trim() || !selectedVoice || overLimit) return;
     setIsGenerating(true);
-    setProgress({ status: "starting", percent: 0, message: "Starting generation..." });
+    setProgress({ status: "starting", percent: 0, message: t("tool.voice_clone.processing") });
     setLogs([]);
     setAudioUrl(null);
     setDownloadName(null);
 
     try {
-      const res = await fetch(`${VOICE_CLONE_API}/voice-clone/start`, {
+      const res = await fetch(`${API_URL}/api/tools/voice-clone/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +152,7 @@ export default function VoiceClone() {
       });
       const data = await res.json();
       const taskId = data.task_id;
-      const es = new EventSource(`${VOICE_CLONE_API}/voice-clone/progress/${taskId}`);
+      const es = new EventSource(`${API_URL}/api/tools/voice-clone/progress/${taskId}`);
 
       es.onmessage = (event) => {
         const payload = JSON.parse(event.data);
@@ -222,9 +161,12 @@ export default function VoiceClone() {
         if (payload.status === "complete") {
           es.close();
           setIsGenerating(false);
-          const url = `${VOICE_CLONE_API}/voice-clone/download/${taskId}`;
-          setAudioUrl(url);
-          setDownloadName(payload.filename || "voice.wav");
+          fetch(`${API_URL}/api/tools/voice-clone/download/${taskId}`)
+            .then((r) => r.json())
+            .then((r) => {
+              setAudioUrl(`${API_URL}${r.download_url}`);
+              setDownloadName(r.filename || "voice.wav");
+            });
         }
         if (payload.status === "error") {
           es.close();
@@ -233,7 +175,7 @@ export default function VoiceClone() {
       };
     } catch (err) {
       console.warn("[VoiceClone] Generate request failed:", err);
-      setProgress({ status: "error", percent: 0, message: "Voice clone server not reachable." });
+      setProgress({ status: "error", percent: 0, message: t("tool.voice_clone.server_not_reachable") });
       setIsGenerating(false);
     }
   };
@@ -255,23 +197,22 @@ export default function VoiceClone() {
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
-        {!statusReady && (
+        {serverUnreachable && (
           <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Voice Clone Not Ready</p>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.voice_clone.not_ready")}</p>
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {status?.model_ready ? "Runtime ready." : "Model not downloaded yet."}
+                  {t("tool.voice_clone.server_not_reachable")}
                 </p>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-amber-600 hover:bg-amber-700" onClick={runSetup} disabled={isSetupLoading}>
-                    {isSetupLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Setup Runtime
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelLoading}>
+                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelLoading || serverUnreachable}>
                     {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Download Model
+                    {t("tool.voice_clone.download_model")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={fetchStatus}>
+                    {t("tool.tts_fast.retry")}
                   </Button>
                 </div>
               </div>
@@ -280,10 +221,10 @@ export default function VoiceClone() {
         )}
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">Select Voice</label>
+          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.select_voice")}</label>
           <Select value={selectedVoice} onValueChange={setSelectedVoice}>
             <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-              <SelectValue placeholder="Choose a preset voice..." />
+              <SelectValue placeholder={t("tool.voice_clone.choose_voice")} />
             </SelectTrigger>
             <SelectContent>
               {voices.map((voice) => (
@@ -296,21 +237,21 @@ export default function VoiceClone() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">Text to Speak</label>
+          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.text_to_speak")}</label>
           <Textarea
-            placeholder="Enter text to clone with selected voice..."
+            placeholder={t("tool.voice_clone.text_ph")}
             value={text}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[100px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 resize-none"
           />
           <p className={`text-xs ${overLimit ? "text-red-500" : "text-zinc-400"}`}>
-            {charCount}/{MAX_CHARS} characters
+            {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">Speed</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.speed")}</label>
             <input
               type="range"
               min="0.5"
@@ -322,7 +263,7 @@ export default function VoiceClone() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">CFG Strength</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.cfg_strength")}</label>
             <input
               type="range"
               min="1.0"
@@ -334,10 +275,10 @@ export default function VoiceClone() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">NFE Steps</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.nfe_steps")}</label>
             <Select value={String(nfeStep)} onValueChange={(v) => setNfeStep(parseInt(v, 10))}>
               <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <SelectValue placeholder="Select steps" />
+                <SelectValue placeholder={t("tool.voice_clone.select_steps")} />
               </SelectTrigger>
               <SelectContent>
                 {[16, 32, 64].map((n) => (
@@ -349,10 +290,10 @@ export default function VoiceClone() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">Remove Silence</label>
+            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.remove_silence")}</label>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={removeSilence} onChange={(e) => setRemoveSilence(e.target.checked)} />
-              <span className="text-xs text-zinc-500">Trim long silences</span>
+              <span className="text-xs text-zinc-500">{t("tool.voice_clone.trim_silence")}</span>
             </div>
           </div>
         </div>
@@ -363,14 +304,14 @@ export default function VoiceClone() {
           disabled={isGenerating || !text.trim() || !selectedVoice || overLimit || !statusReady}
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Mic className="w-5 h-5 mr-2" />}
-          Clone Voice
+          {t("tool.voice_clone.clone_voice")}
         </Button>
 
         {progress && (
           <div className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                {progress.message || "Processing..."}
+                {progress.message || t("tool.voice_clone.processing")}
               </span>
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
             </div>
@@ -393,10 +334,10 @@ export default function VoiceClone() {
         {audioUrl && (
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-green-700 dark:text-green-400">Cloned Audio Ready</span>
+              <span className="text-sm font-bold text-green-700 dark:text-green-400">{t("tool.voice_clone.audio_ready")}</span>
               <Button size="sm" variant="download" onClick={handleDownload}>
                 <Download className="w-4 h-4 mr-2" />
-                Download
+                {t("tool.common.download")}
               </Button>
             </div>
             <audio controls className="w-full h-10">
@@ -405,21 +346,6 @@ export default function VoiceClone() {
           </div>
         )}
 
-        {samples.length > 0 && (
-          <div className="space-y-3">
-            <div className="text-xs font-bold text-zinc-500 uppercase">Samples</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {samples.map((s) => (
-                <div key={s.id} className="p-3 border rounded-lg bg-white dark:bg-zinc-900">
-                  <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-2">{s.filename}</div>
-                  <audio controls className="w-full h-8">
-                    <source src={`${VOICE_CLONE_API}/voice-clone/samples/${s.id}`} type="audio/wav" />
-                  </audio>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

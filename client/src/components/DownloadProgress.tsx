@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from "react";
+import { useI18n } from "@/i18n/i18n";
 
 interface ProgressData {
   status: 'waiting' | 'starting' | 'downloading' | 'processing' | 'converting' | 'complete' | 'error';
@@ -20,6 +21,7 @@ const MAX_ERRORS = 2;
 const TIMEOUT_MS = 30000;
 
 export function DownloadProgress({ downloadId, onComplete, onError }: DownloadProgressProps) {
+  const { t } = useI18n();
   const [progress, setProgress] = useState<ProgressData>({ status: 'waiting' });
   const closedRef = useRef(false);
 
@@ -30,7 +32,7 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
     const timeoutId = setTimeout(() => {
       if (!closedRef.current) {
         closedRef.current = true;
-        onError?.('Connection timeout');
+        onError?.(t("tool.download_progress.timeout"));
       }
     }, TIMEOUT_MS);
     
@@ -52,10 +54,10 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
           clearTimeout(timeoutId);
           closedRef.current = true;
           eventSource.close();
-          onError?.(data.message || 'Failed');
+          onError?.(data.message || t("tool.common.failed"));
         }
       } catch (e) {
-        console.error('Parse error:', e);
+        console.error("Parse error:", e);
       }
     };
 
@@ -65,7 +67,7 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
         clearTimeout(timeoutId);
         closedRef.current = true;
         eventSource.close();
-        onError?.('Connection lost');
+        onError?.(t("tool.download_progress.lost"));
       }
     };
 
@@ -99,13 +101,13 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
       <div className="mb-2">
         <div className="flex justify-between items-center mb-1">
           <span className="text-sm font-medium text-gray-700">
-            {progress.status === 'downloading' && 'Downloading...'}
-            {progress.status === 'processing' && 'Processing...'}
-            {progress.status === 'converting' && 'Converting...'}
-            {progress.status === 'complete' && 'Complete!'}
-            {progress.status === 'error' && 'Error'}
-            {progress.status === 'waiting' && 'Waiting...'}
-            {progress.status === 'starting' && 'Starting...'}
+            {progress.status === 'downloading' && t("tool.download_progress.downloading")}
+            {progress.status === 'processing' && t("tool.download_progress.processing")}
+            {progress.status === 'converting' && t("tool.download_progress.converting")}
+            {progress.status === 'complete' && t("tool.download_progress.complete")}
+            {progress.status === 'error' && t("tool.download_progress.error")}
+            {progress.status === 'waiting' && t("tool.download_progress.waiting")}
+            {progress.status === 'starting' && t("tool.download_progress.starting")}
           </span>
           {progress.percent && (
             <span className="text-sm font-semibold text-blue-600">
@@ -133,8 +135,8 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
         
         {progress.status === 'downloading' && (
           <div className="flex justify-between">
-            <span>Speed: {progress.speed || 'N/A'}</span>
-            <span>ETA: {progress.eta || 'N/A'}</span>
+            <span>{t("tool.download_progress.speed")}: {progress.speed || t("tool.download_progress.na")}</span>
+            <span>{t("tool.download_progress.eta")}: {progress.eta || t("tool.download_progress.na")}</span>
           </div>
         )}
 

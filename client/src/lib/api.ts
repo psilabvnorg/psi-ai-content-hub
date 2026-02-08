@@ -7,7 +7,7 @@ import { getApiUrl, isLocalApiAvailable, getPlatformConfig } from './platform';
 
 export const API_URL = getApiUrl();
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   status: string;
   data?: T;
   error?: string;
@@ -16,27 +16,27 @@ export interface ApiResponse<T = any> {
 export interface DownloadVideoRequest {
   url: string;
   platform: 'youtube' | 'tiktok' | 'facebook' | 'instagram';
+  convert_to_h264?: boolean;
 }
 
 export interface ExtractAudioRequest {
-  video_path: string;
+  file: File;
   format: 'mp3' | 'wav';
 }
 
 export interface ConvertAudioRequest {
-  audio_path: string;
+  file: File;
   output_format: 'mp3' | 'wav';
 }
 
 export interface TrimVideoRequest {
-  video_path: string;
+  file: File;
   start_time: string;
   end_time?: string;
-  duration?: string;
 }
 
 export interface AdjustSpeedRequest {
-  video_path: string;
+  file: File;
   speed: number;
 }
 
@@ -96,15 +96,15 @@ class ApiClient {
   /**
    * Health check
    */
-  async health(): Promise<{ status: string; timestamp: string }> {
-    return this.request('/api/health');
+  async health(): Promise<Record<string, unknown>> {
+    return this.request('/api/system/status');
   }
   
   /**
    * Download video
    */
   async downloadVideo(data: DownloadVideoRequest) {
-    return this.request('/api/download/video', {
+    return this.request('/api/tools/video/download', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -114,47 +114,48 @@ class ApiClient {
    * Extract audio from video
    */
   async extractAudio(data: ExtractAudioRequest) {
-    return this.request('/api/extract/audio', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const form = new FormData();
+    form.append('file', data.file);
+    form.append('format', data.format);
+    return fetch(`${this.baseUrl}/api/tools/video/extract-audio`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
    * Convert audio format
    */
   async convertAudio(data: ConvertAudioRequest) {
-    return this.request('/api/convert/audio', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const form = new FormData();
+    form.append('file', data.file);
+    form.append('output_format', data.output_format);
+    return fetch(`${this.baseUrl}/api/tools/audio/convert`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
    * Trim video
    */
   async trimVideo(data: TrimVideoRequest) {
-    return this.request('/api/trim/video', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const form = new FormData();
+    form.append('file', data.file);
+    form.append('start_time', data.start_time);
+    if (data.end_time) form.append('end_time', data.end_time);
+    return fetch(`${this.baseUrl}/api/tools/video/trim`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
    * Adjust video speed
    */
   async adjustSpeed(data: AdjustSpeedRequest) {
-    return this.request('/api/adjust/speed', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const form = new FormData();
+    form.append('file', data.file);
+    form.append('speed', String(data.speed));
+    return fetch(`${this.baseUrl}/api/tools/video/speed`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
    * Get file download URL
    */
   getFileUrl(filename: string): string {
-    return `${this.baseUrl}/api/files/${filename}`;
+    return `${this.baseUrl}/api/download/${filename}`;
   }
   
   /**

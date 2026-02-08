@@ -9,14 +9,14 @@ export type Platform = 'web' | 'electron' | 'android' | 'ios';
  * Detect the current platform
  */
 export function detectPlatform(): Platform {
-  // Check if running in Electron first (highest priority)
-  if (typeof window !== 'undefined' && (window as any).electronAPI) {
+  // File protocol indicates Electron shell
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
     return 'electron';
   }
   
   // Check if running on actual mobile device (not emulated in desktop browser)
   if (typeof navigator !== 'undefined') {
-    const userAgent = navigator.userAgent || (navigator as any).vendor || '';
+    const userAgent = navigator.userAgent || navigator.vendor || '';
     
     // Skip mobile detection if running in Electron or desktop browser
     // Desktop browsers on Windows/Mac/Linux should return 'web'
@@ -28,7 +28,7 @@ export function detectPlatform(): Platform {
         return 'android';
       }
       
-      if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+      if (/iPad|iPhone|iPod/.test(userAgent) && !('MSStream' in window)) {
         return 'ios';
       }
     }
@@ -46,9 +46,7 @@ export function getApiUrl(): string {
     return import.meta.env.VITE_API_URL;
   }
   
-  // For desktop (Electron) and web, always use same origin (empty string)
-  // This works because the Express server serves both the API and the frontend
-  return '';
+  return 'http://127.0.0.1:8788';
 }
 
 /**
@@ -110,7 +108,7 @@ export async function checkApiHealth(apiUrl?: string): Promise<boolean> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch(`${url}/api/health`, {
+    const response = await fetch(`${url}/api/system/status`, {
       method: 'GET',
       signal: controller.signal,
     });
@@ -148,5 +146,6 @@ export function getPlatformName(): string {
  */
 export function supportsFeature(feature: string): boolean {
   const config = getPlatformConfig();
-  return (config.features as any)[feature] ?? false;
+  const features: Record<string, boolean> = config.features;
+  return features[feature] ?? false;
 }

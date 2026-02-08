@@ -5,82 +5,71 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { isElectron, ipcApi, listen } from "@/lib/ipc-client";
 import { API_URL } from "@/lib/api";
+import { useI18n } from "@/i18n/i18n";
 
 export default function VideoDownloader() {
+  const { t } = useI18n();
+  type DownloadResult = {
+    filename?: string;
+    download_url?: string;
+    original_codec?: string;
+    converted?: boolean;
+  };
+  type ProgressEvent = {
+    percent?: number;
+    status?: string;
+    message?: string;
+  };
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<DownloadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [convertToH264, setConvertToH264] = useState(false);
   const { toast } = useToast();
-  const unlistenRef = useRef<(() => void) | null>(null);
-
-  // Cleanup listener on unmount
   useEffect(() => {
-    return () => {
-      if (unlistenRef.current) {
-        unlistenRef.current();
-      }
-    };
-  }, []);
-
-  // Listen for progress updates via IPC
-  useEffect(() => {
-    if (!downloadId || !isElectron()) return;
-
-    // Listen for progress broadcasts from server
-    const unlisten = listen('download-progress', (data: any) => {
-      if (data.downloadId !== downloadId) return;
-
-      if (data.percent) {
-        setProgress(parseFloat(data.percent.replace('%', '')));
-      }
-
-      if (data.status === 'downloading') {
-        setStatusMessage(`Downloading... ${data.percent || ''}`);
-      } else if (data.status === 'processing') {
-        setStatusMessage('Processing...');
-        setProgress(95);
-      } else if (data.status === 'converting') {
-        setStatusMessage('Converting...');
-        setProgress(98);
-      } else if (data.status === 'complete') {
-        setStatusMessage('Complete!');
-        setProgress(100);
-        setLoading(false);
-        setResult(data);
-        toast({ title: "Success", description: "Download complete!" });
-      } else if (data.status === 'error') {
-        setError(data.message || 'Download failed');
-        setLoading(false);
-        toast({ title: "Failed", description: data.message, variant: "destructive" });
-      }
-    });
-
-    unlistenRef.current = unlisten;
-
-    // Also poll for progress (backup)
+    if (!downloadId) return;
     const pollInterval = setInterval(async () => {
       try {
-        const progressData = await ipcApi.getProgress(downloadId);
-        if (progressData.status === 'complete' || progressData.status === 'error') {
-          clearInterval(pollInterval);
+        const response = await fetch(`${API_URL}/api/tools/video/download/status/${downloadId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const progressData = data.progress as ProgressEvent | undefined;
+        if (progressData?.percent !== undefined) {
+          setProgress(progressData.percent);
         }
-      } catch (e) {
+        if (progressData?.status === "downloading") {
+          setStatusMessage(t("tool.video_downloader.status_downloading", { percent: `${progressData.percent || 0}%` }));
+        } else if (progressData?.status === "processing") {
+          setStatusMessage(t("tool.video_downloader.status_processing"));
+          setProgress(95);
+        } else if (progressData?.status === "converting") {
+          setStatusMessage(t("tool.video_downloader.status_converting"));
+          setProgress(98);
+        }
+
+        if (data.status === "complete") {
+          setStatusMessage(t("tool.video_downloader.status_complete"));
+          setProgress(100);
+          setLoading(false);
+          setResult(data.result as DownloadResult);
+          toast({ title: t("tool.common.success"), description: t("tool.video_downloader.complete") });
+          clearInterval(pollInterval);
+        } else if (data.status === "error") {
+          setError(data.error || t("tool.video_downloader.failed"));
+          setLoading(false);
+          clearInterval(pollInterval);
+          toast({ title: t("tool.common.failed"), description: data.error || t("tool.video_downloader.failed"), variant: "destructive" });
+        }
+      } catch {
         // Ignore polling errors
       }
     }, 1000);
-
-    return () => {
-      unlisten();
-      clearInterval(pollInterval);
-    };
-  }, [downloadId, toast]);
+    return () => clearInterval(pollInterval);
+  }, [downloadId, toast, t]);
 
   const detectPlatform = (url: string): string => {
     if (url.includes("tiktok.com")) return "tiktok";
@@ -92,7 +81,7 @@ export default function VideoDownloader() {
 
   const handleDownload = async () => {
     if (!url) {
-      toast({ title: "Error", description: "Please enter a URL", variant: "destructive" });
+      toast({ title: t("tool.common.error"), description: t("tool.video_downloader.enter_url"), variant: "destructive" });
       return;
     }
 
@@ -104,101 +93,61 @@ export default function VideoDownloader() {
     setError(null);
     setProgress(0);
     setDownloadId(null);
-    setStatusMessage("Initializing download...");
+    setStatusMessage(t("tool.video_downloader.init"));
 
     try {
-      if (isElectron()) {
-        // Use IPC for Electron
-        const response = await ipcApi.downloadVideo(url, platform, convertToH264);
-        console.log("Download response:", response);
-        
-        if (response.downloadId) {
-          setDownloadId(response.downloadId);
-          setStatusMessage("Download started...");
-        } else {
-          throw new Error("No downloadId received");
-        }
-      } else {
-        // Use HTTP for web
-        const response = await fetch(`${API_URL}/api/download/video`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, platform, convert_to_h264: convertToH264 }),
-        });
+      const response = await fetch(`${API_URL}/api/tools/video/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, platform, convert_to_h264: convertToH264 }),
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Download failed");
-        }
-
-        const data = await response.json();
-        if (data.download_id) {
-          setDownloadId(data.download_id);
-          setStatusMessage("Download started...");
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Download failed");
       }
-    } catch (error: any) {
+
+      const data = await response.json();
+      if (data.job_id) {
+        setDownloadId(data.job_id);
+        setStatusMessage(t("tool.video_downloader.started"));
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("tool.video_downloader.failed");
       console.error("Download failed:", error);
-      setError(error.message);
+      setError(message);
       setLoading(false);
       setProgress(0);
       setStatusMessage("");
       toast({ 
-        title: "Download Failed", 
-        description: error.message, 
+        title: t("tool.video_downloader.failed"), 
+        description: message, 
         variant: "destructive" 
       });
     }
   };
 
   const handleSaveFile = async () => {
-    if (!result?.filePath || !isElectron()) return;
-
-    try {
-      // Read file as base64
-      const fileData = await ipcApi.readFileBase64(result.filePath);
-      
-      // Create blob and download
-      const byteCharacters = atob(fileData.data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'video/mp4' });
-      
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileData.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast({ title: "Success", description: "File saved!" });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
+    if (!result?.download_url) return;
+    window.open(`${API_URL}${result.download_url}`, "_blank");
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Download Video</CardTitle>
+          <CardTitle>{t("tool.video_downloader.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Video URL</label>
+            <label className="text-sm font-medium">{t("tool.video_downloader.url")}</label>
             <Input
-              placeholder="Paste Link/URL..."
+              placeholder={t("tool.video_downloader.placeholder")}
               value={url}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
               disabled={loading}
             />
-            <p className="text-xs text-zinc-500">Platform will be automatically detected from the URL</p>
+            <p className="text-xs text-zinc-500">{t("tool.video_downloader.detect_hint")}</p>
           </div>
 
           {url && detectPlatform(url) === "tiktok" && (
@@ -213,11 +162,11 @@ export default function VideoDownloader() {
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="convertH264" className="text-sm font-medium cursor-pointer">
-                  Convert to H.264 for Windows compatibility
+                  {t("tool.video_downloader.convert_h264")}
                 </label>
               </div>
               <p className="text-xs text-zinc-500 -mt-2 ml-6">
-                TikTok videos use HEVC codec. Enable this for better Windows compatibility.
+                {t("tool.video_downloader.convert_h264_hint")}
               </p>
             </>
           )}
@@ -236,7 +185,7 @@ export default function VideoDownloader() {
             <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-red-900 dark:text-red-100">Download Failed</p>
+                <p className="text-sm font-medium text-red-900 dark:text-red-100">{t("tool.video_downloader.failed")}</p>
                 <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
               </div>
             </div>
@@ -246,12 +195,12 @@ export default function VideoDownloader() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Downloading...
+                {t("tool.video_downloader.downloading")}
               </>
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Download Video
+                {t("tool.video_downloader.download")}
               </>
             )}
           </Button>
@@ -263,29 +212,29 @@ export default function VideoDownloader() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              Download Complete
+              {t("tool.common.download_complete")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-zinc-500">Filename</p>
+              <p className="text-sm text-zinc-500">{t("tool.video_downloader.filename")}</p>
               <p className="font-medium">{result.filename}</p>
             </div>
             {result.originalCodec && result.originalCodec !== 'h264' && (
               <div>
-                <p className="text-sm text-zinc-500">Original Codec</p>
+                <p className="text-sm text-zinc-500">{t("tool.video_downloader.original_codec")}</p>
                 <p className="font-medium uppercase">{result.originalCodec}</p>
               </div>
             )}
             {result.converted && (
               <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-700 dark:text-blue-300">
                 <CheckCircle2 className="w-4 h-4" />
-                Converted to H.264 for Windows compatibility
+                {t("tool.video_downloader.converted_note")}
               </div>
             )}
             <Button onClick={handleSaveFile} variant="download" className="w-full">
               <Download className="w-4 h-4 mr-2" />
-              Save File
+              {t("tool.video_downloader.save_file")}
             </Button>
           </CardContent>
         </Card>
