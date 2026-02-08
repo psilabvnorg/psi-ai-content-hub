@@ -8,19 +8,19 @@ back end (Python 3.10, debug dev mode)
 
 Create venv with Python 3.10 (from repo root):
 
-  # Remove old venv if present
-  Remove-Item -Recurse -Force .venv
+# Remove old venv if present
+Remove-Item -Recurse -Force .venv
 
-  # Create venv with Python 3.10 (ensure py -3.10 or python3.10 is on PATH)
-  py -3.10 -m venv .venv
+# Create venv with Python 3.10 (ensure py -3.10 or python3.10 is on PATH)
+python -m venv venv
 
-  # Activate and install
-  .venv\Scripts\activate
-  .venv\Scripts\pip.exe install -r python_api\requirements.txt
-  .venv\Scripts\pip.exe install -e python_api\VieNeu-TTS
+# Activate and install
+venv\Scripts\activate
+pip install -r python_api\requirements.txt
+pip install -e python_api\VieNeu-TTS
 
-  # Run API
-  .venv\Scripts\python.exe -m python_api.main
+# Run API
+.venv\Scripts\python.exe -m python_api.main
 
 Use the venv's pip and python so neucodec and other deps are in the same env.
 ---
