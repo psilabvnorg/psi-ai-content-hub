@@ -15,7 +15,11 @@ from .jobs import JobStore
 
 VIENEU_TTS_ROOT = Path(os.environ.get("VIENEU_TTS_ROOT", "")).resolve() if os.environ.get("VIENEU_TTS_ROOT") else None
 if VIENEU_TTS_ROOT is None or not VIENEU_TTS_ROOT.exists():
-    VIENEU_TTS_ROOT = Path(__file__).resolve().parents[2] / "VieNeu-TTS-Fast-Vietnamese"
+    # Try the new location first: python_api/assets/vieneu-tts-sample
+    VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
+    if not VIENEU_TTS_ROOT.exists():
+        # Fallback to old location
+        VIENEU_TTS_ROOT = Path(__file__).resolve().parents[2] / "VieNeu-TTS-Fast-Vietnamese"
 
 progress_store = ProgressStore()
 tts_engine = None

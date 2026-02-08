@@ -298,12 +298,6 @@ export const translations = {
     "tool.tts_fast.server_unreachable_desc":
       "Backend is not reachable at 127.0.0.1:8788. Start the backend and retry.",
     "tool.tts_fast.retry": "Retry",
-    "tool.tts_fast.load_model": "Load TTS Model",
-    "tool.tts_fast.load_desc": "Select backbone and codec, then download the model and load it before generating speech.",
-    "tool.tts_fast.backbone": "Backbone",
-    "tool.tts_fast.codec": "Codec",
-    "tool.tts_fast.download_model": "Download Model",
-    "tool.tts_fast.load_model_btn": "Load Model",
     "tool.tts_fast.mode": "Mode",
     "tool.tts_fast.preset_voice": "Preset Voice",
     "tool.tts_fast.custom_voice": "Custom Voice",

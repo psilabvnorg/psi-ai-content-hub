@@ -29,32 +29,6 @@ type StatusData = {
   };
 };
 
-type ModelConfig = {
-  backbones: Record<string, { repo: string; [key: string]: unknown }>;
-  codecs: Record<string, { repo: string; [key: string]: unknown }>;
-};
-
-async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
-  const reader = response.body?.getReader();
-  if (!reader) return;
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || "";
-    for (const part of parts) {
-      const line = part.trim();
-      if (line.startsWith("data:")) {
-        const payload = line.replace("data:", "").trim();
-        try { onMessage(JSON.parse(payload)); } catch { /* ignore */ }
-      }
-    }
-  }
-}
-
 export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -62,10 +36,6 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
   const [status, setStatus] = useState<StatusData | null>(null);
-  const [modelConfigs, setModelConfigs] = useState<ModelConfig | null>(null);
-  const [selectedBackbone, setSelectedBackbone] = useState("");
-  const [selectedCodec, setSelectedCodec] = useState("");
-  const [isModelLoading, setIsModelLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -105,55 +75,15 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     } catch { /* */ }
   };
 
-
-  const fetchModelConfigs = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/tools/tts/model/configs`);
-      const data = await res.json();
-      setModelConfigs(data);
-      const bbKeys = Object.keys(data.backbones || {});
-      const ccKeys = Object.keys(data.codecs || {});
-      if (bbKeys.length > 0 && !selectedBackbone) setSelectedBackbone(bbKeys[0]);
-      if (ccKeys.length > 0 && !selectedCodec) setSelectedCodec(ccKeys[0]);
-    } catch { /* */ }
-  };
-
   useEffect(() => {
     fetchStatus();
     fetchVoices();
-    fetchModelConfigs();
   }, []);
-
-  // --- Download Model ---
-  // --- Load Model ---
-  const handleLoadModel = async () => {
-    if (!selectedBackbone || !selectedCodec) return;
-    setIsModelLoading(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.loading_model") });
-    try {
-      const res = await fetch(`${API_URL}/api/tools/tts/model/load`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backbone: selectedBackbone, codec: selectedCodec, device: "auto" }),
-      });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch {
-      setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.failed_load_model") });
-    } finally {
-      setIsModelLoading(false);
-      fetchStatus();
-    }
-  };
 
   // --- Generate ---
   const handleGenerate = async () => {
     if (!text.trim() || overLimit) return;
     if (mode === "preset" && !selectedVoice) return;
-    if (mode === "custom") return;
 
     setIsGenerating(true);
     setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.starting_generation") });
@@ -259,50 +189,11 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
           </div>
         )}
 
-        {!serverUnreachable && depsReady && modelConfigs && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <Settings2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-              <div className="flex-1 space-y-3">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">{t("tool.tts_fast.load_model")}</p>
-                <p className="text-xs text-blue-700 dark:text-blue-400">
-                  {t("tool.tts_fast.load_desc")}
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.backbone")}</label>
-                    <Select value={selectedBackbone} onValueChange={setSelectedBackbone}>
-                      <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                        <SelectValue placeholder={t("tool.tts_fast.backbone")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(modelConfigs.backbones).map((k) => (
-                          <SelectItem key={k} value={k}>{k}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.codec")}</label>
-                    <Select value={selectedCodec} onValueChange={setSelectedCodec}>
-                      <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                        <SelectValue placeholder={t("tool.tts_fast.codec")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(modelConfigs.codecs).map((k) => (
-                          <SelectItem key={k} value={k}>{k}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleLoadModel} disabled={isModelLoading || !selectedBackbone || !selectedCodec}>
-                    {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    {t("tool.tts_fast.load_model_btn")}
-                  </Button>
-                </div>
-              </div>
+        {!serverUnreachable && depsReady && (
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-3">
+              <Settings2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <p className="text-sm font-semibold text-green-800 dark:text-green-300">Model Ready</p>
             </div>
           </div>
         )}
