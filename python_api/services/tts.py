@@ -20,18 +20,27 @@ from ..settings import TEMP_DIR
 from .jobs import JobStore
 
 
+# Centralized model storage location
+APPDATA = os.environ.get("APPDATA") or str(Path.home() / ".config")
+MODEL_ROOT = Path(APPDATA) / "psi-ai-content-hub" / "models"
+VIENEU_MODEL_DIR = MODEL_ROOT / "vieneu-tts"
+VIENEU_BACKBONE_DIR = VIENEU_MODEL_DIR / "backbone"
+VIENEU_CODEC_DIR = VIENEU_MODEL_DIR / "codec"
+
+# Config root - prefer bundled sample config
+_SAMPLE_CONFIG_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
+
+# For backward compatibility, check old locations for config
 VIENEU_TTS_ROOT = Path(os.environ.get("VIENEU_TTS_ROOT", "")).resolve() if os.environ.get("VIENEU_TTS_ROOT") else None
 if VIENEU_TTS_ROOT is None or not VIENEU_TTS_ROOT.exists():
     # Prefer the bundled VieNeu-TTS repo
     VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "VieNeu-TTS"
     if not VIENEU_TTS_ROOT.exists():
         # Fallback to sample assets
-        VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
+        VIENEU_TTS_ROOT = _SAMPLE_CONFIG_ROOT
         if not VIENEU_TTS_ROOT.exists():
             # Fallback to old location
             VIENEU_TTS_ROOT = Path(__file__).resolve().parents[2] / "VieNeu-TTS-Fast-Vietnamese"
-
-_SAMPLE_CONFIG_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
 
 progress_store = ProgressStore()
 tts_engine = None
@@ -60,6 +69,24 @@ def _load_config() -> Dict[str, Any]:
                     config["voice_samples"] = sample_config["voice_samples"]
                 if not config.get("text_settings") and sample_config.get("text_settings"):
                     config["text_settings"] = sample_config["text_settings"]
+        
+        # Fix relative paths in voice_samples to be absolute
+        if config.get("voice_samples"):
+            for voice_id, voice_info in config["voice_samples"].items():
+                if "audio" in voice_info:
+                    audio_path = Path(voice_info["audio"])
+                    if not audio_path.is_absolute():
+                        # Make path relative to project root
+                        audio_path = Path(__file__).resolve().parents[2] / voice_info["audio"]
+                    voice_info["audio"] = str(audio_path)
+                
+                if "text" in voice_info:
+                    text_path = Path(voice_info["text"])
+                    if not text_path.is_absolute():
+                        # Make path relative to project root
+                        text_path = Path(__file__).resolve().parents[2] / voice_info["text"]
+                    voice_info["text"] = str(text_path)
+        
         return config
     except Exception as exc:
         log(f"Failed to load VieNeu config: {exc}", "error")
@@ -96,8 +123,6 @@ def download_model(job_store: JobStore, backbone: str, codec: str) -> str:
 
     def runner() -> None:
         try:
-            from huggingface_hub import snapshot_download
-
             config = _load_config()
             backbones = config.get("backbone_configs", {})
             codecs = config.get("codec_configs", {})
@@ -105,10 +130,19 @@ def download_model(job_store: JobStore, backbone: str, codec: str) -> str:
                 progress_store.set_progress(task_id, "error", 0, "Invalid backbone or codec")
                 return
 
+            backbone_repo = backbones[backbone]["repo"]
+            codec_repo = codecs[codec]["repo"]
+
             progress_store.set_progress(task_id, "downloading", 10, f"Downloading backbone {backbone}...")
-            snapshot_download(repo_id=backbones[backbone]["repo"])
+            if not _ensure_model_downloaded(backbone_repo, VIENEU_BACKBONE_DIR):
+                progress_store.set_progress(task_id, "error", 0, "Failed to download backbone")
+                return
+                
             progress_store.set_progress(task_id, "downloading", 55, f"Downloading codec {codec}...")
-            snapshot_download(repo_id=codecs[codec]["repo"])
+            if not _ensure_model_downloaded(codec_repo, VIENEU_CODEC_DIR):
+                progress_store.set_progress(task_id, "error", 0, "Failed to download codec")
+                return
+                
             progress_store.set_progress(task_id, "complete", 100, "Model download complete")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
@@ -128,19 +162,36 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
             config = _load_config()
             backbones = config.get("backbone_configs", {})
             codecs = config.get("codec_configs", {})
+            
             if backbone not in backbones or codec not in codecs:
                 progress_store.set_progress(task_id, "error", 0, "Invalid backbone or codec")
                 return
 
-            progress_store.set_progress(task_id, "loading", 40, "Initializing TTS engine...")
-            import torch
-            from vieneu import VieNeuTTS
+            backbone_repo = backbones[backbone]["repo"]
+            codec_repo = codecs[codec]["repo"]
+            
+            # Ensure models are downloaded
+            progress_store.set_progress(task_id, "downloading", 20, "Checking backbone model...")
+            if not _ensure_model_downloaded(backbone_repo, VIENEU_BACKBONE_DIR):
+                progress_store.set_progress(task_id, "error", 0, "Failed to download backbone model")
+                return
+            
+            progress_store.set_progress(task_id, "downloading", 30, "Checking codec model...")
+            if not _ensure_model_downloaded(codec_repo, VIENEU_CODEC_DIR):
+                progress_store.set_progress(task_id, "error", 0, "Failed to download codec model")
+                return
 
+            progress_store.set_progress(task_id, "loading", 40, "Initializing TTS engine...")
+            
+            # Unload existing model if loaded
             if model_loaded and tts_engine is not None:
+                import torch
                 del tts_engine
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
+            # Determine devices
+            import torch
             if device == "auto":
                 bb_device = "cuda" if torch.cuda.is_available() else "cpu"
                 cc_device = "cpu" if "ONNX" in codec else ("cuda" if torch.cuda.is_available() else "cpu")
@@ -148,12 +199,9 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
                 bb_device = device
                 cc_device = "cpu" if "ONNX" in codec else device
 
-            tts_engine = VieNeuTTS(
-                backbone_repo=backbones[backbone]["repo"],
-                backbone_device=bb_device,
-                codec_repo=codecs[codec]["repo"],
-                codec_device=cc_device,
-            )
+            # Load TTS engine
+            tts_engine = _load_tts_engine(str(VIENEU_BACKBONE_DIR), codec_repo, bb_device, cc_device)
+            
             model_loaded = True
             current_config = {
                 "backbone": backbone,
@@ -188,6 +236,82 @@ def unload_model() -> None:
             log(f"Error unloading TTS model: {exc}", "error")
 
 
+def _get_backbone_path() -> Optional[str]:
+    """
+    Determine the backbone model path.
+    Checks multiple locations in priority order.
+    Returns the path if found, None otherwise.
+    """
+    # Priority 1: Main vieneu-tts directory (from tools_manager download)
+    if (VIENEU_MODEL_DIR / "model.safetensors").exists():
+        log(f"Using backbone from {VIENEU_MODEL_DIR}", "info")
+        return str(VIENEU_MODEL_DIR)
+    
+    # Priority 2: Backbone subdirectory
+    if (VIENEU_BACKBONE_DIR / "model.safetensors").exists():
+        log(f"Using backbone from {VIENEU_BACKBONE_DIR}", "info")
+        return str(VIENEU_BACKBONE_DIR)
+    
+    return None
+
+
+def _load_tts_engine(backbone_path: str, codec_repo: str, backbone_device: str, codec_device: str) -> Any:
+    """
+    Load the VieNeuTTS engine with specified configuration.
+    
+    Args:
+        backbone_path: Local path to backbone model
+        codec_repo: Codec repository ID (must be repo ID due to match statement)
+        backbone_device: Device for backbone ('cpu', 'cuda')
+        codec_device: Device for codec ('cpu', 'cuda')
+    
+    Returns:
+        Loaded VieNeuTTS engine instance
+    """
+    from vieneu import VieNeuTTS
+    
+    return VieNeuTTS(
+        backbone_repo=backbone_path,
+        backbone_device=backbone_device,
+        codec_repo=codec_repo,  # Must use repo ID for codec
+        codec_device=codec_device,
+    )
+
+
+def _ensure_model_downloaded(repo_id: str, local_dir: Path) -> bool:
+    """
+    Ensure model is downloaded to local directory.
+    Returns True if model exists or was successfully downloaded.
+    """
+    try:
+        # Check if model already exists with actual model files
+        if local_dir.exists() and any(local_dir.iterdir()):
+            # Verify it has model files (config.json or .bin/.safetensors files)
+            has_config = (local_dir / "config.json").exists()
+            has_model = any(local_dir.glob("*.bin")) or any(local_dir.glob("*.safetensors"))
+            if has_config or has_model:
+                log(f"Model already exists at {local_dir}", "info")
+                return True
+            else:
+                log(f"Directory exists but no model files found at {local_dir}, re-downloading...", "warning")
+        
+        # Download model
+        log(f"Downloading model {repo_id} to {local_dir}...", "info")
+        from huggingface_hub import snapshot_download
+        
+        local_dir.parent.mkdir(parents=True, exist_ok=True)
+        snapshot_download(
+            repo_id=repo_id,
+            local_dir=str(local_dir),
+            local_dir_use_symlinks=False
+        )
+        log(f"Model downloaded successfully to {local_dir}", "info")
+        return True
+    except Exception as exc:
+        log(f"Failed to download model {repo_id}: {exc}", "error")
+        return False
+
+
 def _ensure_model_loaded() -> bool:
     """Ensure model is loaded with default config if not already loaded."""
     global tts_engine, model_loaded, current_config
@@ -208,20 +332,34 @@ def _ensure_model_loaded() -> bool:
         default_backbone = list(backbones.keys())[0]
         default_codec = list(codecs.keys())[0]
         
+        backbone_repo = backbones[default_backbone]["repo"]
+        codec_repo = codecs[default_codec]["repo"]
+        
         log(f"Auto-loading TTS model: {default_backbone} + {default_codec}", "info")
         
+        # Get backbone path (checks multiple locations)
+        backbone_path = _get_backbone_path()
+        
+        if not backbone_path:
+            # Download backbone if not found
+            if not _ensure_model_downloaded(backbone_repo, VIENEU_BACKBONE_DIR):
+                log(f"Failed to download backbone model: {backbone_repo}", "error")
+                return False
+            backbone_path = str(VIENEU_BACKBONE_DIR)
+        
+        # Ensure codec is downloaded
+        if not _ensure_model_downloaded(codec_repo, VIENEU_CODEC_DIR):
+            log(f"Failed to download codec model: {codec_repo}", "error")
+            return False
+        
         import torch
-        from vieneu import VieNeuTTS
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         codec_device = "cpu" if "ONNX" in default_codec else device
         
-        tts_engine = VieNeuTTS(
-            backbone_repo=backbones[default_backbone]["repo"],
-            backbone_device=device,
-            codec_repo=codecs[default_codec]["repo"],
-            codec_device=codec_device,
-        )
+        # Load TTS engine
+        tts_engine = _load_tts_engine(backbone_path, codec_repo, device, codec_device)
+        
         model_loaded = True
         current_config = {
             "backbone": default_backbone,
