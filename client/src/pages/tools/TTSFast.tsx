@@ -26,6 +26,7 @@ type StatusData = {
   tools?: {
     torch?: { installed: boolean };
     vieneu_tts?: { installed: boolean };
+    vieneu_tts_deps?: { installed: boolean; missing?: string[] };
   };
 };
 
@@ -48,7 +49,11 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const overLimit = charCount > MAX_CHARS;
 
   const serverUnreachable = status?.server_unreachable === true;
-  const depsReady = Boolean(status?.tools?.torch?.installed && status?.tools?.vieneu_tts?.installed);
+  const depsReady = Boolean(
+    status?.tools?.torch?.installed &&
+    status?.tools?.vieneu_tts?.installed &&
+    status?.tools?.vieneu_tts_deps?.installed
+  );
   const statusReady = status?.server_unreachable !== true && depsReady;
 
   useEffect(() => {

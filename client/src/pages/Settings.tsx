@@ -15,6 +15,7 @@ type SystemStatus = {
     yt_dlp?: { installed: boolean; path?: string | null };
     torch?: { installed: boolean; version?: string | null; cuda?: string | null; path?: string | null };
     vieneu_tts?: { installed: boolean; path?: string | null };
+    vieneu_tts_deps?: { installed: boolean; missing?: string[] };
     f5_tts?: { installed: boolean; path?: string | null };
     whisper?: { installed: boolean; model?: string | null; path?: string | null };
   };
@@ -71,6 +72,7 @@ export default function Settings() {
     "ffmpeg": "settings.tools.item.ffmpeg",
     "torch-cu121": "settings.tools.item.torch-cu121",
     "vieneu-tts": "settings.tools.item.vieneu-tts",
+    "vieneu-tts-deps": "settings.tools.item.vieneu-tts-deps",
     "f5-tts": "settings.tools.item.f5-tts",
     "whisper-large-v3": "settings.tools.item.whisper-large-v3",
   };

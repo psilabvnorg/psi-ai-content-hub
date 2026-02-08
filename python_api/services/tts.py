@@ -22,11 +22,16 @@ from .jobs import JobStore
 
 VIENEU_TTS_ROOT = Path(os.environ.get("VIENEU_TTS_ROOT", "")).resolve() if os.environ.get("VIENEU_TTS_ROOT") else None
 if VIENEU_TTS_ROOT is None or not VIENEU_TTS_ROOT.exists():
-    # Try the new location first: python_api/assets/vieneu-tts-sample
-    VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
+    # Prefer the bundled VieNeu-TTS repo
+    VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "VieNeu-TTS"
     if not VIENEU_TTS_ROOT.exists():
-        # Fallback to old location
-        VIENEU_TTS_ROOT = Path(__file__).resolve().parents[2] / "VieNeu-TTS-Fast-Vietnamese"
+        # Fallback to sample assets
+        VIENEU_TTS_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
+        if not VIENEU_TTS_ROOT.exists():
+            # Fallback to old location
+            VIENEU_TTS_ROOT = Path(__file__).resolve().parents[2] / "VieNeu-TTS-Fast-Vietnamese"
+
+_SAMPLE_CONFIG_ROOT = Path(__file__).resolve().parents[1] / "assets" / "vieneu-tts-sample"
 
 progress_store = ProgressStore()
 tts_engine = None
@@ -43,7 +48,19 @@ def _load_config() -> Dict[str, Any]:
         import yaml
 
         with open(config_path, "r", encoding="utf-8") as handle:
-            return yaml.safe_load(handle) or {}
+            config = yaml.safe_load(handle) or {}
+
+        # Merge in bundled voice samples if VieNeu config doesn't include them
+        if not config.get("voice_samples") and _SAMPLE_CONFIG_ROOT.exists():
+            sample_config_path = _SAMPLE_CONFIG_ROOT / "config.yaml"
+            if sample_config_path.exists():
+                with open(sample_config_path, "r", encoding="utf-8") as sample_handle:
+                    sample_config = yaml.safe_load(sample_handle) or {}
+                if sample_config.get("voice_samples"):
+                    config["voice_samples"] = sample_config["voice_samples"]
+                if not config.get("text_settings") and sample_config.get("text_settings"):
+                    config["text_settings"] = sample_config["text_settings"]
+        return config
     except Exception as exc:
         log(f"Failed to load VieNeu config: {exc}", "error")
         return {}

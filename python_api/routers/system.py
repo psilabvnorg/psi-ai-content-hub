@@ -48,6 +48,7 @@ def status() -> dict:
             "yt_dlp": tools_status.get("yt_dlp", _check_tool("yt-dlp")),
             "torch": tools_status.get("torch"),
             "vieneu_tts": tools_status.get("vieneu_tts"),
+            "vieneu_tts_deps": tools_status.get("vieneu_tts_deps"),
             "f5_tts": tools_status.get("f5_tts"),
             "whisper": tools_status.get("whisper"),
             "tts": {"configs": bool(get_model_configs().get("backbones"))},
