@@ -110,7 +110,7 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
 
             progress_store.set_progress(task_id, "loading", 40, "Initializing TTS engine...")
             import torch
-            from vieneu_tts import VieNeuTTS
+            from vieneu import VieNeuTTS
 
             if model_loaded and tts_engine is not None:
                 del tts_engine
@@ -147,17 +147,86 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
     return task_id
 
 
+def unload_model() -> None:
+    """Unload the TTS model to free memory."""
+    global tts_engine, model_loaded, current_config
+    if tts_engine is not None:
+        try:
+            import torch
+            del tts_engine
+            tts_engine = None
+            model_loaded = False
+            current_config = {}
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            log("TTS model unloaded successfully", "info")
+        except Exception as exc:
+            log(f"Error unloading TTS model: {exc}", "error")
+
+
+def _ensure_model_loaded() -> bool:
+    """Ensure model is loaded with default config if not already loaded."""
+    global tts_engine, model_loaded, current_config
+    
+    if model_loaded and tts_engine is not None:
+        return True
+    
+    try:
+        config = _load_config()
+        backbones = config.get("backbone_configs", {})
+        codecs = config.get("codec_configs", {})
+        
+        if not backbones or not codecs:
+            log("No TTS model configs available", "error")
+            return False
+        
+        # Use first available backbone and codec as defaults
+        default_backbone = list(backbones.keys())[0]
+        default_codec = list(codecs.keys())[0]
+        
+        log(f"Auto-loading TTS model: {default_backbone} + {default_codec}", "info")
+        
+        import torch
+        from vieneu import VieNeuTTS
+        
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        codec_device = "cpu" if "ONNX" in default_codec else device
+        
+        tts_engine = VieNeuTTS(
+            backbone_repo=backbones[default_backbone]["repo"],
+            backbone_device=device,
+            codec_repo=codecs[default_codec]["repo"],
+            codec_device=codec_device,
+        )
+        model_loaded = True
+        current_config = {
+            "backbone": default_backbone,
+            "codec": default_codec,
+            "device": device,
+            "voice_samples": config.get("voice_samples", {}),
+            "max_chars_per_chunk": config.get("text_settings", {}).get("max_chars_per_chunk", 256),
+        }
+        log("TTS model loaded successfully", "info")
+        return True
+    except Exception as exc:
+        log(f"Failed to auto-load TTS model: {exc}", "error")
+        return False
+
+
 def generate(job_store: JobStore, text: str, mode: str, voice_id: Optional[str], sample_voice_id: Optional[str], sample_text_id: Optional[str]) -> str:
     task_id = f"tts_{int(time.time())}"
     progress_store.set_progress(task_id, "starting", 0, "Starting generation...")
 
     def runner() -> None:
         try:
+            # Auto-load model if not loaded
             if not model_loaded or tts_engine is None:
-                progress_store.set_progress(task_id, "error", 0, "Model not loaded")
-                return
+                progress_store.set_progress(task_id, "loading", 10, "Loading model...")
+                if not _ensure_model_loaded():
+                    progress_store.set_progress(task_id, "error", 0, "Failed to load model")
+                    return
 
-            from utils.core_utils import split_text_into_chunks
+            from vieneu_utils.core_utils import split_text_into_chunks
             import numpy as np
             import soundfile as sf
             import torch
@@ -222,9 +291,18 @@ def generate(job_store: JobStore, text: str, mode: str, voice_id: Optional[str],
             task_files[task_id] = file_record.file_id
             progress_store.set_progress(task_id, "complete", 100, "Complete")
             progress_store.add_log(task_id, json.dumps({"download_url": f"/api/download/{file_record.file_id}"}))
+            
+            # Offload model to save memory
+            progress_store.add_log(task_id, "Offloading model to save memory...")
+            unload_model()
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
             log(f"TTS generate failed: {exc}", "error")
+            # Try to unload model even on error
+            try:
+                unload_model()
+            except:
+                pass
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id

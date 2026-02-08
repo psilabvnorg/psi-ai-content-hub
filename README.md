@@ -4,11 +4,12 @@ npm run electron:dev
 npm run dev
 
 ----
-back end
+back end (debug dev mode install)
 
 cd python_api
 pip install -r requirements.txt
-
+pip install -e ./vieneu_tts
+pip install -e python_api/vieneu_tts
 
 .venv\Scripts\activate
 Python -m python_api.main

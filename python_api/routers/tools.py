@@ -20,6 +20,7 @@ from ..services.tts import download_model as tts_download_model
 from ..services.tts import generate as tts_generate
 from ..services.tts import get_model_configs, get_voices
 from ..services.tts import load_model as tts_load_model
+from ..services.tts import unload_model as tts_unload_model
 from ..services.tts import get_download_file_id as tts_download_file_id
 from ..services.tts import progress_store as tts_progress
 from ..services.video import get_download_status, progress_store as video_progress, start_download
@@ -209,6 +210,13 @@ def tts_model_load(payload: dict = Body(...), job_store: JobStore = Depends(get_
         raise HTTPException(status_code=400, detail="backbone and codec are required")
     task_id = tts_load_model(job_store, backbone, codec, device)
     return StreamingResponse(tts_progress.sse_stream(task_id), media_type="text/event-stream")
+
+
+@router.post("/tts/model/unload")
+def tts_model_unload() -> dict:
+    """Unload TTS model to free memory."""
+    tts_unload_model()
+    return {"status": "success", "message": "Model unloaded"}
 
 
 @router.post("/tts/generate")

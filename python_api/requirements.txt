@@ -9,3 +9,4 @@ soundfile
 openai-whisper
 torch
 torchaudio
+-e ./VieNeu-TTS
