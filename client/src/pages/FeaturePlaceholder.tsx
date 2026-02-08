@@ -24,10 +24,12 @@ import type { I18nKey } from "@/i18n/translations";
 
 export default function FeaturePlaceholder({ 
   id, 
-  onBack 
+  onBack,
+  onSelectFeature,
 }: {
   id: string;
   onBack: () => void;
+  onSelectFeature: (id: string) => void;
 }) {
   const { t } = useI18n();
   const [url, setUrl] = useState("");
@@ -90,11 +92,11 @@ export default function FeaturePlaceholder({
       case "adjust-speed":
         return <SpeedAdjuster />;
       case "tts-fast":
-        return <TTSFast />;
+        return <TTSFast onOpenSettings={() => onSelectFeature("settings")} />;
       case "voice-clone":
-        return <VoiceClone />;
+        return <VoiceClone onOpenSettings={() => onSelectFeature("settings")} />;
       case "stt":
-        return <SpeechToText />;
+        return <SpeechToText onOpenSettings={() => onSelectFeature("settings")} />;
       case "thumbnail":
         return <ThumbnailCreator />;
       case "reup-youtube":

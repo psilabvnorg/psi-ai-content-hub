@@ -54,31 +54,6 @@ type ResultData = {
   segments?: Segment[];
 };
 
-async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
-  const reader = response.body?.getReader();
-  if (!reader) return;
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || "";
-    for (const part of parts) {
-      const line = part.trim();
-      if (line.startsWith("data:")) {
-        const payload = line.replace("data:", "").trim();
-        try {
-          onMessage(JSON.parse(payload) as ProgressData);
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }
-}
-
 function formatTimestamp(seconds?: number) {
   if (seconds === undefined || seconds === null || Number.isNaN(seconds)) return "--:--";
   const mins = Math.floor(seconds / 60);
@@ -86,14 +61,13 @@ function formatTimestamp(seconds?: number) {
   return `${String(mins).padStart(2, "0")}:${secs.toFixed(2).padStart(5, "0")}`;
 }
 
-export default function SpeechToText() {
+export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [language, setLanguage] = useState("vi");
   const [model, setModel] = useState<(typeof MODELS)[number]>("base");
   const [addPunctuation, setAddPunctuation] = useState(true);
   const [status, setStatus] = useState<StatusData | null>(null);
-  const [isModelDownloading, setIsModelDownloading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -103,6 +77,7 @@ export default function SpeechToText() {
   const serverUnreachable = status?.server_unreachable === true;
   const depsNotOk = status?.deps_ok === false;
   const ffmpegMissing = status?.ffmpeg_ok === false;
+  const whisperMissing = status?.cached_models ? !status.cached_models.includes("large-v3.pt") : false;
 
   useEffect(() => {
     if (logRef.current) {
@@ -123,29 +98,6 @@ export default function SpeechToText() {
   useEffect(() => {
     fetchStatus();
   }, []);
-
-  const runModelDownload = async () => {
-    setIsModelDownloading(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: t("tool.stt.downloading_model", { model }) });
-    try {
-      const res = await fetch(`${API_URL}/api/tools/stt/model/download`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model }),
-      });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch (err) {
-      console.warn("[STT] Model download failed:", err);
-      setProgress({ status: "error", percent: 0, message: t("tool.stt.model_download_failed") });
-    } finally {
-      setIsModelDownloading(false);
-      fetchStatus();
-    }
-  };
 
   const handleTranscribe = async () => {
     if (!audioFile) return;
@@ -231,7 +183,7 @@ export default function SpeechToText() {
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
-        {!serverUnreachable && (depsNotOk || ffmpegMissing) && (
+        {!serverUnreachable && (depsNotOk || ffmpegMissing || whisperMissing) && (
           <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -242,12 +194,13 @@ export default function SpeechToText() {
                     ? t("tool.stt.missing_deps", { deps: status?.deps_missing?.join(", ") || "unknown" })
                     : ffmpegMissing
                     ? t("tool.stt.ffmpeg_missing")
+                    : whisperMissing
+                    ? t("tool.stt.whisper_missing")
                     : t("tool.stt.setup_incomplete")}
                 </p>
                 <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelDownloading}>
-                    {isModelDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    {t("tool.stt.download_model")}
+                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
+                    {t("tool.common.open_settings")}
                   </Button>
                   <Button size="sm" variant="outline" onClick={fetchStatus}>
                     {t("tool.stt.refresh_status")}
@@ -340,7 +293,7 @@ export default function SpeechToText() {
         <Button
           className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
           onClick={handleTranscribe}
-          disabled={isTranscribing || !audioFile || serverUnreachable || depsNotOk || ffmpegMissing}
+          disabled={isTranscribing || !audioFile || serverUnreachable || depsNotOk || ffmpegMissing || whisperMissing}
         >
           {isTranscribing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
           {t("tool.stt.transcribe")}

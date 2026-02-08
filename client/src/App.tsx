@@ -16,7 +16,13 @@ function AppRouter() {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
 
   if (activeFeature) {
-    return <FeaturePlaceholder id={activeFeature} onBack={() => setActiveFeature(null)} />;
+    return (
+      <FeaturePlaceholder
+        id={activeFeature}
+        onBack={() => setActiveFeature(null)}
+        onSelectFeature={setActiveFeature}
+      />
+    );
   }
 
   return (

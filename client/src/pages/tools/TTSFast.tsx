@@ -23,6 +23,10 @@ type ProgressData = {
 
 type StatusData = {
   server_unreachable?: boolean;
+  tools?: {
+    torch?: { installed: boolean };
+    vieneu_tts?: { installed: boolean };
+  };
 };
 
 type ModelConfig = {
@@ -51,7 +55,7 @@ async function consumeSseStream(response: Response, onMessage: (data: ProgressDa
   }
 }
 
-export default function TTSFast() {
+export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
   const mode: "preset" = "preset";
@@ -61,7 +65,6 @@ export default function TTSFast() {
   const [modelConfigs, setModelConfigs] = useState<ModelConfig | null>(null);
   const [selectedBackbone, setSelectedBackbone] = useState("");
   const [selectedCodec, setSelectedCodec] = useState("");
-  const [isModelDownloading, setIsModelDownloading] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -75,7 +78,8 @@ export default function TTSFast() {
   const overLimit = charCount > MAX_CHARS;
 
   const serverUnreachable = status?.server_unreachable === true;
-  const statusReady = status?.server_unreachable !== true;
+  const depsReady = Boolean(status?.tools?.torch?.installed && status?.tools?.vieneu_tts?.installed);
+  const statusReady = status?.server_unreachable !== true && depsReady;
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -86,7 +90,8 @@ export default function TTSFast() {
     try {
       const res = await fetch(`${API_URL}/api/system/status`);
       if (!res.ok) throw new Error("status");
-      setStatus({ server_unreachable: false });
+      const data = (await res.json()) as { tools?: StatusData["tools"] };
+      setStatus({ server_unreachable: false, tools: data.tools });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -120,29 +125,6 @@ export default function TTSFast() {
   }, []);
 
   // --- Download Model ---
-  const runModelDownload = async () => {
-    if (!selectedBackbone || !selectedCodec) return;
-    setIsModelDownloading(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: t("tool.tts_fast.downloading_model") });
-    try {
-      const res = await fetch(`${API_URL}/api/tools/tts/model/download`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ backbone: selectedBackbone, codec: selectedCodec }),
-      });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch {
-        setProgress({ status: "error", percent: 0, message: t("tool.tts_fast.failed_download_model") });
-    } finally {
-      setIsModelDownloading(false);
-      fetchStatus();
-    }
-  };
-
   // --- Load Model ---
   const handleLoadModel = async () => {
     if (!selectedBackbone || !selectedCodec) return;
@@ -260,7 +242,24 @@ export default function TTSFast() {
         )}
 
         {/* Model Loading Section */}
-        {!serverUnreachable && modelConfigs && (
+        {!serverUnreachable && !depsReady && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.common.deps_not_ready")}</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
+                    {t("tool.common.open_settings")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!serverUnreachable && depsReady && modelConfigs && (
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 space-y-3">
             <div className="flex items-start gap-3">
               <Settings2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -298,10 +297,6 @@ export default function TTSFast() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelDownloading || !selectedBackbone || !selectedCodec}>
-                    {isModelDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    {t("tool.tts_fast.download_model")}
-                  </Button>
                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleLoadModel} disabled={isModelLoading || !selectedBackbone || !selectedCodec}>
                     {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                     {t("tool.tts_fast.load_model_btn")}

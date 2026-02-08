@@ -11,6 +11,7 @@ from .deps import job_store
 from .routers import system as system_router
 from .routers import tools as tools_router
 from .routers import workflows as workflows_router
+from .routers import tools_manager as tools_manager_router
 from .settings import CORS_ALLOW_ORIGINS
 
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     app.include_router(system_router.router)
     app.include_router(system_router.download_router)
     app.include_router(tools_router.router)
+    app.include_router(tools_manager_router.router)
     app.include_router(workflows_router.router)
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()

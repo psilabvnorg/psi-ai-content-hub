@@ -16,6 +16,7 @@ from ..services.jobs import JobStore
 from ..services.stt import status as stt_status
 from ..services.tts import get_model_configs
 from ..services.voice_clone import list_voices
+from ..services.tools_manager import get_system_tools_status
 
 
 router = APIRouter(prefix="/api/system", tags=["system"])
@@ -37,13 +38,18 @@ def _temp_stats() -> dict:
 
 @router.get("/status")
 def status() -> dict:
+    tools_status = get_system_tools_status()
     return {
         "status": "ok",
         "uptime": time.time(),
         "temp": _temp_stats(),
         "tools": {
-            "ffmpeg": _check_tool("ffmpeg"),
-            "yt_dlp": _check_tool("yt-dlp"),
+            "ffmpeg": tools_status.get("ffmpeg", _check_tool("ffmpeg")),
+            "yt_dlp": tools_status.get("yt_dlp", _check_tool("yt-dlp")),
+            "torch": tools_status.get("torch"),
+            "vieneu_tts": tools_status.get("vieneu_tts"),
+            "f5_tts": tools_status.get("f5_tts"),
+            "whisper": tools_status.get("whisper"),
             "tts": {"configs": bool(get_model_configs().get("backbones"))},
             "voice_clone": {"voices": len(list_voices().get("voices", []))},
             "stt": stt_status(),

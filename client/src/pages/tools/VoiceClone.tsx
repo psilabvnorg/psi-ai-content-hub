@@ -19,6 +19,10 @@ type Voice = {
 
 type StatusData = {
   server_unreachable?: boolean;
+  tools?: {
+    torch?: { installed: boolean };
+    f5_tts?: { installed: boolean };
+  };
 };
 
 type ProgressData = {
@@ -31,38 +35,12 @@ type ProgressData = {
   duration?: number;
 };
 
-async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
-  const reader = response.body?.getReader();
-  if (!reader) return;
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || "";
-    for (const part of parts) {
-      const line = part.trim();
-      if (line.startsWith("data:")) {
-        const payload = line.replace("data:", "").trim();
-        try {
-          onMessage(JSON.parse(payload));
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }
-}
-
-export default function VoiceClone() {
+export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
   const [status, setStatus] = useState<StatusData | null>(null);
-  const [isModelLoading, setIsModelLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -77,7 +55,8 @@ export default function VoiceClone() {
   const charCount = text.length;
   const overLimit = charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
-  const statusReady = !serverUnreachable;
+  const depsReady = Boolean(status?.tools?.torch?.installed && status?.tools?.f5_tts?.installed);
+  const statusReady = !serverUnreachable && depsReady;
 
   // Auto-scroll logs to bottom
   useEffect(() => {
@@ -90,7 +69,8 @@ export default function VoiceClone() {
     try {
       const res = await fetch(`${API_URL}/api/system/status`);
       if (!res.ok) throw new Error("status");
-      setStatus({ server_unreachable: false });
+      const data = (await res.json()) as { tools?: StatusData["tools"] };
+      setStatus({ server_unreachable: false, tools: data.tools });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -109,25 +89,6 @@ export default function VoiceClone() {
     fetchStatus();
     fetchVoices();
   }, []);
-
-  const runModelDownload = async () => {
-    setIsModelLoading(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: t("tool.stt.downloading_model", { model: "F5-TTS" }) });
-    try {
-      const res = await fetch(`${API_URL}/api/tools/voice-clone/model`, { method: "POST" });
-      await consumeSseStream(res, (data) => {
-        setProgress(data);
-        if (data.logs) setLogs(data.logs);
-      });
-    } catch (err) {
-      console.warn("[VoiceClone] Model download request failed:", err);
-        setProgress({ status: "error", percent: 0, message: t("tool.voice_clone.server_not_reachable") });
-    } finally {
-      setIsModelLoading(false);
-      fetchStatus();
-    }
-  };
 
   const handleGenerate = async () => {
     if (!text.trim() || !selectedVoice || overLimit) return;
@@ -207,12 +168,25 @@ export default function VoiceClone() {
                   {t("tool.voice_clone.server_not_reachable")}
                 </p>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={runModelDownload} disabled={isModelLoading || serverUnreachable}>
-                    {isModelLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    {t("tool.voice_clone.download_model")}
-                  </Button>
                   <Button size="sm" variant="outline" onClick={fetchStatus}>
                     {t("tool.tts_fast.retry")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!serverUnreachable && !depsReady && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.common.deps_not_ready")}</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
+                    {t("tool.common.open_settings")}
                   </Button>
                 </div>
               </div>
