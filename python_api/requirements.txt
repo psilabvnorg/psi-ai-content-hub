@@ -4,6 +4,7 @@ python-multipart
 yt-dlp
 PyYAML
 huggingface_hub
+neucodec
 numpy
 soundfile
 openai-whisper

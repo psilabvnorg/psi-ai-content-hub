@@ -11,6 +11,7 @@ setup(
         "soundfile",
         "transformers",
         "accelerate",
+        "neucodec",
     ],
     python_requires=">=3.8",
 )

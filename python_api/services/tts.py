@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+# Ensure local VieNeu-TTS package is importable (vieneu, vieneu_utils)
+_repo_root = Path(__file__).resolve().parents[2]
+_vieneu_tts_dir = _repo_root / "python_api" / "VieNeu-TTS"
+if _vieneu_tts_dir.exists() and str(_vieneu_tts_dir) not in sys.path:
+    sys.path.insert(0, str(_vieneu_tts_dir))
 
 from ..logging import log
 from ..psi_server_utils import ProgressStore
