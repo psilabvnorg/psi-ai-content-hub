@@ -20,7 +20,7 @@ pip install -r python_api\requirements.txt
 pip install -e python_api\VieNeu-TTS
 
 # Run API
-.venv\Scripts\python.exe -m python_api.main
+python -m python_api.main
 
 Use the venv's pip and python so neucodec and other deps are in the same env.
 ---
