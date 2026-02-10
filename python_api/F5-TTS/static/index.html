@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PSI Lab - F5-TTS Voice Cloning</title>
+  <link rel="icon" href="/static/images/psi-lab.jpg" type="image/jpeg" />
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/static/translations.js"></script>
+</head>
+<body class="bg-base-200">
+  <!-- Header -->
+  <header class="navbar bg-base-100 shadow-lg">
+    <div class="flex-1">
+      <img src="/static/images/psi-lab.jpg" alt="PSI Lab" class="h-10 w-10 ml-4 mr-3 rounded-lg" />
+      <h1 class="text-2xl font-bold text-primary" data-i18n="appTitle">F5-TTS Voice Cloning</h1>
+    </div>
+    <div class="flex-none gap-2">
+      <!-- Language Toggle -->
+      <div class="btn-group">
+        <button id="lang-vn" class="btn btn-sm btn-primary" onclick="switchLanguage('vi')">
+          <svg class="w-5 h-4" viewBox="0 0 30 20" fill="none">
+            <rect width="30" height="20" fill="#DA251D"/>
+            <path d="M15 4L16.854 9.764H22.929L17.537 13.472L19.391 19.236L15 15.528L10.609 19.236L12.463 13.472L7.071 9.764H13.146L15 4Z" fill="#FFCD00"/>
+          </svg>
+          VN
+        </button>
+        <button id="lang-en" class="btn btn-sm btn-ghost" onclick="switchLanguage('en')">
+          <svg class="w-5 h-4" viewBox="0 0 30 20" fill="none">
+            <rect width="30" height="20" fill="#012169"/>
+            <path d="M0 0L30 20M30 0L0 20" stroke="white" stroke-width="4"/>
+            <path d="M0 0L30 20M30 0L0 20" stroke="#C8102E" stroke-width="2.5"/>
+            <path d="M15 0V20M0 10H30" stroke="white" stroke-width="6"/>
+            <path d="M15 0V20M0 10H30" stroke="#C8102E" stroke-width="4"/>
+          </svg>
+          EN
+        </button>
+      </div>
+      <div class="badge badge-success gap-2 mr-4">
+        <span id="status" data-i18n="apiStatus">API: unknown</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8 max-w-5xl">
+    <!-- Generate Audio Card -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-primary mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+          <span data-i18n="generateAudio">Generate Audio</span>
+        </h2>
+        
+        <form id="tts-form" class="space-y-4">
+          <!-- Voice Selection -->
+          <div class="form-control w-full">
+            <label class="label" for="voice-select">
+              <span class="label-text font-semibold" data-i18n="selectVoice">Chọn giọng (voice)</span>
+            </label>
+            <select id="voice-select" name="voice_id" class="select select-bordered select-primary w-full" required>
+              <option value="" data-i18n="loading">Đang tải...</option>
+            </select>
+          </div>
+
+          <!-- Voice Info -->
+          <div id="voice-info" class="alert shadow-lg hidden">
+            <div>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <div>
+                <h3 id="voice-name" class="font-bold"></h3>
+                <div id="voice-description" class="text-sm"></div>
+                <div id="voice-meta" class="badge badge-sm mt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Input -->
+          <div class="form-control w-full">
+            <label class="label" for="text-input">
+              <span class="label-text font-semibold" data-i18n="enterText">Nhập đoạn văn bản</span>
+              <span class="label-text-alt" id="char-count">0 / 500</span>
+            </label>
+            <textarea 
+              id="text-input" 
+              name="text" 
+              rows="5" 
+              minlength="1" 
+              data-i18n-placeholder="textPlaceholder"
+              placeholder="Nhập text cần clone giọng..." 
+              class="textarea textarea-bordered textarea-primary h-32" 
+              required
+            ></textarea>
+            <div id="char-warning" class="hidden mt-2 alert alert-warning shadow-lg">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span id="char-warning-text" data-i18n="charLimitWarning">Văn bản của bạn vượt quá 500 ký tự. Chỉ 500 ký tự đầu tiên sẽ được sử dụng để tạo giọng nói. Bạn cần đăng nhập để có thể tạo với văn bản dài hơn.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Options -->
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="checkbox" /> 
+            <div class="collapse-title font-semibold" data-i18n="advancedOptions">
+              ⚙️ Tùy chọn nâng cao
+            </div>
+            <div class="collapse-content space-y-4">
+              <!-- Speed -->
+              <div class="form-control w-full">
+                <label class="label" for="speed-input">
+                  <span class="label-text" data-i18n="speed">Tốc độ (0.5 - 2.0)</span>
+                  <span class="label-text-alt"><span data-i18n="default">Default</span>: 1.0</span>
+                </label>
+                <input 
+                  id="speed-input" 
+                  name="speed" 
+                  type="number" 
+                  min="0.5" 
+                  max="2.0" 
+                  step="0.1" 
+                  value="1.0" 
+                  class="input input-bordered w-full"
+                />
+              </div>
+
+              <!-- CFG Strength -->
+              <div class="form-control w-full">
+                <label class="label" for="cfg-input">
+                  <span class="label-text" data-i18n="cfgStrength">CFG Strength (1.0 - 5.0)</span>
+                  <span class="label-text-alt"><span data-i18n="default">Default</span>: 2.0</span>
+                </label>
+                <input 
+                  id="cfg-input" 
+                  name="cfg_strength" 
+                  type="number" 
+                  min="1.0" 
+                  max="5.0" 
+                  step="0.1" 
+                  value="2.0" 
+                  class="input input-bordered w-full"
+                />
+              </div>
+
+              <!-- NFE Steps -->
+              <div class="form-control w-full">
+                <label class="label" for="nfe-input">
+                  <span class="label-text" data-i18n="nfeSteps">NFE Steps</span>
+                </label>
+                <select id="nfe-input" name="nfe_step" class="select select-bordered w-full">
+                  <option value="16">16</option>
+                  <option value="32" selected>32</option>
+                  <option value="64">64</option>
+                </select>
+              </div>
+
+              <!-- Remove Silence -->
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3">
+                  <input id="silence-input" name="remove_silence" type="checkbox" class="checkbox checkbox-primary" />
+                  <span class="label-text" data-i18n="removeSilence">Loại bỏ khoảng lặng</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3 pt-2">
+            <button type="submit" id="generate-btn" class="btn btn-primary flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+              <span data-i18n="generateWav">Tạo file giọng nói (WAV)</span>
+            </button>
+            <button type="reset" class="btn btn-ghost" data-i18n="reset">Đặt lại</button>
+          </div>
+        </form>
+
+        <!-- Result Section -->
+        <div id="result" class="mt-6 hidden">
+          <div class="divider"></div>
+          <h3 class="font-bold text-lg mb-3" data-i18n="result">✅ Kết quả</h3>
+          <audio id="audio-player" controls class="w-full mb-3"></audio>
+          <a id="download-link" href="#" download="result.wav" class="btn btn-success btn-block">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+            <span data-i18n="downloadWav">Tải xuống file giọng nói (WAV)</span>
+          </a>
+        </div>
+
+        <!-- Message Alert -->
+        <div id="message" role="alert" class="mt-4"></div>
+      </div>
+    </div>
+
+    <!-- Samples Section -->
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-primary mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+          <span data-i18n="listenSamples">Nghe thử mẫu</span>
+        </h2>
+        <div id="samples" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer footer-center p-6 bg-neutral text-neutral-content mt-8">
+    <aside>
+      <div class="flex items-center justify-center gap-6 mb-2">
+        <p class="text-base font-medium">Psi Technology © 2025</p>
+        <div class="flex gap-4">
+          <a href="https://xechohang.vn/" target="_blank" rel="noopener noreferrer" 
+             class="btn btn-circle btn-lg border-0 transition-colors hover:opacity-80 overflow-hidden flex items-center justify-center" style="background-color: #3a3a3a; min-height: 3.5rem; height: 3.5rem; width: 3.5rem;">
+            <img src="/static/images/psi-lab.jpg" alt="Xe Cho Hang" width="32" height="32" class="rounded-sm object-cover" />
+          </a>
+          <a href="https://www.facebook.com/psi.lab.vn" target="_blank" rel="noopener noreferrer" 
+             class="btn btn-circle btn-lg border-0 transition-colors hover:opacity-80" style="background-color: #3a3a3a; min-height: 3.5rem; height: 3.5rem; width: 3.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#1877F2">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="https://www.tiktok.com/@xedien6969" target="_blank" rel="noopener noreferrer" 
+             class="btn btn-circle btn-lg border-0 transition-colors hover:opacity-80" style="background-color: #3a3a3a; min-height: 3.5rem; height: 3.5rem; width: 3.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+            </svg>
+          </a>
+          <a href="https://www.youtube.com/@xedienchohangvn" target="_blank" rel="noopener noreferrer" 
+             class="btn btn-circle btn-lg border-0 transition-colors hover:opacity-80" style="background-color: #3a3a3a; min-height: 3.5rem; height: 3.5rem; width: 3.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#FF0000">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </aside>
+  </footer>
+
+  <!-- Loading Modal -->
+  <div id="loading-modal" class="fixed inset-0 z-50 hidden">
+    <!-- Overlay -->
+    <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+    
+    <!-- Modal Dialog -->
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+      <div class="bg-base-100 rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <div class="text-center">
+          <!-- Spinning Clock Icon -->
+          <div class="flex justify-center mb-6">
+            <svg id="spinner" class="animate-spin h-20 w-20 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          
+          <!-- Progress Percentage -->
+          <div class="mb-4">
+            <div class="text-5xl font-bold text-primary" id="progress-percent">0%</div>
+            <div class="text-sm text-base-content opacity-70 mt-2" id="progress-text" data-i18n="initializing"></div>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="w-full bg-base-300 rounded-full h-3 overflow-hidden">
+            <div id="progress-bar" class="bg-primary h-full rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+          </div>
+          
+          <!-- Status Text -->
+          <p class="text-sm mt-4 text-base-content opacity-60" id="loading-subtitle" data-i18n="pleaseWait"></p>
+          
+          <!-- OK Button (hidden by default) -->
+          <button id="modal-ok-btn" class="btn btn-primary btn-wide mt-6 hidden" onclick="document.getElementById('loading-modal').classList.add('hidden')">
+            <span data-i18n="ok">OK</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

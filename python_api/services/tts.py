@@ -434,7 +434,7 @@ def generate(job_store: JobStore, text: str, mode: str, voice_id: Optional[str],
             for idx, chunk in enumerate(chunks):
                 percent = 20 + int((idx / max(total, 1)) * 60)
                 progress_store.set_progress(task_id, "generating", percent, f"Generating {idx + 1}/{total}")
-                wav = tts_engine.infer(chunk, ref_codes, ref_text_raw)
+                wav = tts_engine.infer(chunk, ref_codes=ref_codes, ref_text=ref_text_raw)
                 if wav is not None and len(wav) > 0:
                     all_segments.append(wav)
                     if idx < total - 1:
