@@ -75,6 +75,7 @@ def run_inference(
     print()
     
     try:
+
         # Run the command
         result = subprocess.run(command, check=True)
         print("\n✅ Inference complete!")
@@ -96,8 +97,8 @@ def main():
         "gen_text": "mình muốn ra nước ngoài để tiếp xúc nhiều công ty lớn, sau đó mang những gì học được về việt nam giúp xây dựng các công trình tốt hơn",
         "speed": 1.0,
         "vocoder_name": "vocos",
-        vocab_file="C:/Users/ADMIN/AppData/Roaming/psi-ai-content-hub/models/f5-tts/vocab.txt",
-        ckpt_file="C:/Users/ADMIN/AppData/Roaming/psi-ai-content-hub/models/f5-tts/model_last.pt",
+        "vocab_file":"C:/Users/ADMIN/AppData/Roaming/psi-ai-content-hub/models/f5-tts/vocab.txt",
+        "ckpt_file":"C:/Users/ADMIN/AppData/Roaming/psi-ai-content-hub/models/f5-tts/model_last.pt",
         "output_dir": "output",
         "output_file": None
     }
