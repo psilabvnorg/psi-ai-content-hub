@@ -1,3 +1,9 @@
+Model download :
+C:\Users\ADMIN\AppData\Roaming\psi-ai-content-hub\models
+
+temp video media output:
+C:\Users\ADMIN\AppData\Local\Temp\psi_ai_content_hub\
+-------
 front end
 
 npm run electron:dev

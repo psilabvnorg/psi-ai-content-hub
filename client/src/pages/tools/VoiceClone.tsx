@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, Loader2, Download, AlertCircle } from "lucide-react";
+import { Mic, Loader2, Download, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { F5_API_URL } from "@/lib/api";
 const MAX_CHARS = 500;
@@ -20,6 +21,8 @@ type Voice = {
 type EnvStatus = {
   installed: boolean;
   missing?: string[];
+  installed_modules?: string[];
+  python_path?: string;
 };
 
 type ModelStatus = {
@@ -172,58 +175,97 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
-        {serverUnreachable && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.voice_clone.not_ready")}</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {t("tool.voice_clone.server_not_reachable")}
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    {t("tool.tts_fast.retry")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+        
+        {/* Status Table */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.voice_clone.service_status")}</h3>
+            <Button size="sm" variant="outline" onClick={fetchStatus}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
           </div>
-        )}
-
-        {!serverUnreachable && !depsReady && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.common.deps_not_ready")}</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
-                    {t("tool.common.open_settings")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.server_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {!serverUnreachable ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {!serverUnreachable ? F5_API_URL : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.env?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!status?.env?.installed && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.env?.installed_modules?.length
+                      ? status.env.installed_modules.join(", ")
+                      : status?.env?.missing?.length
+                      ? status.env.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.model?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!status?.model?.installed && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.model?.model_file || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
-        )}
-
-        {!serverUnreachable && depsReady && !modelReady && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.voice_clone.model_not_downloaded")}</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
-                    {t("tool.common.open_settings")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.select_voice")}</label>

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Volume2, AlertCircle, Settings2 } from "lucide-react";
+import { Loader2, Download, Volume2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { VIENEU_API_URL } from "@/lib/api";
 const MAX_CHARS = 3000;
@@ -24,11 +25,15 @@ type ProgressData = {
 type EnvStatus = {
   installed: boolean;
   missing?: string[];
+  installed_modules?: string[];
+  python_path?: string;
 };
 
 type ModelStatus = {
   backbone_ready?: boolean;
   codec_ready?: boolean;
+  backbone_dir?: string;
+  codec_dir?: string;
   model_loaded?: boolean;
   current_config?: Record<string, unknown>;
 };
@@ -165,52 +170,103 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
 
-        {/* Server unreachable */}
-        {serverUnreachable && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("tool.tts_fast.server_unreachable")}</p>
-                <p className="text-xs text-red-700 dark:text-red-400">
-                  {t("tool.tts_fast.server_unreachable_desc")}
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    {t("tool.tts_fast.retry")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+        {/* Status Table */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.tts_fast.service_status")}</h3>
+            <Button size="sm" variant="outline" onClick={fetchStatus}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
           </div>
-        )}
-
-        {/* Model Loading Section */}
-        {!serverUnreachable && !depsReady && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.common.deps_not_ready")}</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
-                    {t("tool.common.open_settings")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!serverUnreachable && depsReady && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-3">
-              <Settings2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-              <p className="text-sm font-semibold text-green-800 dark:text-green-300">Model Ready</p>
-            </div>
-          </div>
-        )}
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">{t("tool.tts_fast.server_status")}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {!serverUnreachable ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    )}
+                    <span className="text-sm">
+                      {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs font-mono break-all">
+                  {!serverUnreachable ? VIENEU_API_URL : "--"}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t("tool.tts_fast.env_status")}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {status?.env?.installed ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    )}
+                    <span className="text-sm">
+                      {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                    </span>
+                    {!status?.env?.installed && onOpenSettings && (
+                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                        {t("tool.common.open_settings")}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs font-mono break-all">
+                  {status?.env?.installed_modules?.length
+                    ? status.env.installed_modules.join(", ")
+                    : status?.env?.missing?.length
+                    ? status.env.missing.join(", ")
+                    : "--"}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t("tool.tts_fast.model_status")}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {status?.model?.backbone_ready && status?.model?.codec_ready ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    )}
+                    <span className="text-sm">
+                      {status?.model?.backbone_ready && status?.model?.codec_ready
+                        ? t("settings.tools.status.ready")
+                        : t("settings.tools.status.not_ready")}
+                    </span>
+                    {status?.model?.model_loaded && (
+                      <span className="ml-2 text-xs text-green-600">({t("settings.vieneu.model_loaded")})</span>
+                    )}
+                    {(!status?.model?.backbone_ready || !status?.model?.codec_ready) && onOpenSettings && (
+                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                        {t("tool.common.open_settings")}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs font-mono break-all">
+                  {status?.model?.backbone_dir && status?.model?.codec_dir
+                    ? `Backbone: ${status.model.backbone_dir}, Codec: ${status.model.codec_dir}`
+                    : "--"}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+        </div>
 
         {/* Mode Selection */}
         <div className="space-y-2">

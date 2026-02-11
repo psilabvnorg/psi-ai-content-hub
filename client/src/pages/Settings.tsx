@@ -36,6 +36,8 @@ type ProgressData = {
 type EnvStatus = {
   installed: boolean;
   missing?: string[];
+  installed_modules?: string[];
+  python_path?: string;
 };
 
 type F5ModelStatus = {
@@ -47,6 +49,8 @@ type F5ModelStatus = {
 type VieNeuModelStatus = {
   backbone_ready?: boolean;
   codec_ready?: boolean;
+  backbone_dir?: string;
+  codec_dir?: string;
   model_loaded?: boolean;
   current_config?: Record<string, unknown>;
 };
@@ -490,28 +494,82 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.f5.env_status")}</div>
-              <div className="text-xs text-zinc-500">
-                {f5Env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                {!f5Env?.installed && f5Env?.missing?.length ? ` (${f5Env.missing.join(", ")})` : ""}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.f5.model_status")}</div>
-              <div className="text-xs text-zinc-500">
-                {f5Model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleF5EnvInstall} disabled={f5Env?.installed === true}>
-              {t("settings.f5.install_env")}
-            </Button>
-            <Button variant="outline" onClick={handleF5DownloadModel}>
-              {t("settings.f5.download_model")}
-            </Button>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.f5.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {f5Env?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {f5Env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!f5Env?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleF5EnvInstall}
+                          disabled={f5Progress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {f5Progress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {t("settings.f5.install_env")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {f5Env?.installed_modules?.length
+                      ? f5Env.installed_modules.join(", ")
+                      : f5Env?.missing?.length
+                      ? f5Env.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.f5.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {f5Model?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {f5Model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!f5Model?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleF5DownloadModel}
+                          disabled={f5Progress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {f5Progress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {t("settings.f5.download_model")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {f5Model?.model_file || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
           {f5Progress && (
             <div className="text-xs text-zinc-500">
@@ -534,20 +592,77 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.vieneu.env_status")}</div>
-              <div className="text-xs text-zinc-500">
-                {vieneuEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                {!vieneuEnv?.installed && vieneuEnv?.missing?.length ? ` (${vieneuEnv.missing.join(", ")})` : ""}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.vieneu.model_status")}</div>
-              <div className="text-xs text-zinc-500">
-                {vieneuStatus?.model_loaded ? t("settings.vieneu.model_loaded") : t("settings.vieneu.model_not_loaded")}
-              </div>
-            </div>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.vieneu.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {vieneuEnv?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {vieneuEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!vieneuEnv?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleVieneuEnvInstall}
+                          disabled={vieneuProgress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {vieneuProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {t("settings.vieneu.install_env")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {vieneuEnv?.installed_modules?.length
+                      ? vieneuEnv.installed_modules.join(", ")
+                      : vieneuEnv?.missing?.length
+                      ? vieneuEnv.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.vieneu.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {vieneuStatus?.backbone_ready && vieneuStatus?.codec_ready ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {vieneuStatus?.backbone_ready && vieneuStatus?.codec_ready
+                          ? t("settings.tools.status.ready")
+                          : t("settings.tools.status.not_ready")}
+                      </span>
+                      {vieneuStatus?.model_loaded && (
+                        <span className="ml-2 text-xs text-green-600">({t("settings.vieneu.model_loaded")})</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {vieneuStatus?.backbone_dir && vieneuStatus?.codec_dir
+                      ? `Backbone: ${vieneuStatus.backbone_dir}, Codec: ${vieneuStatus.codec_dir}`
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -584,13 +699,19 @@ export default function Settings() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleVieneuEnvInstall} disabled={vieneuEnv?.installed === true}>
-              {t("settings.vieneu.install_env")}
-            </Button>
-            <Button variant="outline" onClick={handleVieneuDownloadModel} disabled={!vieneuBackbone || !vieneuCodec}>
+            <Button
+              variant="outline"
+              onClick={handleVieneuDownloadModel}
+              disabled={!vieneuBackbone || !vieneuCodec || vieneuProgress?.status === "starting"}
+            >
+              {vieneuProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {t("settings.vieneu.download_model")}
             </Button>
-            <Button variant="outline" onClick={handleVieneuLoadModel} disabled={!vieneuBackbone || !vieneuCodec}>
+            <Button
+              variant="outline"
+              onClick={handleVieneuLoadModel}
+              disabled={!vieneuBackbone || !vieneuCodec || vieneuProgress?.status === "starting"}
+            >
               {t("settings.vieneu.load_model")}
             </Button>
             <Button variant="outline" onClick={handleVieneuUnloadModel}>
@@ -619,20 +740,63 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.whisper.env_status")}</div>
-              <div className="text-xs text-zinc-500">
-                {whisperEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                {!whisperEnv?.installed && whisperEnv?.missing?.length ? ` (${whisperEnv.missing.join(", ")})` : ""}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("settings.whisper.model_cache")}</div>
-              <div className="text-xs text-zinc-500">
-                {whisperStatus?.cached_models?.length ? whisperStatus.cached_models.join(", ") : t("settings.whisper.no_models")}
-              </div>
-            </div>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.whisper.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {whisperEnv?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {whisperEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!whisperEnv?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleWhisperEnvInstall}
+                          disabled={whisperProgress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {whisperProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {t("settings.whisper.install_env")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {whisperEnv?.installed_modules?.length
+                      ? whisperEnv.installed_modules.join(", ")
+                      : whisperEnv?.missing?.length
+                      ? whisperEnv.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.whisper.model_cache")}</TableCell>
+                  <TableCell>
+                    <div className="text-sm text-zinc-500">
+                      {whisperStatus?.cached_models?.length ? whisperStatus.cached_models.join(", ") : t("settings.whisper.no_models")}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {whisperStatus?.model_dir || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="space-y-2">
@@ -652,10 +816,12 @@ export default function Settings() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleWhisperEnvInstall} disabled={whisperEnv?.installed === true}>
-              {t("settings.whisper.install_env")}
-            </Button>
-            <Button variant="outline" onClick={handleWhisperDownloadModel}>
+            <Button
+              variant="outline"
+              onClick={handleWhisperDownloadModel}
+              disabled={whisperProgress?.status === "starting"}
+            >
+              {whisperProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {t("settings.whisper.download_model")}
             </Button>
           </div>

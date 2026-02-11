@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2, Download, AlertCircle, FileText } from "lucide-react";
+import { Upload, Loader2, Download, FileText, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { WHISPER_API_URL } from "@/lib/api";
@@ -26,14 +27,25 @@ type ProgressData = {
   logs?: string[];
 };
 
-type StatusData = {
+type EnvStatus = {
+  installed: boolean;
+  missing?: string[];
+  installed_modules?: string[];
+  python_path?: string;
+};
+
+type WhisperModelStatus = {
   deps_ok?: boolean;
   deps_missing?: string[];
   ffmpeg_ok?: boolean;
   model_dir?: string;
   cached_models?: string[];
-  server_time?: number;
+};
+
+type StatusData = {
   server_unreachable?: boolean;
+  env?: EnvStatus;
+  whisper?: WhisperModelStatus;
 };
 
 type Segment = {
@@ -75,9 +87,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const logRef = useRef<HTMLDivElement>(null);
 
   const serverUnreachable = status?.server_unreachable === true;
-  const depsNotOk = status?.deps_ok === false;
-  const ffmpegMissing = status?.ffmpeg_ok === false;
-  const whisperMissing = status?.cached_models ? !status.cached_models.includes("large-v3.pt") : false;
+  const depsNotOk = status?.env?.installed === false;
+  const ffmpegMissing = status?.whisper?.ffmpeg_ok === false;
+  const whisperMissing = status?.whisper?.cached_models ? !status.whisper.cached_models.includes("large-v3.pt") : false;
 
   useEffect(() => {
     if (logRef.current) {
@@ -87,9 +99,14 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${WHISPER_API_URL}/api/v1/status`);
-      const data = (await res.json()) as { models?: { whisper?: StatusData } };
-      setStatus({ ...(data.models?.whisper || {}), server_unreachable: false });
+      const [envRes, statusRes] = await Promise.all([
+        fetch(`${WHISPER_API_URL}/api/v1/env/status`),
+        fetch(`${WHISPER_API_URL}/api/v1/status`),
+      ]);
+      if (!envRes.ok || !statusRes.ok) throw new Error("status");
+      const envData = (await envRes.json()) as EnvStatus;
+      const statusData = (await statusRes.json()) as { models?: { whisper?: WhisperModelStatus } };
+      setStatus({ server_unreachable: false, env: envData, whisper: statusData.models?.whisper });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -183,52 +200,123 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
-        {!serverUnreachable && (depsNotOk || ffmpegMissing || whisperMissing) && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.stt.not_ready")}</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {depsNotOk
-                    ? t("tool.stt.missing_deps", { deps: status?.deps_missing?.join(", ") || "unknown" })
-                    : ffmpegMissing
-                    ? t("tool.stt.ffmpeg_missing")
-                    : whisperMissing
-                    ? t("tool.stt.whisper_missing")
-                    : t("tool.stt.setup_incomplete")}
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
-                    {t("tool.common.open_settings")}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    {t("tool.stt.refresh_status")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+        {/* Status Table */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.stt.service_status")}</h3>
+            <Button size="sm" variant="outline" onClick={fetchStatus}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
           </div>
-        )}
-
-        {serverUnreachable && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("tool.stt.server_unreachable")}</p>
-                <p className="text-xs text-red-700 dark:text-red-400">
-                  {t("tool.stt.server_unreachable_desc")}
-                </p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={fetchStatus}>
-                    {t("tool.stt.retry")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.stt.server_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {!serverUnreachable ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {!serverUnreachable ? WHISPER_API_URL : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.stt.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.env?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!status?.env?.installed && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.env?.installed_modules?.length
+                      ? status.env.installed_modules.join(", ")
+                      : status?.env?.missing?.length
+                      ? status.env.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.stt.ffmpeg_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.whisper?.ffmpeg_ok ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.whisper?.ffmpeg_ok ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!status?.whisper?.ffmpeg_ok && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.whisper?.ffmpeg_ok ? "FFmpeg" : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.stt.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.whisper?.cached_models?.length ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.whisper?.cached_models?.length
+                          ? t("settings.tools.status.ready")
+                          : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!status?.whisper?.cached_models?.length && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.whisper?.cached_models?.length
+                      ? status.whisper.cached_models.join(", ")
+                      : status?.whisper?.model_dir || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
-        )}
+        </div>
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.stt.upload_audio")}</label>
