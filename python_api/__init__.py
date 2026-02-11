@@ -1,1 +1,1 @@
-"""Unified FastAPI backend package."""
+"""Python API services for PSI AI CONTENT HUB."""

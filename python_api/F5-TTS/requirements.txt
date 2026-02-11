@@ -1,2 +1,6 @@
+fastapi
+uvicorn
+python-multipart
 f5-tts
 numpy<2
+soundfile
