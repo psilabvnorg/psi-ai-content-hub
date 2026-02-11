@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DownloadProgress } from './DownloadProgress';
 import { useI18n } from "@/i18n/i18n";
+import { APP_API_URL } from "@/lib/api";
 
 export function VideoDownloader() {
   const { t } = useI18n();
@@ -23,7 +24,7 @@ export function VideoDownloader() {
     setResult(null);
 
     try {
-      const response = await fetch("http://localhost:8000/api/download/video", {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, platform })
@@ -31,8 +32,8 @@ export function VideoDownloader() {
 
       const data = await response.json();
       
-      if (data.download_id) {
-        setDownloadId(data.download_id);
+      if (data.job_id) {
+        setDownloadId(data.job_id);
       }
       
       if (data.status === 'success') {
@@ -113,7 +114,7 @@ export function VideoDownloader() {
             <p className="text-sm text-gray-700">{t("tool.video_dl.title_label", { title: result.title ?? "-" })}</p>
             <p className="text-sm text-gray-700">{t("tool.video_dl.duration", { seconds: result.duration ?? 0 })}</p>
             <a
-              href={`http://localhost:8000${result.download_url}`}
+              href={`${APP_API_URL}${result.download_url}`}
               download
               className="inline-block mt-2 text-pink-600 hover:text-pink-700 font-bold hover:underline"
             >

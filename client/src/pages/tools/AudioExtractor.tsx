@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Music, Loader2, Upload, Download, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 
 export default function AudioExtractor() {
@@ -58,7 +58,7 @@ export default function AudioExtractor() {
       formData.append("file", selectedFile!);
       formData.append("format", format);
 
-      const response = await fetch(`${API_URL}/api/tools/video/extract-audio`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/extract-audio`, {
         method: "POST",
         body: formData,
       });
@@ -87,7 +87,7 @@ export default function AudioExtractor() {
     if (!result) return;
     try {
       if (result.download_url) {
-        window.open(`${API_URL}${result.download_url}`, "_blank");
+        window.open(`${APP_API_URL}${result.download_url}`, "_blank");
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("tool.common.error");

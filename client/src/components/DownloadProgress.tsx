@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useI18n } from "@/i18n/i18n";
+import { APP_API_URL } from "@/lib/api";
 
 interface ProgressData {
   status: 'waiting' | 'starting' | 'downloading' | 'processing' | 'converting' | 'complete' | 'error';
@@ -36,7 +37,7 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
       }
     }, TIMEOUT_MS);
     
-    const eventSource = new EventSource(`http://localhost:8000/api/progress/${downloadId}`);
+    const eventSource = new EventSource(`${APP_API_URL}/api/v1/video/download/stream/${downloadId}`);
 
     eventSource.onmessage = (event) => {
       if (closedRef.current) return;

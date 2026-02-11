@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Scissors, Loader2, Download, Upload, X, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 
 export default function VideoTrimmer() {
@@ -68,7 +68,7 @@ export default function VideoTrimmer() {
       formData.append("start_time", startTime);
       if (endTime) formData.append("end_time", endTime);
 
-      const response = await fetch(`${API_URL}/api/tools/video/trim`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/trim`, {
         method: "POST",
         body: formData,
       });
@@ -104,7 +104,7 @@ export default function VideoTrimmer() {
     
     try {
       if (result.download_url) {
-        window.open(`${API_URL}${result.download_url}`, "_blank");
+        window.open(`${APP_API_URL}${result.download_url}`, "_blank");
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("tool.common.error");

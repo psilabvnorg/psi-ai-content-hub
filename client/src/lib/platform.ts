@@ -4,6 +4,7 @@
  */
 
 export type Platform = 'web' | 'electron' | 'android' | 'ios';
+export type ApiService = 'app' | 'f5' | 'vieneu' | 'whisper';
 
 /**
  * Detect the current platform
@@ -40,13 +41,39 @@ export function detectPlatform(): Platform {
 /**
  * Get the appropriate API URL based on platform
  */
-export function getApiUrl(): string {
-  // Check for environment variable override
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+export function getServiceApiUrl(service: ApiService): string {
+  const env = import.meta.env;
+  const specific = {
+    app: env.VITE_APP_API_URL,
+    f5: env.VITE_F5_API_URL,
+    vieneu: env.VITE_VIENEU_API_URL,
+    whisper: env.VITE_WHISPER_API_URL,
+  } as const;
+
+  if (specific[service]) {
+    return specific[service];
   }
-  
-  return 'http://127.0.0.1:8788';
+
+  if (env.VITE_API_URL) {
+    return env.VITE_API_URL;
+  }
+
+  switch (service) {
+    case 'app':
+      return 'http://127.0.0.1:6901';
+    case 'f5':
+      return 'http://127.0.0.1:6902';
+    case 'vieneu':
+      return 'http://127.0.0.1:6903';
+    case 'whisper':
+      return 'http://127.0.0.1:6904';
+    default:
+      return 'http://127.0.0.1:6901';
+  }
+}
+
+export function getApiUrl(): string {
+  return getServiceApiUrl('app');
 }
 
 /**
@@ -102,13 +129,13 @@ export function getPlatformConfig() {
  * Check API health
  */
 export async function checkApiHealth(apiUrl?: string): Promise<boolean> {
-  const url = apiUrl || getApiUrl();
+  const url = apiUrl || getServiceApiUrl('app');
   
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch(`${url}/api/system/status`, {
+    const response = await fetch(`${url}/api/v1/health`, {
       method: 'GET',
       signal: controller.signal,
     });

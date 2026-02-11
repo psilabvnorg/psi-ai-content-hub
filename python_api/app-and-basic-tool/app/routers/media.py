@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from python_api.common.paths import TEMP_DIR
 from ..deps import get_job_store
-from ..services.video import progress_store as video_progress, start_download
+from ..services.video import get_download_status, progress_store as video_progress, start_download
 from python_api.common.jobs import JobStore
 
 
@@ -78,3 +78,62 @@ def video_extract_audio(
     )
     file_record = job_store.add_file(output_path, output_path.name)
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
+
+
+@router.post("/audio/convert")
+def audio_convert(
+    file: UploadFile = File(...),
+    output_format: str = Form(...),
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    if output_format not in ("mp3", "wav"):
+        raise HTTPException(status_code=400, detail="output_format must be mp3 or wav")
+    input_path = _save_upload(file)
+    output_path = input_path.with_suffix(f".{output_format}")
+    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
+    subprocess.check_call(["ffmpeg", "-i", str(input_path), "-acodec", codec, "-y", str(output_path)])
+    file_record = job_store.add_file(output_path, output_path.name)
+    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
+
+
+@router.post("/video/speed")
+def video_speed(
+    file: UploadFile = File(...),
+    speed: float = Form(...),
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    if speed < 0.5 or speed > 2.0:
+        raise HTTPException(status_code=400, detail="speed must be between 0.5 and 2.0")
+    input_path = _save_upload(file)
+    output_path = input_path.with_suffix(".speed.mp4")
+    pts_multiplier = 1.0 / speed
+    subprocess.check_call(
+        [
+            "ffmpeg",
+            "-i",
+            str(input_path),
+            "-filter:v",
+            f"setpts={pts_multiplier}*PTS",
+            "-filter:a",
+            f"atempo={speed}",
+            "-y",
+            str(output_path),
+        ]
+    )
+    file_record = job_store.add_file(output_path, output_path.name)
+    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}", "speed": speed}
+
+
+@router.get("/video/download/status/{job_id}")
+def video_download_status(job_id: str, job_store: JobStore = Depends(get_job_store)) -> dict:
+    record = get_download_status(job_store, job_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="job not found")
+    progress = video_progress.get_payload(job_id, include_logs=False)
+    return {
+        "job_id": job_id,
+        "status": record.get("status"),
+        "result": record.get("result"),
+        "error": record.get("error"),
+        "progress": progress,
+    }

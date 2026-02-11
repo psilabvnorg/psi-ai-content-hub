@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileAudio, Loader2, Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 
 export default function AudioConverter() {
@@ -34,7 +34,7 @@ export default function AudioConverter() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("output_format", outputFormat);
-      const response = await fetch(`${API_URL}/api/tools/audio/convert`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/audio/convert`, {
         method: "POST",
         body: formData,
       });
@@ -56,7 +56,7 @@ export default function AudioConverter() {
     if (!result) return;
     try {
       if (result.download_url) {
-        window.open(`${API_URL}${result.download_url}`, "_blank");
+        window.open(`${APP_API_URL}${result.download_url}`, "_blank");
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("tool.common.error");

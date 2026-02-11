@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Play, Square, RefreshCw, Terminal } from "lucide-react";
+import { AlertCircle, RefreshCw, Terminal } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 
 type SystemStatus = {
   status?: string;
@@ -24,7 +24,7 @@ export default function BackendConsole() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/system/status`);
+      const res = await fetch(`${APP_API_URL}/api/v1/status`);
       if (!res.ok) throw new Error("status");
       const data = (await res.json()) as SystemStatus;
       setStatus(data);
@@ -37,28 +37,11 @@ export default function BackendConsole() {
 
   const fetchLogTail = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/system/logs/tail?lines=200`);
+      const res = await fetch(`${APP_API_URL}/api/v1/logs/tail?lines=200`);
       const data = (await res.json()) as { lines?: string[] };
       setLogs(data.lines || []);
     } catch {
       setLogs([]);
-    }
-  };
-
-  const startBackend = async () => {
-    try {
-      await fetch(`${API_URL}/api/system/start`, { method: "POST" });
-      await fetchStatus();
-    } catch {
-      setServerUnreachable(true);
-    }
-  };
-
-  const stopBackend = async () => {
-    try {
-      await fetch(`${API_URL}/api/system/stop`, { method: "POST" });
-    } catch {
-      setServerUnreachable(true);
     }
   };
 
@@ -78,7 +61,7 @@ export default function BackendConsole() {
       setIsStreaming(false);
       return;
     }
-    const es = new EventSource(`${API_URL}/api/system/logs/stream`);
+    const es = new EventSource(`${APP_API_URL}/api/v1/logs/stream`);
     setIsStreaming(true);
     es.onmessage = (event) => {
       try {
@@ -138,14 +121,6 @@ export default function BackendConsole() {
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               {t("tool.backend_console.refresh")}
-            </Button>
-            <Button size="sm" onClick={startBackend} disabled={serverUnreachable}>
-              <Play className="w-4 h-4 mr-2" />
-              {t("tool.backend_console.start")}
-            </Button>
-            <Button size="sm" variant="destructive" onClick={stopBackend} disabled={serverUnreachable}>
-              <Square className="w-4 h-4 mr-2" />
-              {t("tool.backend_console.stop")}
             </Button>
           </div>
         </div>

@@ -204,6 +204,11 @@ GET
 Video Download Stream
 
 
+GET
+/api/v1/video/download/status/{job_id}
+Video Download Status
+
+
 POST
 /api/v1/video/trim
 Video Trim
@@ -212,6 +217,16 @@ Video Trim
 POST
 /api/v1/video/extract-audio
 Video Extract Audio
+
+
+POST
+/api/v1/audio/convert
+Audio Convert
+
+
+POST
+/api/v1/video/speed
+Video Speed
 
 files
 

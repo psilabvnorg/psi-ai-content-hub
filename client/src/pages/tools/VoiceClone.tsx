@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mic, Loader2, Download, AlertCircle } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { API_URL } from "@/lib/api";
+import { F5_API_URL } from "@/lib/api";
 const MAX_CHARS = 500;
 
 type Voice = {
@@ -17,12 +17,21 @@ type Voice = {
 };
 
 
+type EnvStatus = {
+  installed: boolean;
+  missing?: string[];
+};
+
+type ModelStatus = {
+  installed?: boolean;
+  model_file?: string | null;
+  vocab_file?: string | null;
+};
+
 type StatusData = {
   server_unreachable?: boolean;
-  tools?: {
-    torch?: { installed: boolean };
-    f5_tts?: { installed: boolean };
-  };
+  env?: EnvStatus;
+  model?: ModelStatus;
 };
 
 type ProgressData = {
@@ -55,8 +64,9 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const charCount = text.length;
   const overLimit = charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
-  const depsReady = Boolean(status?.tools?.torch?.installed && status?.tools?.f5_tts?.installed);
-  const statusReady = !serverUnreachable && depsReady;
+  const depsReady = status?.env?.installed === true;
+  const modelReady = status?.model?.installed === true;
+  const statusReady = !serverUnreachable && depsReady && modelReady;
 
   // Auto-scroll logs to bottom
   useEffect(() => {
@@ -67,10 +77,14 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/system/status`);
-      if (!res.ok) throw new Error("status");
-      const data = (await res.json()) as { tools?: StatusData["tools"] };
-      setStatus({ server_unreachable: false, tools: data.tools });
+      const [envRes, statusRes] = await Promise.all([
+        fetch(`${F5_API_URL}/api/v1/env/status`),
+        fetch(`${F5_API_URL}/api/v1/status`),
+      ]);
+      if (!envRes.ok || !statusRes.ok) throw new Error("status");
+      const envData = (await envRes.json()) as EnvStatus;
+      const statusData = (await statusRes.json()) as { models?: { f5_tts?: ModelStatus } };
+      setStatus({ server_unreachable: false, env: envData, model: statusData.models?.f5_tts });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -78,7 +92,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
 
   const fetchVoices = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/tools/voice-clone/voices`);
+      const res = await fetch(`${F5_API_URL}/api/v1/voices`);
       const data = await res.json();
       setVoices(data.voices || []);
     } catch {}
@@ -99,7 +113,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     setDownloadName(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/tools/voice-clone/generate`, {
+      const res = await fetch(`${F5_API_URL}/api/v1/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,7 +127,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
       });
       const data = await res.json();
       const taskId = data.task_id;
-      const es = new EventSource(`${API_URL}/api/tools/voice-clone/progress/${taskId}`);
+      const es = new EventSource(`${F5_API_URL}/api/v1/generate/stream/${taskId}`);
 
       es.onmessage = (event) => {
         const payload = JSON.parse(event.data);
@@ -122,10 +136,10 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
         if (payload.status === "complete") {
           es.close();
           setIsGenerating(false);
-          fetch(`${API_URL}/api/tools/voice-clone/download/${taskId}`)
+          fetch(`${F5_API_URL}/api/v1/generate/download/${taskId}`)
             .then((r) => r.json())
             .then((r) => {
-              setAudioUrl(`${API_URL}${r.download_url}`);
+              setAudioUrl(`${F5_API_URL}${r.download_url}`);
               setDownloadName(r.filename || "voice.wav");
             });
         }
@@ -183,6 +197,23 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="flex-1 space-y-2">
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.common.deps_not_ready")}</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>
+                    {t("tool.common.open_settings")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!serverUnreachable && depsReady && !modelReady && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.voice_clone.model_not_downloaded")}</p>
                 <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.common.go_settings")}</p>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={onOpenSettings} disabled={!onOpenSettings}>

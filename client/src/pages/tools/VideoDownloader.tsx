@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 
 export default function VideoDownloader() {
@@ -32,12 +32,34 @@ export default function VideoDownloader() {
   const { toast } = useToast();
   useEffect(() => {
     if (!downloadId) return;
-    const pollInterval = setInterval(async () => {
+    let closed = false;
+    const es = new EventSource(`${APP_API_URL}/api/v1/video/download/stream/${downloadId}`);
+
+    const finalize = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/tools/video/download/status/${downloadId}`);
+        const response = await fetch(`${APP_API_URL}/api/v1/video/download/status/${downloadId}`);
         if (!response.ok) return;
         const data = await response.json();
-        const progressData = data.progress as ProgressEvent | undefined;
+        if (data.status === "complete") {
+          setStatusMessage(t("tool.video_downloader.status_complete"));
+          setProgress(100);
+          setLoading(false);
+          setResult(data.result as DownloadResult);
+          toast({ title: t("tool.common.success"), description: t("tool.video_downloader.complete") });
+        } else if (data.status === "error") {
+          setError(data.error || t("tool.video_downloader.failed"));
+          setLoading(false);
+          toast({ title: t("tool.common.failed"), description: data.error || t("tool.video_downloader.failed"), variant: "destructive" });
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    es.onmessage = (event) => {
+      if (closed) return;
+      try {
+        const progressData = JSON.parse(event.data) as ProgressEvent;
         if (progressData?.percent !== undefined) {
           setProgress(progressData.percent);
         }
@@ -45,30 +67,36 @@ export default function VideoDownloader() {
           setStatusMessage(t("tool.video_downloader.status_downloading", { percent: `${progressData.percent || 0}%` }));
         } else if (progressData?.status === "processing") {
           setStatusMessage(t("tool.video_downloader.status_processing"));
-          setProgress(95);
         } else if (progressData?.status === "converting") {
           setStatusMessage(t("tool.video_downloader.status_converting"));
-          setProgress(98);
         }
-
-        if (data.status === "complete") {
-          setStatusMessage(t("tool.video_downloader.status_complete"));
-          setProgress(100);
+        if (progressData?.status === "complete") {
+          closed = true;
+          es.close();
+          void finalize();
+        }
+        if (progressData?.status === "error") {
+          closed = true;
+          es.close();
+          setError(progressData.message || t("tool.video_downloader.failed"));
           setLoading(false);
-          setResult(data.result as DownloadResult);
-          toast({ title: t("tool.common.success"), description: t("tool.video_downloader.complete") });
-          clearInterval(pollInterval);
-        } else if (data.status === "error") {
-          setError(data.error || t("tool.video_downloader.failed"));
-          setLoading(false);
-          clearInterval(pollInterval);
-          toast({ title: t("tool.common.failed"), description: data.error || t("tool.video_downloader.failed"), variant: "destructive" });
         }
       } catch {
-        // Ignore polling errors
+        // ignore
       }
-    }, 1000);
-    return () => clearInterval(pollInterval);
+    };
+
+    es.onerror = () => {
+      if (!closed) {
+        closed = true;
+        es.close();
+      }
+    };
+
+    return () => {
+      closed = true;
+      es.close();
+    };
   }, [downloadId, toast, t]);
 
   const detectPlatform = (url: string): string => {
@@ -96,7 +124,7 @@ export default function VideoDownloader() {
     setStatusMessage(t("tool.video_downloader.init"));
 
     try {
-      const response = await fetch(`${API_URL}/api/tools/video/download`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, platform, convert_to_h264: convertToH264 }),
@@ -129,7 +157,7 @@ export default function VideoDownloader() {
 
   const handleSaveFile = async () => {
     if (!result?.download_url) return;
-    window.open(`${API_URL}${result.download_url}`, "_blank");
+        window.open(`${APP_API_URL}${result.download_url}`, "_blank");
   };
 
   return (

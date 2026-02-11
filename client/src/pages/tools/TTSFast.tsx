@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Volume2, AlertCircle, Settings2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { API_URL } from "@/lib/api";
+import { VIENEU_API_URL } from "@/lib/api";
 const MAX_CHARS = 3000;
 
 type Voice = { id: string; name: string; description?: string };
@@ -21,13 +21,22 @@ type ProgressData = {
   sample_rate?: number;
 };
 
+type EnvStatus = {
+  installed: boolean;
+  missing?: string[];
+};
+
+type ModelStatus = {
+  backbone_ready?: boolean;
+  codec_ready?: boolean;
+  model_loaded?: boolean;
+  current_config?: Record<string, unknown>;
+};
+
 type StatusData = {
   server_unreachable?: boolean;
-  tools?: {
-    torch?: { installed: boolean };
-    vieneu_tts?: { installed: boolean };
-    vieneu_tts_deps?: { installed: boolean; missing?: string[] };
-  };
+  env?: EnvStatus;
+  model?: ModelStatus;
 };
 
 export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
@@ -49,11 +58,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const overLimit = charCount > MAX_CHARS;
 
   const serverUnreachable = status?.server_unreachable === true;
-  const depsReady = Boolean(
-    status?.tools?.torch?.installed &&
-    status?.tools?.vieneu_tts?.installed &&
-    status?.tools?.vieneu_tts_deps?.installed
-  );
+  const depsReady = status?.env?.installed === true;
   const statusReady = status?.server_unreachable !== true && depsReady;
 
   useEffect(() => {
@@ -63,10 +68,14 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   // --- Data fetching ---
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/system/status`);
-      if (!res.ok) throw new Error("status");
-      const data = (await res.json()) as { tools?: StatusData["tools"] };
-      setStatus({ server_unreachable: false, tools: data.tools });
+      const [envRes, statusRes] = await Promise.all([
+        fetch(`${VIENEU_API_URL}/api/v1/env/status`),
+        fetch(`${VIENEU_API_URL}/api/v1/status`),
+      ]);
+      if (!envRes.ok || !statusRes.ok) throw new Error("status");
+      const envData = (await envRes.json()) as EnvStatus;
+      const statusData = (await statusRes.json()) as { models?: { vieneu_tts?: ModelStatus } };
+      setStatus({ server_unreachable: false, env: envData, model: statusData.models?.vieneu_tts });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -74,7 +83,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
   const fetchVoices = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/tools/tts/voices`);
+      const res = await fetch(`${VIENEU_API_URL}/api/v1/voices`);
       const data = await res.json();
       setVoices(data.voices || []);
     } catch { /* */ }
@@ -100,7 +109,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     try {
       const payload: Record<string, unknown> = { text, mode, voice_id: selectedVoice };
 
-      const res = await fetch(`${API_URL}/api/tools/tts/generate`, {
+      const res = await fetch(`${VIENEU_API_URL}/api/v1/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -108,7 +117,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
       const data = await res.json();
       const taskId = data.task_id;
 
-      const es = new EventSource(`${API_URL}/api/tools/tts/progress/${taskId}`);
+      const es = new EventSource(`${VIENEU_API_URL}/api/v1/generate/stream/${taskId}`);
       es.onmessage = (event) => {
         const p: ProgressData = JSON.parse(event.data);
         setProgress(p);
@@ -116,10 +125,10 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
         if (p.status === "complete") {
           es.close();
           setIsGenerating(false);
-          fetch(`${API_URL}/api/tools/tts/download/${taskId}`)
+          fetch(`${VIENEU_API_URL}/api/v1/generate/download/${taskId}`)
             .then((r) => r.json())
             .then((r) => {
-              setAudioUrl(`${API_URL}${r.download_url}`);
+              setAudioUrl(`${VIENEU_API_URL}${r.download_url}`);
               setDownloadName(r.filename || "tts.wav");
             });
           setAudioDuration(p.duration || null);

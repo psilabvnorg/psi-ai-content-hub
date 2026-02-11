@@ -3,7 +3,12 @@
  * Automatically uses the correct API endpoint based on platform
  */
 
-import { getApiUrl, isLocalApiAvailable, getPlatformConfig } from './platform';
+import { getApiUrl, getServiceApiUrl, isLocalApiAvailable, getPlatformConfig } from './platform';
+
+export const APP_API_URL = getServiceApiUrl('app');
+export const F5_API_URL = getServiceApiUrl('f5');
+export const VIENEU_API_URL = getServiceApiUrl('vieneu');
+export const WHISPER_API_URL = getServiceApiUrl('whisper');
 
 export const API_URL = getApiUrl();
 
@@ -97,14 +102,14 @@ class ApiClient {
    * Health check
    */
   async health(): Promise<Record<string, unknown>> {
-    return this.request('/api/system/status');
+    return this.request('/api/v1/status');
   }
   
   /**
    * Download video
    */
   async downloadVideo(data: DownloadVideoRequest) {
-    return this.request('/api/tools/video/download', {
+    return this.request('/api/v1/video/download', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -117,7 +122,7 @@ class ApiClient {
     const form = new FormData();
     form.append('file', data.file);
     form.append('format', data.format);
-    return fetch(`${this.baseUrl}/api/tools/video/extract-audio`, { method: 'POST', body: form }).then(r => r.json());
+    return fetch(`${this.baseUrl}/api/v1/video/extract-audio`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
@@ -127,7 +132,7 @@ class ApiClient {
     const form = new FormData();
     form.append('file', data.file);
     form.append('output_format', data.output_format);
-    return fetch(`${this.baseUrl}/api/tools/audio/convert`, { method: 'POST', body: form }).then(r => r.json());
+    return fetch(`${this.baseUrl}/api/v1/audio/convert`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
@@ -138,7 +143,7 @@ class ApiClient {
     form.append('file', data.file);
     form.append('start_time', data.start_time);
     if (data.end_time) form.append('end_time', data.end_time);
-    return fetch(`${this.baseUrl}/api/tools/video/trim`, { method: 'POST', body: form }).then(r => r.json());
+    return fetch(`${this.baseUrl}/api/v1/video/trim`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
@@ -148,14 +153,14 @@ class ApiClient {
     const form = new FormData();
     form.append('file', data.file);
     form.append('speed', String(data.speed));
-    return fetch(`${this.baseUrl}/api/tools/video/speed`, { method: 'POST', body: form }).then(r => r.json());
+    return fetch(`${this.baseUrl}/api/v1/video/speed`, { method: 'POST', body: form }).then(r => r.json());
   }
   
   /**
    * Get file download URL
    */
   getFileUrl(filename: string): string {
-    return `${this.baseUrl}/api/download/${filename}`;
+    return `${this.baseUrl}/api/v1/files/${filename}`;
   }
   
   /**

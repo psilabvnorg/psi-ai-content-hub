@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Loader2, Download, AlertCircle, FileText } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
-import { API_URL } from "@/lib/api";
+import { WHISPER_API_URL } from "@/lib/api";
 
 const MODELS = ["tiny", "base", "small", "medium", "large"] as const;
 const LANGUAGES: Array<{ code: string; nameKey: I18nKey }> = [
@@ -87,9 +87,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/tools/stt/status`);
-      const data = (await res.json()) as StatusData;
-      setStatus({ ...data, server_unreachable: false });
+      const res = await fetch(`${WHISPER_API_URL}/api/v1/status`);
+      const data = (await res.json()) as { models?: { whisper?: StatusData } };
+      setStatus({ ...(data.models?.whisper || {}), server_unreachable: false });
     } catch {
       setStatus({ server_unreachable: true });
     }
@@ -113,14 +113,14 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     formData.append("add_punctuation", String(addPunctuation));
 
     try {
-      const res = await fetch(`${API_URL}/api/tools/stt/transcribe`, {
+      const res = await fetch(`${WHISPER_API_URL}/api/v1/transcribe`, {
         method: "POST",
         body: formData,
       });
       const data = (await res.json()) as { task_id: string };
       const taskId = data.task_id;
 
-      const es = new EventSource(`${API_URL}/api/tools/stt/progress/${taskId}`);
+      const es = new EventSource(`${WHISPER_API_URL}/api/v1/transcribe/stream/${taskId}`);
       es.onmessage = (event) => {
         const payload = JSON.parse(event.data) as ProgressData;
         setProgress(payload);
@@ -128,7 +128,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
         if (payload.status === "complete") {
           es.close();
           setIsTranscribing(false);
-          fetch(`${API_URL}/api/tools/stt/result/${taskId}`)
+          fetch(`${WHISPER_API_URL}/api/v1/transcribe/result/${taskId}`)
             .then((r) => r.json())
             .then((r: ResultData) => setResult(r))
             .catch(() => {

@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { Gauge, Loader2, Download, Upload, X, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 
 export default function SpeedAdjuster() {
@@ -58,7 +58,7 @@ export default function SpeedAdjuster() {
       formData.append("file", selectedFile!);
       formData.append("speed", speed[0].toString());
 
-      const response = await fetch(`${API_URL}/api/tools/video/speed`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/speed`, {
         method: "POST",
         body: formData,
       });
@@ -87,7 +87,7 @@ export default function SpeedAdjuster() {
     if (!result) return;
     try {
       if (result.download_url) {
-        window.open(`${API_URL}${result.download_url}`, "_blank");
+        window.open(`${APP_API_URL}${result.download_url}`, "_blank");
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("tool.common.error");
