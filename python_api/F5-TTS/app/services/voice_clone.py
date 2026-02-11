@@ -138,44 +138,48 @@ def generate(
             output_name = f"voice_clone_{int(time.time())}.wav"
             output_path = TEMP_DIR / output_name
 
+            # Use f5-tts_infer-cli command directly (same as working infer.py)
             cmd = [
-                sys.executable,
-                "-m",
-                "f5_tts.infer.infer_cli",
-                "--model",
-                "F5TTS_Base",
-                "--ref_audio",
-                str(ref_audio),
-                "--ref_text",
-                ref_text,
-                "--gen_text",
-                text,
-                "--speed",
-                str(speed),
-                "--cfg_strength",
-                str(cfg_strength),
-                "--nfe_step",
-                str(nfe_step),
-                "--vocoder_name",
-                "vocos",
-                "--ckpt_file",
-                str(MODEL_FILE),
-                "--vocab_file",
-                str(VOCAB_FILE),
-                "--output_dir",
-                str(TEMP_DIR),
-                "--output_file",
-                output_name,
+                "f5-tts_infer-cli",
+                "--model", "F5TTS_Base",
+                "--ref_audio", str(ref_audio),
+                "--ref_text", ref_text,
+                "--gen_text", text,
+                "--speed", str(speed),
+                "--vocoder_name", "vocos",
+                "--vocab_file", str(VOCAB_FILE),
+                "--ckpt_file", str(MODEL_FILE),
+                "--output_dir", str(TEMP_DIR),
+                "--output_file", output_name,
             ]
             if remove_silence:
                 cmd.append("--remove_silence")
 
             progress_store.set_progress(task_id, "generating", 30, "Generating audio...")
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            if proc.stdout:
-                for line in proc.stdout:
-                    progress_store.add_log(task_id, line.strip())
-            code = proc.wait()
+            
+            # Set UTF-8 encoding environment variables
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["PYTHONLEGACYWINDOWSSTDIO"] = "utf-8"
+            
+            # Run with subprocess.run like the working infer.py
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env
+            )
+            
+            # Log output
+            if result.stdout:
+                for line in result.stdout.split('\n'):
+                    if line.strip():
+                        progress_store.add_log(task_id, line.strip())
+            
+            code = result.returncode
             if code != 0:
                 progress_store.set_progress(task_id, "error", 0, "TTS process failed")
                 return
