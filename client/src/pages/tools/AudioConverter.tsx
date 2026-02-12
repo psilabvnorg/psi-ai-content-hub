@@ -86,7 +86,7 @@ export default function AudioConverter() {
                   <p className="text-sm font-medium truncate">{selectedFile.name}</p>
                 ) : (
                   <>
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-zinc-400" />
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm">{t("tool.audio_converter.click_select")}</p>
                   </>
                 )}

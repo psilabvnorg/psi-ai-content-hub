@@ -173,13 +173,13 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   }, [progress]);
 
   return (
-    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
+    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
         
         {/* Status Table */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.voice_clone.service_status")}</h3>
+            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.voice_clone.service_status")}</h3>
             <Button size="sm" variant="outline" onClick={fetchStatus}>
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -268,9 +268,9 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.select_voice")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.select_voice")}</label>
           <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-            <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder={t("tool.voice_clone.choose_voice")} />
             </SelectTrigger>
             <SelectContent>
@@ -284,21 +284,21 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.text_to_speak")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.text_to_speak")}</label>
           <Textarea
             placeholder={t("tool.voice_clone.text_ph")}
             value={text}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
-            className="min-h-[100px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 resize-none"
+            className="min-h-[100px] bg-card border-border resize-none"
           />
-          <p className={`text-xs ${overLimit ? "text-red-500" : "text-zinc-400"}`}>
+          <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
             {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.speed")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.speed")}</label>
             <input
               type="range"
               min="0.5"
@@ -310,7 +310,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.cfg_strength")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.cfg_strength")}</label>
             <input
               type="range"
               min="1.0"
@@ -322,9 +322,9 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.nfe_steps")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.nfe_steps")}</label>
             <Select value={String(nfeStep)} onValueChange={(v) => setNfeStep(parseInt(v, 10))}>
-              <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder={t("tool.voice_clone.select_steps")} />
               </SelectTrigger>
               <SelectContent>
@@ -337,16 +337,16 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.voice_clone.remove_silence")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.remove_silence")}</label>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={removeSilence} onChange={(e) => setRemoveSilence(e.target.checked)} />
-              <span className="text-xs text-zinc-500">{t("tool.voice_clone.trim_silence")}</span>
+              <span className="text-xs text-muted-foreground">{t("tool.voice_clone.trim_silence")}</span>
             </div>
           </div>
         </div>
 
         <Button
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleGenerate}
           disabled={isGenerating || !text.trim() || !selectedVoice || overLimit || !statusReady}
         >
@@ -355,21 +355,21 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
         </Button>
 
         {progress && (
-          <div className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <div className="w-full p-4 bg-accent/12 rounded-xl border border-accent/45">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              <span className="text-sm font-semibold text-accent">
                 {progress.message || t("tool.voice_clone.processing")}
               </span>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
+              <span className="text-sm font-bold text-accent">{progressPercent}%</span>
             </div>
-            <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-blue-600 dark:bg-blue-500 h-full rounded-full transition-all duration-300 ease-out"
+                className="bg-accent h-full rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
             {logs.length > 0 && (
-              <div ref={logRef} className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-blue-700 dark:text-blue-300 bg-white/60 dark:bg-black/20 p-2 rounded">
+              <div ref={logRef} className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-accent bg-muted/50 p-2 rounded">
                 {logs.map((l, idx) => (
                   <div key={idx}>{l}</div>
                 ))}
@@ -379,9 +379,9 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
         )}
 
         {audioUrl && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">
+          <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-green-700 dark:text-green-400">{t("tool.voice_clone.audio_ready")}</span>
+              <span className="text-sm font-bold text-emerald-400">{t("tool.voice_clone.audio_ready")}</span>
               <Button size="sm" variant="download" onClick={handleDownload}>
                 <Download className="w-4 h-4 mr-2" />
                 {t("tool.common.download")}

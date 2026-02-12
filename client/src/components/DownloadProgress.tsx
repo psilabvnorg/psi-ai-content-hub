@@ -98,10 +98,10 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
   };
 
   return (
-    <div className="w-full max-w-md p-4 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-md rounded-xl border border-border bg-card p-4 shadow-md">
       <div className="mb-2">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-foreground">
             {progress.status === 'downloading' && t("tool.download_progress.downloading")}
             {progress.status === 'processing' && t("tool.download_progress.processing")}
             {progress.status === 'converting' && t("tool.download_progress.converting")}
@@ -111,25 +111,25 @@ export function DownloadProgress({ downloadId, onComplete, onError }: DownloadPr
             {progress.status === 'starting' && t("tool.download_progress.starting")}
           </span>
           {progress.percent && (
-            <span className="text-sm font-semibold text-blue-600">
+            <span className="text-sm font-semibold text-accent">
               {progress.percent}
             </span>
           )}
         </div>
 
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="h-2.5 w-full rounded-full bg-muted/50">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
-              progress.status === 'error' ? 'bg-red-600' :
-              progress.status === 'complete' ? 'bg-green-600' :
-              'bg-blue-600'
+              progress.status === 'error' ? 'bg-destructive' :
+              progress.status === 'complete' ? 'bg-emerald-500' :
+              'bg-accent'
             }`}
             style={{ width: `${getProgressPercentage()}%` }}
           />
         </div>
       </div>
 
-      <div className="text-xs text-gray-600 space-y-1">
+      <div className="space-y-1 text-xs text-muted-foreground">
         {progress.message && (
           <div className="text-sm">{progress.message}</div>
         )}

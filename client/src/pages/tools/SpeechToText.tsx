@@ -198,12 +198,12 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const progressPercent = useMemo(() => Math.max(0, Math.min(100, progress?.percent || 0)), [progress]);
 
   return (
-    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
+    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
         {/* Status Table */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.stt.service_status")}</h3>
+            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.stt.service_status")}</h3>
             <Button size="sm" variant="outline" onClick={fetchStatus}>
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -319,8 +319,8 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.stt.upload_audio")}</label>
-          <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.upload_audio")}</label>
+          <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-accent transition-colors cursor-pointer">
             <input
               type="file"
               accept="audio/*"
@@ -329,20 +329,20 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
               id="audio-upload"
             />
             <label htmlFor="audio-upload" className="cursor-pointer">
-              <Upload className="w-10 h-10 text-zinc-400 mx-auto mb-3" />
-              <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">
+              <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-bold text-muted-foreground">
                 {audioFile ? audioFile.name : t("tool.stt.click_upload")}
               </p>
-              <p className="text-xs text-zinc-400 mt-1">{t("tool.common.supported_audio")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("tool.common.supported_audio")}</p>
             </label>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.stt.language")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.language")}</label>
             <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <SelectTrigger className="bg-card border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -355,9 +355,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.stt.model")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.model")}</label>
             <Select value={model} onValueChange={(v) => setModel(v as (typeof MODELS)[number])}>
-              <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <SelectTrigger className="bg-card border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -370,16 +370,16 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.stt.punctuation")}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.punctuation")}</label>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={addPunctuation} onChange={(e) => setAddPunctuation(e.target.checked)} />
-              <span className="text-xs text-zinc-500">{t("tool.stt.restore_punctuation")}</span>
+              <span className="text-xs text-muted-foreground">{t("tool.stt.restore_punctuation")}</span>
             </div>
           </div>
         </div>
 
         <Button
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleTranscribe}
           disabled={isTranscribing || !audioFile || serverUnreachable || depsNotOk || ffmpegMissing || whisperMissing}
         >
@@ -388,23 +388,23 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
         </Button>
 
         {progress && progress.status !== "waiting" && (
-          <div className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <div className="w-full p-4 bg-accent/12 rounded-xl border border-accent/45">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              <span className="text-sm font-semibold text-accent">
                 {progress.message || t("tool.common.processing")}
               </span>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
+              <span className="text-sm font-bold text-accent">{progressPercent}%</span>
             </div>
-            <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-blue-600 dark:bg-blue-500 h-full rounded-full transition-all duration-300 ease-out"
+                className="bg-accent h-full rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
             {logs.length > 0 && (
               <div
                 ref={logRef}
-                className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-blue-700 dark:text-blue-300 bg-white/60 dark:bg-black/20 p-2 rounded"
+                className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-accent bg-muted/50 p-2 rounded"
               >
                 {logs.map((l, idx) => (
                   <div key={idx}>{l}</div>
@@ -416,9 +416,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
 
         {result && (
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+            <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold text-green-700 dark:text-green-400">{t("tool.stt.transcription_ready")}</span>
+                <span className="text-sm font-bold text-emerald-400">{t("tool.stt.transcription_ready")}</span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={handleDownloadText}>
                     <Download className="w-4 h-4 mr-2" />
@@ -430,29 +430,29 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                   </Button>
                 </div>
               </div>
-              <div className="text-xs text-green-700 dark:text-green-400 mb-2">
+              <div className="text-xs text-emerald-400 mb-2">
                 {t("tool.stt.language_line", {
                   lang: result.language || t("tool.stt.auto"),
                   duration: result.duration ? `${result.duration}s` : t("tool.stt.na"),
                   segments: result.segments_count ?? result.segments?.length ?? 0,
                 })}
               </div>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
                 {result.text}
               </p>
             </div>
 
             {result.text_with_punctuation && result.text_no_punctuation && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 border rounded-lg bg-white dark:bg-zinc-900">
-                  <div className="text-xs font-semibold text-zinc-500 mb-2">{t("tool.stt.with_punctuation")}</div>
-                  <div className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                <div className="p-3 border rounded-lg bg-card">
+                  <div className="text-xs font-semibold text-muted-foreground mb-2">{t("tool.stt.with_punctuation")}</div>
+                  <div className="text-xs text-foreground/85 whitespace-pre-wrap">
                     {result.text_with_punctuation}
                   </div>
                 </div>
-                <div className="p-3 border rounded-lg bg-white dark:bg-zinc-900">
-                  <div className="text-xs font-semibold text-zinc-500 mb-2">{t("tool.stt.without_punctuation")}</div>
-                  <div className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                <div className="p-3 border rounded-lg bg-card">
+                  <div className="text-xs font-semibold text-muted-foreground mb-2">{t("tool.stt.without_punctuation")}</div>
+                  <div className="text-xs text-foreground/85 whitespace-pre-wrap">
                     {result.text_no_punctuation}
                   </div>
                 </div>
@@ -460,12 +460,12 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
             )}
 
             {result.segments && result.segments.length > 0 && (
-              <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                <div className="text-xs font-bold text-zinc-500 uppercase mb-3">{t("tool.stt.segments")}</div>
+              <div className="p-4 bg-card border border-border rounded-xl">
+                <div className="text-xs font-bold text-muted-foreground uppercase mb-3">{t("tool.stt.segments")}</div>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {result.segments.map((seg, idx) => (
-                    <div key={idx} className="text-xs text-zinc-700 dark:text-zinc-300">
-                      <span className="font-mono text-zinc-500">
+                    <div key={idx} className="text-xs text-foreground/85">
+                      <span className="font-mono text-muted-foreground">
                         {formatTimestamp(seg.start)} → {formatTimestamp(seg.end)}
                       </span>{" "}
                       {seg.text}

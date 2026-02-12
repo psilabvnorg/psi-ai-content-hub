@@ -5,7 +5,7 @@ import {
   Video, FileText, Book, Film, Youtube, 
   Music, FileAudio, 
   Mic, Languages, Search, Settings, 
-  Menu, Sparkles, Wand2,
+  Menu, Sparkles,
   Instagram, Facebook, Play,
   Image as ImageIcon, Scissors, Gauge, Terminal
 } from "lucide-react";
@@ -13,6 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
+import BrandLogo from "@/components/BrandLogo";
 
 const features = {
   workflow: [
@@ -163,31 +164,28 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
   };
 
   return (
-    <div className="flex h-screen bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden font-sans">
-      {/* Sidebar */}
-      <aside 
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-transform duration-300 ease-in-out transform shadow-xl lg:shadow-none",
+          "fixed inset-y-0 left-0 z-50 w-72 border-r border-sidebar-border bg-sidebar transition-transform duration-300 ease-in-out shadow-xl lg:relative lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:relative lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Wand2 className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-white">{t("app.name")}</span>
+          <div className="p-6 border-b border-sidebar-border">
+            <BrandLogo label={t("app.name")} imageClassName="h-10 border-white/15 bg-black" />
           </div>
 
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
             <div className="py-4">
-              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">{t("nav.workflows")}</p>
+              <p className="px-2 mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/85">
+                {t("nav.workflows")}
+              </p>
               {features.workflow.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleFeatureClick(item.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                  className="w-full flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-sidebar-accent-border hover:bg-sidebar-accent hover:text-sidebar-foreground"
                   data-testid={`link-${item.id}`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -196,14 +194,16 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
               ))}
             </div>
 
-            <div className="py-4 border-t border-zinc-100 dark:border-zinc-800 mt-2">
-              <p className="px-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">{t("nav.tools")}</p>
+            <div className="py-4 mt-2 border-t border-sidebar-border">
+              <p className="px-2 mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/85">
+                {t("nav.tools")}
+              </p>
               <div className="grid grid-cols-1 gap-1">
                 {features.tool.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleFeatureClick(item.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                    className="w-full flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-sidebar-accent-border hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     data-testid={`link-${item.id}`}
                   >
                     <item.icon className="w-4 h-4" />
@@ -214,10 +214,10 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
             </div>
           </nav>
 
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-            <button 
+          <div className="p-4 border-t border-sidebar-border">
+            <button
               onClick={() => handleFeatureClick("settings")}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 rounded-lg border border-sidebar-accent-border bg-sidebar-accent px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:border-accent-border hover:bg-accent hover:text-accent-foreground"
               data-testid="link-settings"
             >
               <Settings className="w-4 h-4" />
@@ -227,88 +227,91 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Header */}
-        <header className="h-16 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="lg:hidden" 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              data-testid="button-toggle-menu"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">{t("app.dashboard")}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="hidden sm:flex">
-              <Search className="w-4 h-4 text-zinc-500" />
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-5 h-9 text-xs font-bold shadow-lg shadow-blue-500/20">
-              <Sparkles className="w-3.5 h-3.5 mr-2" />
-              {t("app.upgrade_pro")}
-            </Button>
+        <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/90 px-6 backdrop-blur-md">
+          <div className="flex h-full items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                data-testid="button-toggle-menu"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              <h1 className="text-lg font-semibold text-foreground">{t("app.dashboard")}</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="hidden sm:flex">
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </Button>
+              <Button className="h-9 rounded-md px-5 text-xs font-bold uppercase tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 mr-2" />
+                {t("app.upgrade_pro")}
+              </Button>
+            </div>
           </div>
         </header>
 
-        {/* Scrollable Content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 md:p-10 scroll-smooth">
-          <div className="max-w-7xl mx-auto space-y-16">
-            
-            {/* Workflows Section */}
+          <div className="mx-auto max-w-7xl space-y-16 pb-14">
             <section>
-              <div className="flex items-end justify-between mb-8">
+              <div className="mb-8 flex items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{t("home.section.workflows")}</h2>
-                  <p className="text-zinc-500 dark:text-zinc-400">{t("home.section.workflows_desc")}</p>
+                  <h2 className="mb-2 text-3xl font-black tracking-tight text-foreground">{t("home.section.workflows")}</h2>
+                  <p className="text-muted-foreground">{t("home.section.workflows_desc")}</p>
                 </div>
-                <Button variant="link" className="text-blue-600 font-bold hidden md:flex">{t("app.view_all")}</Button>
+                <Button variant="link" className="hidden font-bold md:flex">
+                  {t("app.view_all")}
+                </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {features.workflow.map((feature) => (
-                  <Card 
-                    key={feature.id} 
-                    className="group cursor-pointer border-none shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-300 bg-white dark:bg-zinc-900 overflow-hidden"
+                  <Card
+                    key={feature.id}
+                    className="group cursor-pointer overflow-hidden border-card-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-accent/70 hover:shadow-lg"
                     onClick={() => handleFeatureClick(feature.id)}
                     data-testid={`card-workflow-${feature.id}`}
                   >
                     <CardContent className="p-8">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 ease-out shadow-sm group-hover:shadow-blue-500/40">
-                        <feature.icon className="w-7 h-7 text-blue-600 dark:text-blue-400 group-hover:text-white" />
+                      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl border border-accent-border bg-accent text-accent-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        <feature.icon className="w-7 h-7" />
                       </div>
-                      <h3 className="text-xl font-black mb-3 text-zinc-900 dark:text-white tracking-tight group-hover:text-blue-600 transition-colors">{t(feature.titleKey)}</h3>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">{t(feature.descriptionKey)}</p>
+                      <h3 className="mb-3 text-xl font-black tracking-tight text-foreground transition-colors group-hover:text-accent">
+                        {t(feature.titleKey)}
+                      </h3>
+                      <p className="text-sm font-medium leading-relaxed text-muted-foreground">{t(feature.descriptionKey)}</p>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </section>
 
-            {/* Tools Section */}
             <section className="pb-12">
               <div className="mb-8">
-                <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{t("home.section.tools")}</h2>
-                <p className="text-zinc-500 dark:text-zinc-400">{t("home.section.tools_desc")}</p>
+                <h2 className="mb-2 text-3xl font-black tracking-tight text-foreground">{t("home.section.tools")}</h2>
+                <p className="text-muted-foreground">{t("home.section.tools_desc")}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {features.tool.map((tool) => (
-                  <Card 
-                    key={tool.id} 
-                    className="group cursor-pointer border border-zinc-100 dark:border-zinc-800/50 hover:border-blue-500 hover:ring-1 hover:ring-blue-500 transition-all bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md rounded-xl overflow-hidden"
+                  <Card
+                    key={tool.id}
+                    className="group cursor-pointer overflow-hidden border-card-border bg-card transition-all hover:-translate-y-0.5 hover:border-accent/70 hover:shadow-md"
                     onClick={() => handleFeatureClick(tool.id)}
                     data-testid={`card-tool-${tool.id}`}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-all duration-300">
-                          <tool.icon className="w-6 h-6 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600" />
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 transition-colors duration-300 group-hover:border-accent/70 group-hover:bg-accent group-hover:text-accent-foreground">
+                          <tool.icon className="w-5 h-5 text-muted-foreground group-hover:text-accent-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white mb-1.5 group-hover:text-blue-600 transition-colors">{t(tool.titleKey)}</h3>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">{t(tool.descriptionKey)}</p>
+                          <h3 className="mb-1.5 text-sm font-bold text-foreground transition-colors group-hover:text-accent">
+                            {t(tool.titleKey)}
+                          </h3>
+                          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{t(tool.descriptionKey)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -316,15 +319,13 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                 ))}
               </div>
             </section>
-
           </div>
         </div>
       </main>
 
-      {/* Overlay for mobile sidebar */}
       {sidebarOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity" 
+        <div
+          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}

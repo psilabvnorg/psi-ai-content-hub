@@ -167,22 +167,22 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const progressPercent = useMemo(() => Math.max(0, Math.min(100, progress?.percent || 0)), [progress]);
 
   return (
-    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
+    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
 
         {/* Title and Description */}
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{t("tool.tts_fast.title")}</h2>
-          <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
-            <p>API: <a href="http://127.0.0.1:6903" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">http://127.0.0.1:6903</a></p>
-            <p>API Docs: <a href="http://127.0.0.1:6903/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">http://127.0.0.1:6903/docs</a></p>
+          <h2 className="text-2xl font-bold text-foreground">{t("feature.tool.tts_fast.title")}</h2>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>API: <a href="http://127.0.0.1:6903" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline">http://127.0.0.1:6903</a></p>
+            <p>API Docs: <a href="http://127.0.0.1:6903/docs" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline">http://127.0.0.1:6903/docs</a></p>
           </div>
         </div>
 
         {/* Status Table */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t("tool.tts_fast.service_status")}</h3>
+            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.tts_fast.service_status")}</h3>
             <Button size="sm" variant="outline" onClick={fetchStatus}>
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -284,9 +284,9 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
         {/* Mode Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.select_voice")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.tts_fast.select_voice")}</label>
           <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-            <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder={t("tool.tts_fast.choose_preset")} />
             </SelectTrigger>
             <SelectContent>
@@ -299,21 +299,21 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
         {/* Text Input */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.tts_fast.text_to_speak")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.tts_fast.text_to_speak")}</label>
           <Textarea
             placeholder={t("tool.tts_fast.text_ph")}
             value={text}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
-            className="min-h-[120px] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 resize-none"
+            className="min-h-[120px] bg-card border-border resize-none"
           />
-          <p className={`text-xs ${overLimit ? "text-red-500" : "text-zinc-400"}`}>
+          <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
             {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
           </p>
         </div>
 
         {/* Generate Button */}
         <Button
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleGenerate}
           disabled={isGenerating || !text.trim() || overLimit || !statusReady || !selectedVoice}
         >
@@ -323,16 +323,16 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
         {/* Progress */}
         {progress && progress.status !== "waiting" && (
-          <div className="w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <div className="w-full p-4 bg-accent/12 rounded-xl border border-accent/45">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{progress.message || t("tool.tts_fast.processing")}</span>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
+              <span className="text-sm font-semibold text-accent">{progress.message || t("tool.tts_fast.processing")}</span>
+              <span className="text-sm font-bold text-accent">{progressPercent}%</span>
             </div>
-            <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2 overflow-hidden">
-              <div className="bg-blue-600 dark:bg-blue-500 h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
+            <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden">
+              <div className="bg-accent h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
             </div>
             {logs.length > 0 && (
-              <div ref={logRef} className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-blue-700 dark:text-blue-300 bg-white/60 dark:bg-black/20 p-2 rounded">
+              <div ref={logRef} className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-accent bg-muted/50 p-2 rounded">
                 {logs.map((l, idx) => (<div key={idx}>{l}</div>))}
               </div>
             )}
@@ -341,16 +341,16 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
         {/* Audio Result */}
         {audioUrl && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-3">
+          <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-green-700 dark:text-green-400">{t("tool.tts_fast.audio_ready")}</span>
+              <span className="text-sm font-bold text-emerald-400">{t("tool.tts_fast.audio_ready")}</span>
               <Button size="sm" variant="outline" onClick={handleDownload}>
                 <Download className="w-4 h-4 mr-2" />
                 {t("tool.common.download")}
               </Button>
             </div>
             {audioDuration !== null && (
-              <div className="text-xs text-green-700 dark:text-green-400">{t("tool.tts_fast.duration", { seconds: audioDuration })}</div>
+              <div className="text-xs text-emerald-400">{t("tool.tts_fast.duration", { seconds: audioDuration })}</div>
             )}
             <audio controls className="w-full h-10">
               <source src={audioUrl} type="audio/wav" />

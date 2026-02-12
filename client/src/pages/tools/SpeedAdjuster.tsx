@@ -116,9 +116,9 @@ export default function SpeedAdjuster() {
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="w-12 h-12 mx-auto mb-4 text-zinc-400" />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-sm font-medium mb-1">{t("tool.common.upload_video")}</p>
-                <p className="text-xs text-zinc-500">{t("tool.common.supported_videos")}</p>
+                <p className="text-xs text-muted-foreground">{t("tool.common.supported_videos")}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -135,7 +135,7 @@ export default function SpeedAdjuster() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{selectedFile.name}</p>
-                    <p className="text-xs text-zinc-500">{formatFileSize(selectedFile.size)}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleClearFile} disabled={loading}>
@@ -148,10 +148,10 @@ export default function SpeedAdjuster() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">{t("tool.speed_adjuster.speed_multiplier")}</label>
-              <span className="text-lg font-bold text-blue-600">{speed[0].toFixed(1)}x</span>
+              <span className="text-lg font-bold text-accent">{speed[0].toFixed(1)}x</span>
             </div>
             <Slider value={speed} onValueChange={setSpeed} min={0.5} max={2.0} step={0.1} className="w-full" />
-            <div className="flex justify-between text-xs text-zinc-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>0.5x ({t("home.slower")})</span>
               <span>1.0x ({t("home.normal")})</span>
               <span>2.0x ({t("home.faster")})</span>
@@ -161,7 +161,7 @@ export default function SpeedAdjuster() {
           {loading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">{t("tool.speed_adjuster.processing")}</span>
+                <span className="text-muted-foreground">{t("tool.speed_adjuster.processing")}</span>
                 <span className="font-medium">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
@@ -181,7 +181,7 @@ export default function SpeedAdjuster() {
       {result && (
         <Card>
           <CardContent className="pt-6 space-y-3">
-            <p className="text-sm text-zinc-500">{t("tool.speed_adjuster.result_speed", { speed: result.speed ?? speed[0] })}</p>
+            <p className="text-sm text-muted-foreground">{t("tool.speed_adjuster.result_speed", { speed: result.speed ?? speed[0] })}</p>
             <Button onClick={handleDownload} variant="download" className="w-full">
               <Download className="w-4 h-4 mr-2" />
               {t("tool.speed_adjuster.download")}

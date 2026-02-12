@@ -51,32 +51,32 @@ export default function ReupYoutube() {
   };
 
   return (
-    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
+    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
-        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+        <div className="p-4 bg-accent/12 rounded-xl border border-accent/45">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-accent mt-0.5" />
             <div className="flex-1 space-y-1">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("tool.reup.stub_title")}</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400">{t("tool.reup.stub_desc")}</p>
+              <p className="text-sm font-semibold text-accent">{t("tool.reup.stub_title")}</p>
+              <p className="text-xs text-accent/90">{t("tool.reup.stub_desc")}</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.reup.youtube_url")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.reup.youtube_url")}</label>
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=..."
-            className="h-12 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
+            className="h-12 bg-card border-border rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.reup.target_language")}</label>
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.reup.target_language")}</label>
           <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+            <SelectTrigger className="bg-card border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -90,7 +90,7 @@ export default function ReupYoutube() {
         </div>
 
         <Button
-          className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+          className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={startJob}
           disabled={isRunning || !url}
         >
@@ -99,17 +99,17 @@ export default function ReupYoutube() {
         </Button>
 
         {error && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
+          <div className="p-4 bg-destructive/12 rounded-xl border border-destructive/45 text-sm text-destructive/90">
             {error}
           </div>
         )}
 
         {result && (
-          <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
-            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          <div className="p-4 bg-muted/40 rounded-xl border border-border space-y-2">
+            <div className="text-sm font-semibold text-foreground">
               {t("tool.reup.stub_result")}
             </div>
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">
+            <div className="text-xs text-muted-foreground">
               {t("tool.reup.stub_reason", { reason: result.reason || t("tool.reup.stub_unknown") })}
             </div>
           </div>

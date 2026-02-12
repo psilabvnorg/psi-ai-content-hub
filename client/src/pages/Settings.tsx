@@ -387,7 +387,7 @@ export default function Settings() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold mb-2">{t("settings.title")}</h2>
-        <p className="text-zinc-500">{t("settings.subtitle")}</p>
+        <p className="text-muted-foreground">{t("settings.subtitle")}</p>
       </div>
 
       <Card>
@@ -438,7 +438,7 @@ export default function Settings() {
               <TableBody>
                 {tools.map((tool) => {
                   const progress = toolProgress[tool.id];
-                  const isInstalling = progress && !["complete", "error"].includes(progress.status);
+                  const isInstalling = !!progress && !["complete", "error"].includes(progress.status);
                   const ready = tool.status === "ready" && !isInstalling;
                   return (
                     <TableRow key={tool.id}>
@@ -572,7 +572,7 @@ export default function Settings() {
             </Table>
           </div>
           {f5Progress && (
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs text-muted-foreground">
               {f5Progress.message} {f5Progress.percent ?? 0}%
             </div>
           )}
@@ -667,7 +667,7 @@ export default function Settings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-zinc-500 uppercase">{t("settings.vieneu.backbone")}</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">{t("settings.vieneu.backbone")}</label>
               <Select value={vieneuBackbone} onValueChange={setVieneuBackbone}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("settings.vieneu.select_backbone")} />
@@ -682,7 +682,7 @@ export default function Settings() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-zinc-500 uppercase">{t("settings.vieneu.codec")}</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">{t("settings.vieneu.codec")}</label>
               <Select value={vieneuCodec} onValueChange={setVieneuCodec}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("settings.vieneu.select_codec")} />
@@ -720,7 +720,7 @@ export default function Settings() {
           </div>
 
           {vieneuProgress && (
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs text-muted-foreground">
               {vieneuProgress.message} {vieneuProgress.percent ?? 0}%
             </div>
           )}
@@ -787,7 +787,7 @@ export default function Settings() {
                 <TableRow>
                   <TableCell className="font-medium">{t("settings.whisper.model_cache")}</TableCell>
                   <TableCell>
-                    <div className="text-sm text-zinc-500">
+                    <div className="text-sm text-muted-foreground">
                       {whisperStatus?.cached_models?.length ? whisperStatus.cached_models.join(", ") : t("settings.whisper.no_models")}
                     </div>
                   </TableCell>
@@ -800,7 +800,7 @@ export default function Settings() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-500 uppercase">{t("settings.whisper.model_select")}</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase">{t("settings.whisper.model_select")}</label>
             <Select value={whisperModel} onValueChange={(v) => setWhisperModel(v as (typeof WHISPER_MODELS)[number])}>
               <SelectTrigger>
                 <SelectValue />
@@ -827,7 +827,7 @@ export default function Settings() {
           </div>
 
           {whisperProgress && (
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs text-muted-foreground">
               {whisperProgress.message} {whisperProgress.percent ?? 0}%
             </div>
           )}
@@ -848,16 +848,16 @@ export default function Settings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4">
-              <div className="text-sm text-zinc-500 mb-1">{t("settings.storage.total_files")}</div>
+            <div className="bg-muted/40 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">{t("settings.storage.total_files")}</div>
               <div className="text-2xl font-bold">{status?.temp?.file_count ?? 0}</div>
             </div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4">
-              <div className="text-sm text-zinc-500 mb-1">{t("settings.storage.used")}</div>
+            <div className="bg-muted/40 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">{t("settings.storage.used")}</div>
               <div className="text-2xl font-bold">{status?.temp?.total_size_mb ?? 0} MB</div>
             </div>
-            <div className="bg-zinc-50 dark:bg-zinc-900 rounded-lg p-4">
-              <div className="text-sm text-zinc-500 mb-1">{t("settings.storage.location")}</div>
+            <div className="bg-muted/40 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">{t("settings.storage.location")}</div>
               <div className="text-xs font-mono break-all">{status?.temp?.temp_dir ?? "--"}</div>
             </div>
           </div>

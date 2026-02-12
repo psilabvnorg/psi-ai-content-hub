@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  ChevronLeft, Wand2, Download, 
-  Scissors, Gauge, Loader2, CheckCircle2,
-  Video, Music, Youtube, Facebook, Instagram
+  ChevronLeft, Wand2, 
+  Scissors, Gauge, Loader2, CheckCircle2
 } from "lucide-react";
 import VideoDownloader from "./tools/VideoDownloader";
 import AudioExtractor from "./tools/AudioExtractor";
@@ -21,6 +20,7 @@ import BackendConsole from "./tools/BackendConsole";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function FeaturePlaceholder({ 
   id, 
@@ -121,17 +121,17 @@ export default function FeaturePlaceholder({
               placeholder={t("home.paste_url")}
               value={url}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
-              className="h-12 pr-32 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl"
+              className="h-12 rounded-xl pr-32"
             />
             <Button 
-              className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs"
+              className="absolute right-1 top-1 bottom-1 rounded-lg text-xs"
               onClick={handleAction}
               disabled={isLoading || !url}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("home.process")}
             </Button>
           </div>
-          <p className="text-[10px] text-zinc-400 text-center uppercase tracking-widest font-bold">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-center text-muted-foreground">
             {t("home.supports")}
           </p>
         </div>
@@ -143,16 +143,16 @@ export default function FeaturePlaceholder({
         <div className="w-full space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.video_trimmer.start_time")}</label>
-              <Input placeholder="00:00:00" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" />
+              <label className="text-xs font-bold uppercase text-muted-foreground">{t("tool.video_trimmer.start_time")}</label>
+              <Input placeholder="00:00:00" />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-500 uppercase">{t("tool.video_trimmer.end_time")}</label>
-              <Input placeholder="00:02:15" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" />
+              <label className="text-xs font-bold uppercase text-muted-foreground">{t("tool.video_trimmer.end_time")}</label>
+              <Input placeholder="00:02:15" />
             </div>
           </div>
           <Button 
-            className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+            className="w-full h-12 rounded-xl font-bold"
             onClick={handleAction}
             disabled={isLoading}
           >
@@ -166,10 +166,10 @@ export default function FeaturePlaceholder({
     if (id === "adjust-speed") {
       return (
         <div className="w-full space-y-6 text-left">
-          <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+          <div className="space-y-4 rounded-2xl border border-border bg-muted/40 p-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{t("home.speed_multiplier")}</span>
-              <span className="text-lg font-black text-blue-600">{speed}x</span>
+              <span className="text-sm font-bold text-foreground">{t("home.speed_multiplier")}</span>
+              <span className="text-lg font-black text-accent">{speed}x</span>
             </div>
             <input 
               type="range" 
@@ -178,16 +178,16 @@ export default function FeaturePlaceholder({
               step="0.1" 
               value={speed}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(e.target.value)}
-              className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-border accent-accent"
             />
-            <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase">
+            <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground">
               <span>{t("home.slower")}</span>
               <span>{t("home.normal")}</span>
               <span>{t("home.faster")}</span>
             </div>
           </div>
           <Button 
-            className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+            className="w-full h-12 rounded-xl font-bold"
             onClick={handleAction}
             disabled={isLoading}
           >
@@ -200,7 +200,7 @@ export default function FeaturePlaceholder({
 
     return (
       <Button 
-        className="w-full h-12 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold"
+        className="w-full h-12 rounded-xl font-bold"
         onClick={handleAction}
         disabled={isLoading}
       >
@@ -211,51 +211,46 @@ export default function FeaturePlaceholder({
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] p-6 flex flex-col font-sans">
-      <header className="max-w-4xl mx-auto w-full flex items-center justify-between mb-12">
+    <div className="flex min-h-screen flex-col bg-background p-6 text-foreground">
+      <header className="mx-auto mb-12 flex w-full max-w-5xl items-center justify-between gap-4 border-b border-border pb-6">
         <Button 
           variant="ghost" 
           onClick={onBack}
-          className="group hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold"
+          className="group font-bold"
           data-testid="button-back"
         >
           <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           {t("home.back_dashboard")}
         </Button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-            <Wand2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-lg dark:text-white">{t("app.name")}</span>
-        </div>
+        <BrandLogo label={t("app.name")} imageClassName="h-10 border-white/15 bg-black" />
       </header>
 
-      <main className="flex-1 flex flex-col items-center text-center max-w-xl mx-auto w-full pt-8">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center pt-4 text-center">
         {isSuccess ? (
           <div className="animate-in zoom-in duration-300 flex flex-col items-center">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-6">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-accent-border bg-accent/20">
               <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
-            <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-2">{t("home.success_title")}</h2>
-            <p className="text-zinc-500 mb-8">{t("home.success_desc")}</p>
-            <Button variant="outline" className="rounded-full px-8 border-zinc-200 dark:border-zinc-800" onClick={() => setIsSuccess(false)}>
+            <h2 className="mb-2 text-2xl font-black text-foreground">{t("home.success_title")}</h2>
+            <p className="mb-8 text-muted-foreground">{t("home.success_desc")}</p>
+            <Button variant="outline" className="rounded-full px-8" onClick={() => setIsSuccess(false)}>
               {t("home.process_another")}
             </Button>
           </div>
         ) : (
           <>
 
-            <h1 className="text-3xl font-black text-zinc-900 dark:text-white mb-4 tracking-tight">
+            <h1 className="mb-4 text-3xl font-black tracking-tight text-foreground">
               {title}
             </h1>
 
             
             {actualTool ? (
-              <div className="w-full mb-12">
+              <div className="mb-12 w-full">
                 {actualTool}
               </div>
             ) : (
-              <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900 overflow-hidden mb-12">
+              <Card className="mb-12 w-full overflow-hidden border-card-border bg-card">
                 <CardContent className="p-8">
                   {renderToolUI()}
                 </CardContent>
@@ -264,24 +259,24 @@ export default function FeaturePlaceholder({
 
             <div className="grid grid-cols-3 gap-8 w-full">
               <div className="flex flex-col items-center gap-2">
-                <div className="text-zinc-900 dark:text-white font-black text-xl">4K</div>
-                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{t("home.quality")}</div>
+                <div className="text-xl font-black text-foreground">4K</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("home.quality")}</div>
               </div>
-              <div className="flex flex-col items-center gap-2 border-x border-zinc-100 dark:border-zinc-800">
-                <div className="text-zinc-900 dark:text-white font-black text-xl">10s</div>
-                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{t("home.avg_speed")}</div>
+              <div className="flex flex-col items-center gap-2 border-x border-border">
+                <div className="text-xl font-black text-foreground">10s</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("home.avg_speed")}</div>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <div className="text-zinc-900 dark:text-white font-black text-xl">PRO</div>
-                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{t("home.engine")}</div>
+                <div className="text-xl font-black text-accent">PRO</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("home.engine")}</div>
               </div>
             </div>
           </>
         )}
       </main>
 
-      <footer className="max-w-4xl mx-auto w-full py-8 text-center mt-auto">
-        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t("app.powered_by")}</p>
+      <footer className="mx-auto mt-auto w-full max-w-5xl py-8 text-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("app.powered_by")}</p>
       </footer>
     </div>
   );

@@ -87,15 +87,15 @@ export default function BackendConsole() {
   }, [serverUnreachable]);
 
   return (
-    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
+    <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
         {serverUnreachable && (
-          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+          <div className="p-4 bg-destructive/12 rounded-xl border border-destructive/45">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t("tool.backend_console.unreachable")}</p>
-                <p className="text-xs text-red-700 dark:text-red-400">
+                <p className="text-sm font-semibold text-destructive">{t("tool.backend_console.unreachable")}</p>
+                <p className="text-xs text-destructive/90">
                   {t("tool.backend_console.unreachable_desc")}
                 </p>
               </div>
@@ -105,8 +105,8 @@ export default function BackendConsole() {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-zinc-500" />
-            <div className="text-sm font-semibold text-zinc-900 dark:text-white">
+            <Terminal className="w-4 h-4 text-muted-foreground" />
+            <div className="text-sm font-semibold text-foreground">
               {t("tool.backend_console.title")}
             </div>
           </div>
@@ -126,21 +126,21 @@ export default function BackendConsole() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
-            <div className="text-xs text-zinc-500 uppercase">{t("tool.backend_console.status")}</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-white">
+          <div className="bg-muted/40 rounded-xl p-4 border border-border">
+            <div className="text-xs text-muted-foreground uppercase">{t("tool.backend_console.status")}</div>
+            <div className="text-lg font-bold text-foreground">
               {status?.status || (serverUnreachable ? t("tool.backend_console.down") : t("tool.backend_console.unknown"))}
             </div>
           </div>
-          <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
-            <div className="text-xs text-zinc-500 uppercase">{t("tool.backend_console.temp_files")}</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-white">
+          <div className="bg-muted/40 rounded-xl p-4 border border-border">
+            <div className="text-xs text-muted-foreground uppercase">{t("tool.backend_console.temp_files")}</div>
+            <div className="text-lg font-bold text-foreground">
               {status?.temp?.file_count ?? 0}
             </div>
           </div>
-          <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
-            <div className="text-xs text-zinc-500 uppercase">{t("tool.backend_console.temp_size")}</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-white">
+          <div className="bg-muted/40 rounded-xl p-4 border border-border">
+            <div className="text-xs text-muted-foreground uppercase">{t("tool.backend_console.temp_size")}</div>
+            <div className="text-lg font-bold text-foreground">
               {status?.temp?.total_size_mb ?? 0} MB
             </div>
           </div>
@@ -148,17 +148,17 @@ export default function BackendConsole() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-zinc-500 uppercase">{t("tool.backend_console.logs")}</div>
-            <div className="text-xs text-zinc-500">
+            <div className="text-xs font-bold text-muted-foreground uppercase">{t("tool.backend_console.logs")}</div>
+            <div className="text-xs text-muted-foreground">
               {isStreaming ? t("tool.backend_console.streaming") : t("tool.backend_console.paused")}
             </div>
           </div>
           <div
             ref={logRef}
-            className="h-72 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-black/90 text-zinc-100 p-3 font-mono text-xs"
+            className="h-72 overflow-y-auto rounded-xl border border-border bg-black/90 text-zinc-100 p-3 font-mono text-xs"
           >
             {logs.length === 0 ? (
-              <div className="text-zinc-400">{t("tool.backend_console.no_logs")}</div>
+              <div className="text-muted-foreground">{t("tool.backend_console.no_logs")}</div>
             ) : (
               logs.map((line, idx) => <div key={idx}>{line}</div>)
             )}

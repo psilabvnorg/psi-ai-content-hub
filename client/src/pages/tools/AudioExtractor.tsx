@@ -116,9 +116,9 @@ export default function AudioExtractor() {
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="w-12 h-12 mx-auto mb-4 text-zinc-400" />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-sm font-medium mb-1">{t("tool.common.upload_video")}</p>
-                <p className="text-xs text-zinc-500">{t("tool.common.supported_videos")}</p>
+                <p className="text-xs text-muted-foreground">{t("tool.common.supported_videos")}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -135,7 +135,7 @@ export default function AudioExtractor() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{selectedFile.name}</p>
-                    <p className="text-xs text-zinc-500">{formatFileSize(selectedFile.size)}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleClearFile} disabled={loading}>
@@ -161,7 +161,7 @@ export default function AudioExtractor() {
           {loading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">{t("tool.audio_extractor.progress")}</span>
+                <span className="text-muted-foreground">{t("tool.audio_extractor.progress")}</span>
                 <span className="font-medium">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />

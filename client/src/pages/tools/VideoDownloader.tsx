@@ -175,7 +175,7 @@ export default function VideoDownloader() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
               disabled={loading}
             />
-            <p className="text-xs text-zinc-500">{t("tool.video_downloader.detect_hint")}</p>
+            <p className="text-xs text-muted-foreground">{t("tool.video_downloader.detect_hint")}</p>
           </div>
 
           {url && detectPlatform(url) === "tiktok" && (
@@ -187,13 +187,13 @@ export default function VideoDownloader() {
                   checked={convertToH264}
                   onChange={(e) => setConvertToH264(e.target.checked)}
                   disabled={loading}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-ring"
                 />
                 <label htmlFor="convertH264" className="text-sm font-medium cursor-pointer">
                   {t("tool.video_downloader.convert_h264")}
                 </label>
               </div>
-              <p className="text-xs text-zinc-500 -mt-2 ml-6">
+              <p className="text-xs text-muted-foreground -mt-2 ml-6">
                 {t("tool.video_downloader.convert_h264_hint")}
               </p>
             </>
@@ -202,7 +202,7 @@ export default function VideoDownloader() {
           {loading && (
             <div className="space-y-3">
               <Progress value={progress} className="w-full" />
-              <div className="flex items-center gap-2 text-sm text-zinc-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>{statusMessage}</span>
               </div>
@@ -210,11 +210,11 @@ export default function VideoDownloader() {
           )}
 
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 bg-destructive/12 border border-destructive/45 rounded-lg">
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-red-900 dark:text-red-100">{t("tool.video_downloader.failed")}</p>
-                <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
+                <p className="text-sm font-medium text-destructive">{t("tool.video_downloader.failed")}</p>
+                <p className="text-xs text-destructive/90 mt-1">{error}</p>
               </div>
             </div>
           )}
@@ -245,17 +245,17 @@ export default function VideoDownloader() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-zinc-500">{t("tool.video_downloader.filename")}</p>
+              <p className="text-sm text-muted-foreground">{t("tool.video_downloader.filename")}</p>
               <p className="font-medium">{result.filename}</p>
             </div>
-            {result.originalCodec && result.originalCodec !== 'h264' && (
+            {result.original_codec && result.original_codec !== 'h264' && (
               <div>
-                <p className="text-sm text-zinc-500">{t("tool.video_downloader.original_codec")}</p>
-                <p className="font-medium uppercase">{result.originalCodec}</p>
+                <p className="text-sm text-muted-foreground">{t("tool.video_downloader.original_codec")}</p>
+                <p className="font-medium uppercase">{result.original_codec}</p>
               </div>
             )}
             {result.converted && (
-              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-700 dark:text-blue-300">
+              <div className="flex items-center gap-2 p-2 bg-accent/12 border border-accent/45 rounded text-xs text-accent">
                 <CheckCircle2 className="w-4 h-4" />
                 {t("tool.video_downloader.converted_note")}
               </div>
