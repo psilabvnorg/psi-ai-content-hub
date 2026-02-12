@@ -170,6 +170,15 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white dark:bg-zinc-900">
       <CardContent className="p-8 space-y-6">
 
+        {/* Title and Description */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{t("tool.tts_fast.title")}</h2>
+          <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
+            <p>API: <a href="http://127.0.0.1:6903" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">http://127.0.0.1:6903</a></p>
+            <p>API Docs: <a href="http://127.0.0.1:6903/docs" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">http://127.0.0.1:6903/docs</a></p>
+          </div>
+        </div>
+
         {/* Status Table */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -200,6 +209,11 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
                     <span className="text-sm">
                       {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                     </span>
+                    {serverUnreachable && onOpenSettings && (
+                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                        {t("tool.common.turn_on_server")}
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-xs font-mono break-all">
@@ -220,7 +234,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
                     </span>
                     {!status?.env?.installed && onOpenSettings && (
                       <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                        {t("tool.common.open_settings")}
+                        {t("tool.common.install_library")}
                       </Button>
                     )}
                   </div>
@@ -252,7 +266,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
                     )}
                     {(!status?.model?.backbone_ready || !status?.model?.codec_ready) && onOpenSettings && (
                       <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                        {t("tool.common.open_settings")}
+                        {t("tool.common.download_model")}
                       </Button>
                     )}
                   </div>
