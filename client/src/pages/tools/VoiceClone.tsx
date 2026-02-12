@@ -224,7 +224,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
                       <span className="text-sm">
                         {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
-                      {!status?.env?.installed && onOpenSettings && (
+                      {!serverUnreachable && !status?.env?.installed && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>
@@ -251,7 +251,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
                       <span className="text-sm">
                         {status?.model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
-                      {!status?.model?.installed && onOpenSettings && (
+                      {!serverUnreachable && !status?.model?.installed && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>

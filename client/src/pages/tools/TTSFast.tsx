@@ -1,33 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Volume2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Loader2, Volume2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { VIENEU_API_URL } from "@/lib/api";
+import { ServiceStatusTable, ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
+import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
+
 const MAX_CHARS = 3000;
 
 type Voice = { id: string; name: string; description?: string };
-
-type ProgressData = {
-  status: string;
-  percent: number;
-  message?: string;
-  logs?: string[];
-  file_path?: string;
-  filename?: string;
-  duration?: number;
-  sample_rate?: number;
-};
-
-type EnvStatus = {
-  installed: boolean;
-  missing?: string[];
-  installed_modules?: string[];
-  python_path?: string;
-};
 
 type ModelStatus = {
   backbone_ready?: boolean;
@@ -38,10 +22,10 @@ type ModelStatus = {
   current_config?: Record<string, unknown>;
 };
 
-type StatusData = {
-  server_unreachable?: boolean;
-  env?: EnvStatus;
-  model?: ModelStatus;
+type VieneuStatusResponse = {
+  models?: {
+    vieneu_tts?: ModelStatus;
+  };
 };
 
 export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
@@ -50,25 +34,24 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const mode: "preset" = "preset";
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [status, setStatus] = useState<StatusData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
-  const logRef = useRef<HTMLDivElement>(null);
+
+  // Status management
+  const [serverUnreachable, setServerUnreachable] = useState(false);
+  const [envInstalled, setEnvInstalled] = useState(false);
+  const [envModules, setEnvModules] = useState<string[]>([]);
+  const [envMissing, setEnvMissing] = useState<string[]>([]);
+  const [modelStatus, setModelStatus] = useState<ModelStatus | undefined>();
 
   const charCount = text.length;
   const overLimit = charCount > MAX_CHARS;
-
-  const serverUnreachable = status?.server_unreachable === true;
-  const depsReady = status?.env?.installed === true;
-  const statusReady = status?.server_unreachable !== true && depsReady;
-
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs]);
+  const modelReady = modelStatus?.backbone_ready && modelStatus?.codec_ready;
+  const statusReady = !serverUnreachable && envInstalled && modelReady;
 
   // --- Data fetching ---
   const fetchStatus = async () => {
@@ -78,11 +61,17 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
         fetch(`${VIENEU_API_URL}/api/v1/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("status");
-      const envData = (await envRes.json()) as EnvStatus;
-      const statusData = (await statusRes.json()) as { models?: { vieneu_tts?: ModelStatus } };
-      setStatus({ server_unreachable: false, env: envData, model: statusData.models?.vieneu_tts });
+      
+      const envData = await envRes.json();
+      const statusData = (await statusRes.json()) as VieneuStatusResponse;
+      
+      setServerUnreachable(false);
+      setEnvInstalled(envData.installed || false);
+      setEnvModules(envData.installed_modules || []);
+      setEnvMissing(envData.missing || []);
+      setModelStatus(statusData.models?.vieneu_tts);
     } catch {
-      setStatus({ server_unreachable: true });
+      setServerUnreachable(true);
     }
   };
 
@@ -164,7 +153,36 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     document.body.removeChild(a);
   };
 
-  const progressPercent = useMemo(() => Math.max(0, Math.min(100, progress?.percent || 0)), [progress]);
+  // Build status rows configuration
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: !serverUnreachable ? VIENEU_API_URL : undefined,
+      onAction: onOpenSettings,
+    },
+    {
+      id: "env",
+      label: t("tool.tts_fast.env_status"),
+      isReady: envInstalled,
+      path: envModules.length ? envModules.join(", ") : envMissing.length ? envMissing.join(", ") : undefined,
+      showActionButton: !envInstalled,
+      actionButtonLabel: t("tool.common.install_library"),
+      onAction: onOpenSettings,
+    },
+    {
+      id: "model",
+      label: t("tool.tts_fast.model_status"),
+      isReady: modelReady || false,
+      path: modelStatus?.backbone_dir && modelStatus?.codec_dir
+        ? `Backbone: ${modelStatus.backbone_dir}, Codec: ${modelStatus.codec_dir}`
+        : undefined,
+      showActionButton: !modelReady,
+      actionButtonLabel: t("tool.common.download_model"),
+      onAction: onOpenSettings,
+    },
+  ];
 
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
@@ -180,107 +198,12 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
         </div>
 
         {/* Status Table */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.tts_fast.service_status")}</h3>
-            <Button size="sm" variant="outline" onClick={fetchStatus}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
-                  <TableHead>{t("settings.tools.table.status")}</TableHead>
-                  <TableHead>{t("settings.tools.table.path")}</TableHead>
-                </TableRow>
-              </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">{t("tool.tts_fast.server_status")}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {!serverUnreachable ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="text-sm">
-                      {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                    </span>
-                    {serverUnreachable && onOpenSettings && (
-                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                        {t("tool.common.turn_on_server")}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs font-mono break-all">
-                  {!serverUnreachable ? VIENEU_API_URL : "--"}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">{t("tool.tts_fast.env_status")}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {status?.env?.installed ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="text-sm">
-                      {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                    </span>
-                    {!status?.env?.installed && onOpenSettings && (
-                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                        {t("tool.common.install_library")}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs font-mono break-all">
-                  {status?.env?.installed_modules?.length
-                    ? status.env.installed_modules.join(", ")
-                    : status?.env?.missing?.length
-                    ? status.env.missing.join(", ")
-                    : "--"}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">{t("tool.tts_fast.model_status")}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {status?.model?.backbone_ready && status?.model?.codec_ready ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="text-sm">
-                      {status?.model?.backbone_ready && status?.model?.codec_ready
-                        ? t("settings.tools.status.ready")
-                        : t("settings.tools.status.not_ready")}
-                    </span>
-                    {status?.model?.model_loaded && (
-                      <span className="ml-2 text-xs text-green-600">({t("settings.vieneu.model_loaded")})</span>
-                    )}
-                    {(!status?.model?.backbone_ready || !status?.model?.codec_ready) && onOpenSettings && (
-                      <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                        {t("tool.common.download_model")}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs font-mono break-all">
-                  {status?.model?.backbone_dir && status?.model?.codec_dir
-                    ? `Backbone: ${status.model.backbone_dir}, Codec: ${status.model.codec_dir}`
-                    : "--"}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-        </div>
+        <ServiceStatusTable
+          apiUrl={VIENEU_API_URL}
+          serverUnreachable={serverUnreachable}
+          rows={statusRows}
+          onRefresh={fetchStatus}
+        />
 
         {/* Mode Selection */}
         <div className="space-y-2">
@@ -322,41 +245,21 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
         </Button>
 
         {/* Progress */}
-        {progress && progress.status !== "waiting" && (
-          <div className="w-full p-4 bg-accent/12 rounded-xl border border-accent/45">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-semibold text-accent">{progress.message || t("tool.tts_fast.processing")}</span>
-              <span className="text-sm font-bold text-accent">{progressPercent}%</span>
-            </div>
-            <div className="w-full bg-muted/60 rounded-full h-2 overflow-hidden">
-              <div className="bg-accent h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
-            </div>
-            {logs.length > 0 && (
-              <div ref={logRef} className="mt-3 max-h-48 overflow-y-auto text-xs font-mono text-accent bg-muted/50 p-2 rounded">
-                {logs.map((l, idx) => (<div key={idx}>{l}</div>))}
-              </div>
-            )}
-          </div>
-        )}
+        <ProgressDisplay
+          progress={progress}
+          logs={logs}
+          defaultMessage={t("tool.tts_fast.processing")}
+        />
 
         {/* Audio Result */}
-        {audioUrl && (
-          <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-emerald-400">{t("tool.tts_fast.audio_ready")}</span>
-              <Button size="sm" variant="outline" onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" />
-                {t("tool.common.download")}
-              </Button>
-            </div>
-            {audioDuration !== null && (
-              <div className="text-xs text-emerald-400">{t("tool.tts_fast.duration", { seconds: audioDuration })}</div>
-            )}
-            <audio controls className="w-full h-10">
-              <source src={audioUrl} type="audio/wav" />
-            </audio>
-          </div>
-        )}
+        <AudioResult
+          audioUrl={audioUrl}
+          downloadName={downloadName}
+          duration={audioDuration}
+          onDownload={handleDownload}
+          readyMessage={t("tool.tts_fast.audio_ready")}
+          durationMessage={audioDuration !== null ? t("tool.tts_fast.duration", { seconds: audioDuration }) : undefined}
+        />
       </CardContent>
     </Card>
   );

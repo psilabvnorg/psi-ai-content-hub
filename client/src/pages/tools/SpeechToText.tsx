@@ -248,7 +248,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                       <span className="text-sm">
                         {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
-                      {!status?.env?.installed && onOpenSettings && (
+                      {!serverUnreachable && !status?.env?.installed && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>
@@ -275,7 +275,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                       <span className="text-sm">
                         {status?.whisper?.ffmpeg_ok ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
-                      {!status?.whisper?.ffmpeg_ok && onOpenSettings && (
+                      {!serverUnreachable && !status?.whisper?.ffmpeg_ok && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>
@@ -300,7 +300,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                           ? t("settings.tools.status.ready")
                           : t("settings.tools.status.not_ready")}
                       </span>
-                      {!status?.whisper?.cached_models?.length && onOpenSettings && (
+                      {!serverUnreachable && !status?.whisper?.cached_models?.length && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>
