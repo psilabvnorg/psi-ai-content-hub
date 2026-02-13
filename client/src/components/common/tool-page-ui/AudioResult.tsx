@@ -38,7 +38,7 @@ export function AudioResult({
       </div>
       {duration !== null && duration !== undefined && (
         <div className="text-xs text-emerald-400">
-          {durationMessage || t("tool.common.duration", { seconds: duration })}
+          {durationMessage || t("tool.tts_fast.duration", { seconds: duration })}
         </div>
       )}
       <audio controls className="w-full h-10">

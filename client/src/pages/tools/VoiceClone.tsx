@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mic, Loader2, Download, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { F5_API_URL } from "@/lib/api";
+import { useManagedServices } from "@/hooks/useManagedServices";
 const MAX_CHARS = 500;
 
 type Voice = {
@@ -63,6 +64,10 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const [cfgStrength, setCfgStrength] = useState(2.0);
   const [nfeStep, setNfeStep] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(false);
+  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const serviceStatus = servicesById.f5;
+  const serviceRunning = serviceStatus?.status === "running";
+  const serviceBusy = isBusy("f5");
 
   const charCount = text.length;
   const overLimit = charCount > MAX_CHARS;
@@ -106,6 +111,26 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     fetchStatus();
     fetchVoices();
   }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+      fetchVoices();
+    }
+  }, [serviceStatus?.status]);
+
+  const handleToggleServer = async () => {
+    if (!serviceStatus) return;
+    if (serviceRunning) {
+      await stop("f5");
+      setStatus({ server_unreachable: true });
+      return;
+    }
+    await start("f5");
+    await fetchStatus();
+    await fetchVoices();
+  };
 
   const handleGenerate = async () => {
     if (!text.trim() || !selectedVoice || overLimit) return;
@@ -206,10 +231,22 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
                       <span className="text-sm">
                         {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
+                      {serviceStatus && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleToggleServer}
+                          disabled={serviceBusy || serviceStatus.status === "not_configured"}
+                          className="ml-2"
+                        >
+                          {serviceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {!serverUnreachable ? F5_API_URL : "--"}
+                    {F5_API_URL}
                   </TableCell>
                 </TableRow>
                 <TableRow>

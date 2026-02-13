@@ -7,6 +7,7 @@ import { RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { APP_API_URL, F5_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
+import { useManagedServices } from "@/hooks/useManagedServices";
 
 type SystemStatus = {
   status: string;
@@ -64,6 +65,17 @@ type WhisperModelStatus = {
 };
 
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
+const MANAGED_SERVICE_LABELS: Record<string, string> = {
+  app: "App API",
+  f5: "F5 Voice Clone API",
+  vieneu: "VieNeu TTS API",
+  whisper: "Whisper STT API",
+};
+const MANAGED_SERVICE_IDS = ["app", "f5", "vieneu", "whisper"] as const;
+
+function isManagedServiceId(value: string): value is (typeof MANAGED_SERVICE_IDS)[number] {
+  return MANAGED_SERVICE_IDS.includes(value as (typeof MANAGED_SERVICE_IDS)[number]);
+}
 
 async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
   const reader = response.body?.getReader();
@@ -109,10 +121,38 @@ export default function Settings() {
   const [whisperStatus, setWhisperStatus] = useState<WhisperModelStatus | null>(null);
   const [whisperModel, setWhisperModel] = useState<(typeof WHISPER_MODELS)[number]>("large-v3");
   const [whisperProgress, setWhisperProgress] = useState<ProgressData | null>(null);
+  const {
+    services,
+    supported: servicesSupported,
+    loading: servicesLoading,
+    refresh: refreshServices,
+    start: startService,
+    stop: stopService,
+    isBusy: isServiceBusy,
+  } = useManagedServices();
   const toolLabelMap: Record<string, I18nKey> = {
     "yt-dlp": "settings.tools.item.yt-dlp",
     "ffmpeg": "settings.tools.item.ffmpeg",
     "torch": "settings.tools.item.torch",
+  };
+
+  const getManagedServiceStatusText = (status: string) => {
+    switch (status) {
+      case "running":
+        return "Running";
+      case "starting":
+        return "Starting";
+      case "stopping":
+        return "Stopping";
+      case "stopped":
+        return "Stopped";
+      case "not_configured":
+        return "Venv missing";
+      case "error":
+        return "Error";
+      default:
+        return status;
+    }
   };
 
   const fetchStatus = async () => {
@@ -381,6 +421,7 @@ export default function Settings() {
     fetchF5Status();
     fetchVieneuStatus();
     fetchWhisperStatus();
+    refreshServices();
   }, []);
 
   return (
@@ -406,6 +447,89 @@ export default function Settings() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
+              <CardTitle>Backend Services</CardTitle>
+              <CardDescription>Start and stop FastAPI services manually from Electron</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={refreshServices} disabled={servicesLoading}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!servicesSupported ? (
+            <div className="text-sm text-muted-foreground">
+              Service controls are available in the Electron desktop app.
+            </div>
+          ) : (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                    <TableHead>{t("settings.tools.table.status")}</TableHead>
+                    <TableHead>API</TableHead>
+                    <TableHead>{t("settings.tools.table.path")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {services.map((service) => {
+                    const serviceId = service.id;
+                    if (!isManagedServiceId(serviceId)) {
+                      return null;
+                    }
+                    const running = service.status === "running";
+                    const busy = isServiceBusy(serviceId);
+                    const actionDisabled = busy || service.status === "not_configured";
+                    return (
+                      <TableRow key={serviceId}>
+                        <TableCell className="font-medium">
+                          {MANAGED_SERVICE_LABELS[service.id] || service.name}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {running ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : service.status === "starting" || service.status === "stopping" ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-red-500" />
+                            )}
+                            <span className="text-sm">{getManagedServiceStatusText(service.status)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-2"
+                              disabled={actionDisabled}
+                              onClick={() => {
+                                if (running) {
+                                  stopService(serviceId);
+                                  return;
+                                }
+                                startService(serviceId);
+                              }}
+                            >
+                              {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                              {running ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                            </Button>
+                          </div>
+                          {service.error ? <div className="text-xs text-red-500 mt-1">{service.error}</div> : null}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono break-all">{service.api_url}</TableCell>
+                        <TableCell className="text-xs font-mono break-all">{service.venv_python_path || "--"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
               <CardTitle>{t("settings.tools.title")}</CardTitle>
               <CardDescription>{t("settings.tools.desc")}</CardDescription>
             </div>
@@ -418,6 +542,7 @@ export default function Settings() {
                 fetchF5Status();
                 fetchVieneuStatus();
                 fetchWhisperStatus();
+                refreshServices();
               }}
               disabled={loading}
             >

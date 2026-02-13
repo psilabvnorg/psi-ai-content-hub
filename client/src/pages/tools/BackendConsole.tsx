@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, Terminal } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL } from "@/lib/api";
+import { useManagedServices } from "@/hooks/useManagedServices";
 
 type SystemStatus = {
   status?: string;
@@ -21,6 +22,10 @@ export default function BackendConsole() {
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const serviceStatus = servicesById.app;
+  const serviceRunning = serviceStatus?.status === "running";
+  const serviceBusy = isBusy("app");
 
   const fetchStatus = async () => {
     try {
@@ -49,6 +54,30 @@ export default function BackendConsole() {
     fetchStatus();
     fetchLogTail();
   }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running") {
+      fetchStatus();
+      fetchLogTail();
+    }
+    if (serviceStatus.status === "stopped") {
+      setServerUnreachable(true);
+    }
+  }, [serviceStatus?.status]);
+
+  const handleToggleServer = async () => {
+    if (!serviceStatus) return;
+    if (serviceRunning) {
+      await stop("app");
+      setServerUnreachable(true);
+      setLogs([]);
+      return;
+    }
+    await start("app");
+    await fetchStatus();
+    await fetchLogTail();
+  };
 
   useEffect(() => {
     if (logRef.current) {
@@ -98,6 +127,17 @@ export default function BackendConsole() {
                 <p className="text-xs text-destructive/90">
                   {t("tool.backend_console.unreachable_desc")}
                 </p>
+                {serviceStatus && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleToggleServer}
+                    disabled={serviceBusy || serviceStatus.status === "not_configured"}
+                  >
+                    {serviceBusy ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -111,6 +151,17 @@ export default function BackendConsole() {
             </div>
           </div>
           <div className="flex gap-2">
+            {serviceStatus && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleToggleServer}
+                disabled={serviceBusy || serviceStatus.status === "not_configured"}
+              >
+                {serviceBusy ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"

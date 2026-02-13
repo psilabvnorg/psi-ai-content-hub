@@ -10,6 +10,39 @@ let ttsFastServerProcess;
 let ipcClient = null;
 let pendingRequests = new Map();
 let requestId = 0;
+const managedServiceProcesses = new Map();
+const managedServiceRuntime = new Map();
+
+const MANAGED_SERVICES = [
+  {
+    id: 'app',
+    name: 'App API',
+    relativeRoot: path.join('python_api', 'app-and-basic-tool'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6901',
+  },
+  {
+    id: 'f5',
+    name: 'F5 Voice Clone API',
+    relativeRoot: path.join('python_api', 'F5-TTS'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6902',
+  },
+  {
+    id: 'vieneu',
+    name: 'VieNeu TTS API',
+    relativeRoot: path.join('python_api', 'VieNeu-TTS'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6903',
+  },
+  {
+    id: 'whisper',
+    name: 'Whisper STT API',
+    relativeRoot: path.join('python_api', 'whisper-stt'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6904',
+  },
+];
 
 // Check if dev server is running on port 5000
 const isDev = !app.isPackaged;
@@ -18,6 +51,304 @@ function getInstallDir() {
   return app.isPackaged ? path.dirname(process.execPath) : process.cwd();
 }
 
+function getProjectRoot() {
+  return app.isPackaged ? app.getAppPath() : process.cwd();
+}
+
+function getManagedServiceConfig(serviceId) {
+  const service = MANAGED_SERVICES.find((entry) => entry.id === serviceId);
+  if (!service) return null;
+
+  const serviceRoot = path.join(getProjectRoot(), service.relativeRoot);
+  const venvPythonPath = process.platform === 'win32'
+    ? path.join(serviceRoot, 'venv', 'Scripts', 'python.exe')
+    : path.join(serviceRoot, 'venv', 'bin', 'python');
+
+  return {
+    ...service,
+    serviceRoot,
+    venvPythonPath,
+    healthUrl: `${service.apiUrl}/api/v1/status`,
+  };
+}
+
+function getInitialManagedServiceRuntime(serviceId) {
+  const service = getManagedServiceConfig(serviceId);
+  if (!service) return null;
+
+  const configured = fs.existsSync(service.venvPythonPath);
+  return {
+    status: configured ? 'stopped' : 'not_configured',
+    pid: null,
+    error: null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function ensureManagedServiceRuntime(serviceId) {
+  if (!managedServiceRuntime.has(serviceId)) {
+    const initial = getInitialManagedServiceRuntime(serviceId);
+    if (initial) {
+      managedServiceRuntime.set(serviceId, initial);
+    }
+  }
+  return managedServiceRuntime.get(serviceId) || null;
+}
+
+function buildManagedServiceStatus(serviceId) {
+  const service = getManagedServiceConfig(serviceId);
+  const runtime = ensureManagedServiceRuntime(serviceId);
+  if (!service || !runtime) return null;
+
+  const configured = fs.existsSync(service.venvPythonPath);
+  return {
+    id: service.id,
+    name: service.name,
+    status: configured && runtime.status === 'not_configured' ? 'stopped' : runtime.status,
+    pid: runtime.pid,
+    error: runtime.error,
+    api_url: service.apiUrl,
+    health_url: service.healthUrl,
+    service_root: service.serviceRoot,
+    venv_python_path: service.venvPythonPath,
+    configured,
+    updated_at: runtime.updated_at,
+  };
+}
+
+function getManagedServicesStatusList() {
+  return MANAGED_SERVICES.map((service) => buildManagedServiceStatus(service.id)).filter(Boolean);
+}
+
+function broadcastManagedServicesStatus() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('services:status-changed', getManagedServicesStatusList());
+  }
+}
+
+function setManagedServiceRuntime(serviceId, patch) {
+  const current = ensureManagedServiceRuntime(serviceId);
+  if (!current) return null;
+
+  const next = {
+    ...current,
+    ...patch,
+    updated_at: new Date().toISOString(),
+  };
+  managedServiceRuntime.set(serviceId, next);
+  broadcastManagedServicesStatus();
+  return next;
+}
+
+function waitForProcessExit(processHandle, timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      resolve(value);
+    };
+
+    processHandle.once('exit', () => finish(true));
+    setTimeout(() => finish(false), timeoutMs);
+  });
+}
+
+async function waitForManagedServiceReady(serviceId, timeoutMs = 20000) {
+  const service = getManagedServiceConfig(serviceId);
+  if (!service) return false;
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    if (!managedServiceProcesses.has(serviceId)) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(service.healthUrl);
+      if (response.ok) {
+        return true;
+      }
+    } catch (error) {
+      // keep polling until timeout
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return false;
+}
+
+async function stopManagedService(serviceId) {
+  const service = getManagedServiceConfig(serviceId);
+  if (!service) {
+    throw new Error(`Unknown service id: ${serviceId}`);
+  }
+
+  const processHandle = managedServiceProcesses.get(serviceId);
+  if (!processHandle) {
+    const configured = fs.existsSync(service.venvPythonPath);
+    setManagedServiceRuntime(serviceId, {
+      status: configured ? 'stopped' : 'not_configured',
+      pid: null,
+      error: null,
+    });
+    return buildManagedServiceStatus(serviceId);
+  }
+
+  setManagedServiceRuntime(serviceId, {
+    status: 'stopping',
+    pid: processHandle.pid || null,
+    error: null,
+  });
+
+  try {
+    processHandle.kill();
+  } catch (error) {
+    console.error(`[ManagedService:${serviceId}] Failed to stop process:`, error);
+  }
+
+  const exited = await waitForProcessExit(processHandle, 8000);
+  if (!exited) {
+    try {
+      processHandle.kill('SIGKILL');
+    } catch (error) {
+      console.error(`[ManagedService:${serviceId}] Failed to force kill process:`, error);
+    }
+    await waitForProcessExit(processHandle, 3000);
+  }
+
+  managedServiceProcesses.delete(serviceId);
+  const configured = fs.existsSync(service.venvPythonPath);
+  setManagedServiceRuntime(serviceId, {
+    status: configured ? 'stopped' : 'not_configured',
+    pid: null,
+    error: null,
+  });
+  return buildManagedServiceStatus(serviceId);
+}
+
+async function startManagedService(serviceId) {
+  const service = getManagedServiceConfig(serviceId);
+  if (!service) {
+    throw new Error(`Unknown service id: ${serviceId}`);
+  }
+
+  const current = ensureManagedServiceRuntime(serviceId);
+  if (!current) {
+    throw new Error(`Unable to initialize service status for: ${serviceId}`);
+  }
+
+  if (current.status === 'running' || current.status === 'starting') {
+    return buildManagedServiceStatus(serviceId);
+  }
+
+  if (!fs.existsSync(service.serviceRoot)) {
+    setManagedServiceRuntime(serviceId, {
+      status: 'error',
+      pid: null,
+      error: `Service folder not found: ${service.serviceRoot}`,
+    });
+    return buildManagedServiceStatus(serviceId);
+  }
+
+  if (!fs.existsSync(service.venvPythonPath)) {
+    setManagedServiceRuntime(serviceId, {
+      status: 'not_configured',
+      pid: null,
+      error: `Missing venv python: ${service.venvPythonPath}`,
+    });
+    return buildManagedServiceStatus(serviceId);
+  }
+
+  setManagedServiceRuntime(serviceId, {
+    status: 'starting',
+    pid: null,
+    error: null,
+  });
+
+  const processHandle = spawn(
+    service.venvPythonPath,
+    ['-m', service.entryModule],
+    {
+      cwd: service.serviceRoot,
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: '1',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }
+  );
+
+  managedServiceProcesses.set(serviceId, processHandle);
+  setManagedServiceRuntime(serviceId, {
+    status: 'starting',
+    pid: processHandle.pid || null,
+    error: null,
+  });
+
+  processHandle.stdout.on('data', (data) => {
+    console.log(`[ManagedService:${serviceId}]`, data.toString().trim());
+  });
+
+  processHandle.stderr.on('data', (data) => {
+    console.error(`[ManagedService:${serviceId}:error]`, data.toString().trim());
+  });
+
+  processHandle.on('error', (error) => {
+    managedServiceProcesses.delete(serviceId);
+    setManagedServiceRuntime(serviceId, {
+      status: 'error',
+      pid: null,
+      error: error.message,
+    });
+  });
+
+  processHandle.on('exit', (code, signal) => {
+    managedServiceProcesses.delete(serviceId);
+    const runtime = ensureManagedServiceRuntime(serviceId);
+    const configured = fs.existsSync(service.venvPythonPath);
+    const stoppedByRequest = runtime && runtime.status === 'stopping';
+    const exitError = stoppedByRequest || code === 0
+      ? null
+      : `Exited with code ${code}${signal ? `, signal ${signal}` : ''}`;
+
+    setManagedServiceRuntime(serviceId, {
+      status: configured ? (stoppedByRequest ? 'stopped' : exitError ? 'error' : 'stopped') : 'not_configured',
+      pid: null,
+      error: exitError,
+    });
+  });
+
+  const ready = await waitForManagedServiceReady(serviceId);
+  if (!ready) {
+    await stopManagedService(serviceId);
+    setManagedServiceRuntime(serviceId, {
+      status: 'error',
+      pid: null,
+      error: `Service did not become healthy in time (${service.healthUrl})`,
+    });
+    return buildManagedServiceStatus(serviceId);
+  }
+
+  setManagedServiceRuntime(serviceId, {
+    status: 'running',
+    pid: processHandle.pid || null,
+    error: null,
+  });
+  return buildManagedServiceStatus(serviceId);
+}
+
+async function restartManagedService(serviceId) {
+  await stopManagedService(serviceId);
+  return startManagedService(serviceId);
+}
+
+function initializeManagedServicesState() {
+  MANAGED_SERVICES.forEach((service) => {
+    managedServiceRuntime.set(service.id, getInitialManagedServiceRuntime(service.id));
+  });
+}
 function getVenvDir() {
   return process.env.VOICE_CLONE_VENV_DIR || path.join(getInstallDir(), '.venv');
 }
@@ -249,6 +580,22 @@ function setupIpcHandlers() {
   // Relay messages to server process
   ipcMain.handle('server:send', async (event, name, args) => {
     return sendToServer(name, args);
+  });
+
+  ipcMain.handle('services:list', async () => {
+    return getManagedServicesStatusList();
+  });
+
+  ipcMain.handle('services:start', async (event, serviceId) => {
+    return startManagedService(serviceId);
+  });
+
+  ipcMain.handle('services:stop', async (event, serviceId) => {
+    return stopManagedService(serviceId);
+  });
+
+  ipcMain.handle('services:restart', async (event, serviceId) => {
+    return restartManagedService(serviceId);
   });
 
   // Voice Clone: check runtime + server status
@@ -548,24 +895,20 @@ function startServer() {
 app.whenReady().then(async () => {
   console.log('App ready, isDev:', isDev);
   console.log('App path:', app.getAppPath());
+  initializeManagedServicesState();
   
   // Setup IPC handlers
   setupIpcHandlers();
   
   // Start the server process
   startServer();
-
-  // Start Voice Clone Python server (REST-only)
-  startVoiceCloneServer();
-
-  // Start Fast TTS Python server (REST-only)
-  startTtsFastServer();
   
   // Wait a bit for server to initialize
   await new Promise(r => setTimeout(r, 500));
   
   // Create the main window
   createWindow();
+  broadcastManagedServicesStatus();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -596,6 +939,16 @@ app.on('before-quit', () => {
     ttsFastServerProcess.kill();
     ttsFastServerProcess = null;
   }
+
+  for (const [serviceId, processHandle] of managedServiceProcesses.entries()) {
+    console.log(`Killing managed service process: ${serviceId}`);
+    try {
+      processHandle.kill();
+    } catch (error) {
+      console.error(`Failed to kill managed service ${serviceId}:`, error);
+    }
+  }
+  managedServiceProcesses.clear();
 });
 
 process.on('uncaughtException', (err) => {

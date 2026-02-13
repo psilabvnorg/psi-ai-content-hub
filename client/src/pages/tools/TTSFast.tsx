@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n/i18n";
 import { VIENEU_API_URL } from "@/lib/api";
 import { ServiceStatusTable, ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useManagedServices } from "@/hooks/useManagedServices";
 
 const MAX_CHARS = 3000;
 
@@ -52,6 +53,10 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const overLimit = charCount > MAX_CHARS;
   const modelReady = modelStatus?.backbone_ready && modelStatus?.codec_ready;
   const statusReady = !serverUnreachable && envInstalled && modelReady;
+  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const serviceStatus = servicesById.vieneu;
+  const serviceRunning = serviceStatus?.status === "running";
+  const serviceBusy = isBusy("vieneu");
 
   // --- Data fetching ---
   const fetchStatus = async () => {
@@ -87,6 +92,48 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     fetchStatus();
     fetchVoices();
   }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+      fetchVoices();
+    }
+  }, [serviceStatus?.status]);
+
+  const handleToggleServer = async () => {
+    // Check if running in Electron
+    const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
+    
+    try {
+      if (isElectron && serviceStatus) {
+        // Use Electron API - this is the primary supported mode
+        if (serviceRunning) {
+          await stop("vieneu");
+          setServerUnreachable(true);
+        } else {
+          await start("vieneu");
+          await fetchStatus();
+          await fetchVoices();
+        }
+      } else if (!serverUnreachable) {
+        // Browser mode: can only STOP a running server
+        // Cannot start a server that's not running (chicken-and-egg problem)
+        const response = await fetch(`${VIENEU_API_URL}/api/v1/server/stop`, {
+          method: "POST",
+        });
+        if (response.ok) {
+          setServerUnreachable(true);
+        }
+      }
+      // If in browser mode and server is unreachable, do nothing
+      // User must manually start the server via command line
+    } catch (error) {
+      console.error("Error toggling server:", error);
+    }
+  };
+
+
 
   // --- Generate ---
   const handleGenerate = async () => {
@@ -154,13 +201,21 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   };
 
   // Build status rows configuration
+  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
+  
   const statusRows: StatusRowConfig[] = [
     {
       id: "server",
       label: t("tool.tts_fast.server_status"),
       isReady: !serverUnreachable,
-      path: !serverUnreachable ? VIENEU_API_URL : undefined,
-      onAction: onOpenSettings,
+      path: VIENEU_API_URL,
+      // Only show start/stop button in Electron mode or when server is running (for stop)
+      showActionButton: Boolean(serviceStatus) || (!isElectron && !serverUnreachable),
+      actionButtonLabel: serviceRunning || !serverUnreachable 
+        ? t("tool.common.stop_server") 
+        : t("tool.common.start_server"),
+      actionDisabled: serviceBusy || serviceStatus?.status === "not_configured" || (!isElectron && serverUnreachable),
+      onAction: handleToggleServer,
     },
     {
       id: "env",
@@ -199,7 +254,6 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
 
         {/* Status Table */}
         <ServiceStatusTable
-          apiUrl={VIENEU_API_URL}
           serverUnreachable={serverUnreachable}
           rows={statusRows}
           onRefresh={fetchStatus}

@@ -1,23 +1,62 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Play, Square } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { ServiceStatusConfig } from "./types";
 
-export function ServiceStatusTable({ apiUrl, serverUnreachable, rows, onRefresh }: ServiceStatusConfig) {
+export function ServiceStatusTable({ 
+  serverUnreachable, 
+  rows, 
+  onRefresh,
+  onServerToggle,
+  isServerStarting = false,
+}: ServiceStatusConfig) {
   const { t } = useI18n();
+  
+  // Check if running in Electron
+  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
 
   // Find the server row from the rows array
   const serverRow = rows.find(row => row.id === "server");
   const otherRows = rows.filter(row => row.id !== "server");
+  
+  // In browser mode, only show stop button when server is running
+  const showServerToggle = onServerToggle && (isElectron || !serverUnreachable);
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground/85">{t("tool.common.service_status")}</h3>
-        <Button size="sm" variant="outline" onClick={onRefresh}>
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <h3 className="text-sm font-semibold text-foreground/85">{t("tool.tts_fast.service_status")}</h3>
+        <div className="flex items-center gap-2">
+          {showServerToggle && (
+            <Button 
+              size="sm" 
+              variant={serverUnreachable ? "default" : "destructive"}
+              onClick={onServerToggle}
+              disabled={isServerStarting}
+            >
+              {isServerStarting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  {t("tool.common.starting")}
+                </>
+              ) : serverUnreachable ? (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  {t("tool.common.start_server")}
+                </>
+              ) : (
+                <>
+                  <Square className="w-4 h-4 mr-2" />
+                  {t("tool.common.stop_server")}
+                </>
+              )}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onRefresh}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
       <div className="border rounded-lg">
         <Table>
@@ -43,9 +82,48 @@ export function ServiceStatusTable({ apiUrl, serverUnreachable, rows, onRefresh 
                     <span className="text-sm">
                       {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                     </span>
-                    {serverUnreachable && serverRow.onAction && (
-                      <Button size="sm" variant="outline" onClick={serverRow.onAction} className="ml-2">
-                        {t("tool.common.turn_on_server")}
+                    {serverRow.showActionButton && serverRow.onAction && (
+                      <Button
+                        size="sm"
+                        variant={!serverUnreachable ? "destructive" : "default"}
+                        onClick={serverRow.onAction}
+                        className="ml-2"
+                        disabled={serverRow.actionDisabled}
+                      >
+                        {serverRow.actionDisabled ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            {t("tool.common.starting")}
+                          </>
+                        ) : !serverUnreachable ? (
+                          <>
+                            <Square className="w-4 h-4 mr-2" />
+                            {t("tool.common.stop_server")}
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            {t("tool.common.start_server")}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {(() => {
+                      console.log('[ServiceStatusTable] Server row secondary action:', {
+                        showSecondaryAction: serverRow.showSecondaryAction,
+                        hasOnSecondaryAction: !!serverRow.onSecondaryAction,
+                        secondaryActionLabel: serverRow.secondaryActionLabel,
+                      });
+                      return null;
+                    })()}
+                    {serverRow.showSecondaryAction && serverRow.onSecondaryAction && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={serverRow.onSecondaryAction}
+                        className="ml-2"
+                      >
+                        {serverRow.secondaryActionLabel || "Start in Terminal"}
                       </Button>
                     )}
                   </div>
@@ -77,7 +155,13 @@ export function ServiceStatusTable({ apiUrl, serverUnreachable, rows, onRefresh 
                         : t("settings.tools.status.not_ready")}
                     </span>
                     {!serverUnreachable && row.showActionButton && row.onAction && (
-                      <Button size="sm" variant="outline" onClick={row.onAction} className="ml-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={row.onAction}
+                        className="ml-2"
+                        disabled={row.actionDisabled}
+                      >
                         {row.actionButtonLabel || t("tool.common.open_settings")}
                       </Button>
                     )}

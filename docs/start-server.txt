@@ -1,0 +1,78 @@
+How the "Start Server" Button Works
+The flow involves three layers: React UI → Electron Preload → Electron Main Process
+
+1. UI Layer (TTSFast.tsx)
+When you click the "Start Server" button, it triggers handleToggleServer():
+
+const handleToggleServer = async () => {
+  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
+  
+  if (isElectron && serviceStatus) {
+    if (serviceRunning) {
+      await stop("vieneu");  // Stop the service
+    } else {
+      await start("vieneu");  // Start the service
+    }
+  }
+};
+The start() function comes from the useManagedServices hook, which internally calls:
+
+await window.electronAPI.services.start("vieneu");
+2. Preload Bridge (preload.cjs)
+The preload script exposes the Electron API to the renderer process securely via contextBridge:
+
+services: {
+  start: (serviceId) => ipcRenderer.invoke('services:start', serviceId),
+  // ...
+}
+This sends an IPC message 'services:start' with the service ID "vieneu" to the main process.
+
+3. Main Process (main.cjs)
+The main process has an IPC handler that receives the message:
+
+ipcMain.handle('services:start', async (event, serviceId) => {
+  return startManagedService(serviceId);
+});
+The startManagedService() function:
+
+Validates the service exists in MANAGED_SERVICES array
+Checks if already running - returns current status if so
+Verifies the venv exists at the configured path
+Updates status to "starting" and broadcasts to UI
+Spawns the Python process using spawn():
+const processHandle = spawn(
+  service.venvPythonPath,  // e.g., python_api/VieNeu-TTS/venv/Scripts/python.exe
+  ['-m', service.entryModule],  // e.g., ['-m', 'app.main']
+  {
+    cwd: service.serviceRoot,  // python_api/VieNeu-TTS
+    env: { ...process.env, PYTHONUNBUFFERED: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }
+);
+Waits for health check by polling http://127.0.0.1:6903/api/v1/status until it responds (up to 20 seconds)
+Updates status to "running" if healthy, or "error" if timeout
+Returns the service status back through the IPC chain
+Service Configuration
+For the VieNeu TTS service ("vieneu"), the configuration is:
+
+{
+  id: 'vieneu',
+  name: 'VieNeu TTS API',
+  relativeRoot: path.join('python_api', 'VieNeu-TTS'),
+  entryModule: 'app.main',
+  apiUrl: 'http://127.0.0.1:6903',
+}
+This means it runs: python -m app.main from the python_api/VieNeu-TTS directory.
+
+Status Broadcasting
+Throughout the process, status changes are broadcast to the UI via:
+
+function broadcastManagedServicesStatus() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('services:status-changed', getManagedServicesStatusList());
+  }
+}
+The UI listens for these updates via the useManagedServices hook, which keeps the button state and status indicators in sync.
+
+Summary
+Button Click → start("vieneu") → IPC 'services:start' → startManagedService() → Spawn Python process → Health check → Update status → Broadcast to UI → Button updates to "Stop Server"

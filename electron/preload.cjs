@@ -41,6 +41,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ttsFastStatus: () => ipcRenderer.invoke('tts-fast:status'),
   ttsFastStartServer: () => ipcRenderer.invoke('tts-fast:start-server'),
   ttsFastStopServer: () => ipcRenderer.invoke('tts-fast:stop-server'),
+
+  services: {
+    list: () => ipcRenderer.invoke('services:list'),
+    start: (serviceId) => ipcRenderer.invoke('services:start', serviceId),
+    stop: (serviceId) => ipcRenderer.invoke('services:stop', serviceId),
+    restart: (serviceId) => ipcRenderer.invoke('services:restart', serviceId),
+    onStatusChanged: (callback) => {
+      const handler = (event, data) => callback(data);
+      ipcRenderer.on('services:status-changed', handler);
+      return () => ipcRenderer.removeListener('services:status-changed', handler);
+    },
+  },
 });
 
 console.log('Preload script loaded');

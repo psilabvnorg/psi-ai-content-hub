@@ -27,12 +27,17 @@ export type StatusRowConfig = {
   path?: string;
   showActionButton?: boolean;
   actionButtonLabel?: string;
+  actionDisabled?: boolean;
   onAction?: () => void;
+  showSecondaryAction?: boolean;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
 };
 
 export type ServiceStatusConfig = {
-  apiUrl: string;
   serverUnreachable: boolean;
   rows: StatusRowConfig[];
   onRefresh: () => void;
+  onServerToggle?: () => void;
+  isServerStarting?: boolean;
 };

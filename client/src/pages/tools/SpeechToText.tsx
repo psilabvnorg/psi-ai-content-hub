@@ -7,6 +7,7 @@ import { Upload, Loader2, Download, FileText, CheckCircle, XCircle, RefreshCw } 
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { WHISPER_API_URL } from "@/lib/api";
+import { useManagedServices } from "@/hooks/useManagedServices";
 
 const MODELS = ["tiny", "base", "small", "medium", "large"] as const;
 const LANGUAGES: Array<{ code: string; nameKey: I18nKey }> = [
@@ -85,6 +86,10 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [logs, setLogs] = useState<string[]>([]);
   const [result, setResult] = useState<ResultData | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const serviceStatus = servicesById.whisper;
+  const serviceRunning = serviceStatus?.status === "running";
+  const serviceBusy = isBusy("whisper");
 
   const serverUnreachable = status?.server_unreachable === true;
   const depsNotOk = status?.env?.installed === false;
@@ -115,6 +120,24 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   useEffect(() => {
     fetchStatus();
   }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+    }
+  }, [serviceStatus?.status]);
+
+  const handleToggleServer = async () => {
+    if (!serviceStatus) return;
+    if (serviceRunning) {
+      await stop("whisper");
+      setStatus({ server_unreachable: true });
+      return;
+    }
+    await start("whisper");
+    await fetchStatus();
+  };
 
   const handleTranscribe = async () => {
     if (!audioFile) return;
@@ -230,10 +253,22 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                       <span className="text-sm">
                         {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
+                      {serviceStatus && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleToggleServer}
+                          disabled={serviceBusy || serviceStatus.status === "not_configured"}
+                          className="ml-2"
+                        >
+                          {serviceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {!serverUnreachable ? WHISPER_API_URL : "--"}
+                    {WHISPER_API_URL}
                   </TableCell>
                 </TableRow>
                 <TableRow>
