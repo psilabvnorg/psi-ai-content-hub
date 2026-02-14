@@ -86,7 +86,7 @@ def download_model(job_store: JobStore, model_name: str) -> str:
     return task_id
 
 
-def transcribe(job_store: JobStore, file_path: Path, model: str, language: Optional[str], add_punctuation: bool) -> str:
+def transcribe(job_store: JobStore, file_path: Path, model: str, language: Optional[str], add_punctuation: bool, word_timestamps: bool = False) -> str:
     task_id = f"stt_{uuid.uuid4().hex}"
     progress_store.set_progress(task_id, "queued", 0, "Queued")
 
@@ -100,7 +100,7 @@ def transcribe(job_store: JobStore, file_path: Path, model: str, language: Optio
             model_obj = whisper.load_model(model, download_root=str(MODEL_WHISPER_DIR))
             progress_store.set_progress(task_id, "transcribing", 40, "Transcribing...")
             fp16 = torch.cuda.is_available()
-            result = model_obj.transcribe(str(file_path), language=language, verbose=False, fp16=fp16)
+            result = model_obj.transcribe(str(file_path), language=language, verbose=False, fp16=fp16, word_timestamps=word_timestamps)
             progress_store.set_progress(task_id, "finalizing", 90, "Finalizing...")
             text_with_punct = (result.get("text") or "").strip()
             text_no_punct = _strip_punctuation(text_with_punct)

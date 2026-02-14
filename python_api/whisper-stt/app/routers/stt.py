@@ -30,11 +30,12 @@ def stt_transcribe_route(
     model: str = Form("large-v3"),
     language: Optional[str] = Form("vi"),
     add_punctuation: bool = Form(True),
+    word_timestamps: bool = Form(False),
     job_store: JobStore = Depends(get_job_store),
 ) -> dict:
     content = file.file.read()
     input_path = save_upload(file.filename or "audio.wav", content)
-    task_id = stt_transcribe(job_store, input_path, model, language, add_punctuation)
+    task_id = stt_transcribe(job_store, input_path, model, language, add_punctuation, word_timestamps)
     return {"task_id": task_id}
 
 

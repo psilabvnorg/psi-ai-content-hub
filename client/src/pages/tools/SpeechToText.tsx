@@ -80,6 +80,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [language, setLanguage] = useState("vi");
   const [model, setModel] = useState<(typeof MODELS)[number]>("base");
   const [addPunctuation, setAddPunctuation] = useState(true);
+  const [wordTimestamps, setWordTimestamps] = useState(false);
   const [status, setStatus] = useState<StatusData | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -151,6 +152,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     formData.append("model", model);
     formData.append("language", language);
     formData.append("add_punctuation", String(addPunctuation));
+    formData.append("word_timestamps", String(wordTimestamps));
 
     try {
       const res = await fetch(`${WHISPER_API_URL}/api/v1/transcribe`, {
@@ -373,7 +375,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.language")}</label>
             <Select value={language} onValueChange={setLanguage}>
@@ -409,6 +411,13 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={addPunctuation} onChange={(e) => setAddPunctuation(e.target.checked)} />
               <span className="text-xs text-muted-foreground">{t("tool.stt.restore_punctuation")}</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.word_timestamps")}</label>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={wordTimestamps} onChange={(e) => setWordTimestamps(e.target.checked)} />
+              <span className="text-xs text-muted-foreground">{t("tool.stt.enable_word_timestamps")}</span>
             </div>
           </div>
         </div>
