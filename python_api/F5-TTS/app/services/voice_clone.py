@@ -138,9 +138,13 @@ def generate(
             output_name = f"voice_clone_{int(time.time())}.wav"
             output_path = TEMP_DIR / output_name
 
-            # Use f5-tts_infer-cli command directly (same as working infer.py)
+            # Use full path to f5-tts_infer-cli from the venv Scripts/bin dir
+            # (when launched from Electron, venv isn't activated so bare name won't resolve)
+            venv_scripts_dir = Path(sys.executable).parent
+            cli_name = "f5-tts_infer-cli.exe" if sys.platform == "win32" else "f5-tts_infer-cli"
+            cli_path = str(venv_scripts_dir / cli_name)
             cmd = [
-                "f5-tts_infer-cli",
+                cli_path,
                 "--model", "F5TTS_Base",
                 "--ref_audio", str(ref_audio),
                 "--ref_text", ref_text,
@@ -157,7 +161,6 @@ def generate(
 
             progress_store.set_progress(task_id, "generating", 30, "Generating audio...")
             
-            # Set UTF-8 encoding environment variables
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
             env["PYTHONLEGACYWINDOWSSTDIO"] = "utf-8"

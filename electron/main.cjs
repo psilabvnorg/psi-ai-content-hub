@@ -282,6 +282,7 @@ async function startManagedService(serviceId) {
       env: {
         ...process.env,
         PYTHONUNBUFFERED: '1',
+        PYTHONIOENCODING: 'utf-8',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     }
@@ -801,6 +802,7 @@ function createWindow() {
     height: 900,
     minWidth: 800,
     minHeight: 600,
+    icon: path.join(getProjectRoot(), 'client', 'public', 'favicon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 import threading
 from pathlib import Path
 from typing import Optional
@@ -10,6 +11,7 @@ from python_api.common.logging import log
 from python_api.common.paths import TEMP_DIR
 from python_api.common.progress import ProgressStore
 from python_api.common.jobs import JobStore
+from app.services.tools_manager import _yt_dlp_path, _ffmpeg_bin_path
 
 
 _PROGRESS_RE = re.compile(r"(\d+\.?\d*)%")
@@ -29,8 +31,16 @@ def start_download(
         output_file = TEMP_DIR / f"{platform}_video_{job.job_id}.mp4"
         try:
             progress_store.set_progress(job.job_id, "starting", 0, "Starting download...")
+
+            # Resolve full paths to external tools
+            # (when launched from Electron, venv isn't activated so bare names won't resolve)
+            yt_dlp_bin = _yt_dlp_path()
+            if not yt_dlp_bin:
+                # Fallback: check venv Scripts dir
+                venv_scripts = Path(sys.executable).parent
+                yt_dlp_bin = venv_scripts / ("yt-dlp.exe" if sys.platform == "win32" else "yt-dlp")
             ytdlp_args = [
-                "yt-dlp",
+                str(yt_dlp_bin),
                 "-f",
                 "bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "-o",
@@ -60,11 +70,19 @@ def start_download(
                 raise RuntimeError(f"yt-dlp exited with code {code}")
 
             progress_store.set_progress(job.job_id, "processing", 90, "Checking codec...")
+
+            # Resolve ffmpeg/ffprobe paths from tools_manager
+            ffmpeg_bin = _ffmpeg_bin_path()
+            ffprobe_bin = None
+            if ffmpeg_bin:
+                ffprobe_name = "ffprobe.exe" if sys.platform == "win32" else "ffprobe"
+                ffprobe_bin = ffmpeg_bin.parent / ffprobe_name
+
             video_codec = "unknown"
             try:
                 probe = subprocess.check_output(
                     [
-                        "ffprobe",
+                        str(ffprobe_bin) if ffprobe_bin else "ffprobe",
                         "-v",
                         "error",
                         "-select_streams",
@@ -86,7 +104,7 @@ def start_download(
                 progress_store.set_progress(job.job_id, "converting", 95, "Converting to H.264...")
                 subprocess.check_call(
                     [
-                        "ffmpeg",
+                        str(ffmpeg_bin) if ffmpeg_bin else "ffmpeg",
                         "-i",
                         str(temp_download),
                         "-c:v",

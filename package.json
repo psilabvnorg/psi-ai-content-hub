@@ -138,6 +138,7 @@
     ],
     "asar": false,
     "win": {
+      "icon": "client/public/favicon.png",
       "target": [
         "nsis"
       ]

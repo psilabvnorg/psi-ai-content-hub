@@ -11,7 +11,14 @@ from fastapi.responses import StreamingResponse
 from python_api.common.paths import TEMP_DIR
 from ..deps import get_job_store
 from ..services.video import get_download_status, progress_store as video_progress, start_download
+from ..services.tools_manager import _ffmpeg_bin_path
 from python_api.common.jobs import JobStore
+
+
+def _get_ffmpeg_cmd() -> str:
+    """Return full path to ffmpeg, falling back to bare name."""
+    ffmpeg_bin = _ffmpeg_bin_path()
+    return str(ffmpeg_bin) if ffmpeg_bin else "ffmpeg"
 
 
 router = APIRouter(prefix="/api/v1", tags=["media"])
@@ -53,7 +60,7 @@ def video_trim(
 ) -> dict:
     input_path = _save_upload(file)
     output_path = input_path.with_suffix(".trimmed.mp4")
-    cmd = ["ffmpeg", "-i", str(input_path), "-ss", start_time]
+    cmd = [_get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
     if end_time:
         cmd.extend(["-to", end_time])
     cmd.extend(["-c", "copy", "-y", str(output_path)])
@@ -74,7 +81,7 @@ def video_extract_audio(
     output_path = input_path.with_suffix(f".{format}")
     codec = "libmp3lame" if format == "mp3" else "pcm_s16le"
     subprocess.check_call(
-        ["ffmpeg", "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
+        [_get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
     )
     file_record = job_store.add_file(output_path, output_path.name)
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
@@ -91,7 +98,7 @@ def audio_convert(
     input_path = _save_upload(file)
     output_path = input_path.with_suffix(f".{output_format}")
     codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
-    subprocess.check_call(["ffmpeg", "-i", str(input_path), "-acodec", codec, "-y", str(output_path)])
+    subprocess.check_call([_get_ffmpeg_cmd(), "-i", str(input_path), "-acodec", codec, "-y", str(output_path)])
     file_record = job_store.add_file(output_path, output_path.name)
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
 
@@ -109,7 +116,7 @@ def video_speed(
     pts_multiplier = 1.0 / speed
     subprocess.check_call(
         [
-            "ffmpeg",
+            _get_ffmpeg_cmd(),
             "-i",
             str(input_path),
             "-filter:v",
