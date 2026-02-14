@@ -42,6 +42,13 @@ const MANAGED_SERVICES = [
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6904',
   },
+  {
+    id: 'bgremove',
+    name: 'Background Removal API',
+    relativeRoot: path.join('python_api', 'background-removal'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6905',
+  },
 ];
 
 // Check if dev server is running on port 5000

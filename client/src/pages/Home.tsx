@@ -109,6 +109,12 @@ const features = {
       icon: ImageIcon,
       descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
     },
+    {
+      id: "background-removal",
+      titleKey: "feature.tool.background_removal.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.background_removal.desc" as I18nKey,
+    },
     { 
       id: "tts-fast",
       titleKey: "feature.tool.tts_fast.title" as I18nKey,

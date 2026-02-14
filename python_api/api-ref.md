@@ -325,3 +325,69 @@ Schemas
 Body_stt_transcribe_route_api_v1_transcribe_postExpand allobject
 HTTPValidationErrorExpand allobject
 ValidationErrorExpand allobject
+---------------------------------------
+---------------------------------------
+---------------------------------------
+---------------------------------------
+---------------------------------------
+Background Removal Service
+ 1.0.0 
+OAS 3.1
+/openapi.json
+system
+
+
+GET
+/api/v1/health
+Health
+
+
+GET
+/api/v1/status
+Status
+
+env
+
+
+GET
+/api/v1/env/status
+Env Status
+
+
+POST
+/api/v1/env/install
+Env Install
+
+background-removal
+
+
+POST
+/api/v1/remove/upload
+Remove Background Upload
+
+
+POST
+/api/v1/remove/url
+Remove Background Url
+
+
+GET
+/api/v1/remove/stream/{task_id}
+Remove Progress Stream
+
+
+GET
+/api/v1/remove/result/{task_id}
+Remove Result
+
+files
+
+
+GET
+/api/v1/files/{file_id}
+Download
+
+
+Schemas
+HTTPValidationErrorExpand allobject
+ValidationErrorExpand allobject

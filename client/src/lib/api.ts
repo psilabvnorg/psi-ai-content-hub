@@ -9,6 +9,7 @@ export const APP_API_URL = getServiceApiUrl('app');
 export const F5_API_URL = getServiceApiUrl('f5');
 export const VIENEU_API_URL = getServiceApiUrl('vieneu');
 export const WHISPER_API_URL = getServiceApiUrl('whisper');
+export const BGREMOVE_API_URL = getServiceApiUrl('bgremove');
 
 export const API_URL = getApiUrl();
 

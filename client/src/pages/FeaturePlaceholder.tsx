@@ -15,6 +15,7 @@ import TTSFast from "./tools/TTSFast";
 import VoiceClone from "./tools/VoiceClone";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
+import BackgroundRemoval from "./tools/BackgroundRemoval";
 import ReupYoutube from "./tools/ReupYoutube";
 import BackendConsole from "./tools/BackendConsole";
 import Settings from "./Settings";
@@ -54,6 +55,7 @@ export default function FeaturePlaceholder({
       "trim-video": "feature.tool.trim_video.title",
       "adjust-speed": "feature.tool.adjust_speed.title",
       "thumbnail": "feature.tool.thumbnail.title",
+      "background-removal": "feature.tool.background_removal.title",
       "tts-fast": "feature.tool.tts_fast.title",
       "voice-clone": "feature.tool.voice_clone.title",
       "stt": "feature.tool.stt.title",
@@ -99,6 +101,8 @@ export default function FeaturePlaceholder({
         return <SpeechToText onOpenSettings={() => onSelectFeature("settings")} />;
       case "thumbnail":
         return <ThumbnailCreator />;
+      case "background-removal":
+        return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
         return <ReupYoutube />;
       case "backend-console":

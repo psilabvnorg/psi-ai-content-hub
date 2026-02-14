@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export type ManagedServiceId = "app" | "f5" | "vieneu" | "whisper";
+export type ManagedServiceId = "app" | "f5" | "vieneu" | "whisper" | "bgremove";
 export type ManagedServiceStatusState =
   | "not_configured"
   | "stopped"

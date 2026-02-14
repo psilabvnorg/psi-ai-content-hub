@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { APP_API_URL, F5_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
+import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { useManagedServices } from "@/hooks/useManagedServices";
@@ -64,14 +64,23 @@ type WhisperModelStatus = {
   cached_models?: string[];
 };
 
+type BgRemoveModelStatus = {
+  model_id?: string;
+  model_loaded?: boolean;
+  model_loading?: boolean;
+  model_error?: string | null;
+  device?: "cuda" | "cpu";
+};
+
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
 const MANAGED_SERVICE_LABELS: Record<string, string> = {
   app: "App API",
   f5: "F5 Voice Clone API",
   vieneu: "VieNeu TTS API",
   whisper: "Whisper STT API",
+  bgremove: "Background Removal API",
 };
-const MANAGED_SERVICE_IDS = ["app", "f5", "vieneu", "whisper"] as const;
+const MANAGED_SERVICE_IDS = ["app", "f5", "vieneu", "whisper", "bgremove"] as const;
 
 function isManagedServiceId(value: string): value is (typeof MANAGED_SERVICE_IDS)[number] {
   return MANAGED_SERVICE_IDS.includes(value as (typeof MANAGED_SERVICE_IDS)[number]);
@@ -121,6 +130,9 @@ export default function Settings() {
   const [whisperStatus, setWhisperStatus] = useState<WhisperModelStatus | null>(null);
   const [whisperModel, setWhisperModel] = useState<(typeof WHISPER_MODELS)[number]>("large-v3");
   const [whisperProgress, setWhisperProgress] = useState<ProgressData | null>(null);
+  const [bgRemoveEnv, setBgRemoveEnv] = useState<EnvStatus | null>(null);
+  const [bgRemoveStatus, setBgRemoveStatus] = useState<BgRemoveModelStatus | null>(null);
+  const [bgRemoveProgress, setBgRemoveProgress] = useState<ProgressData | null>(null);
   const {
     services,
     supported: servicesSupported,
@@ -407,6 +419,40 @@ export default function Settings() {
     }
   };
 
+  const fetchBgRemoveStatus = async () => {
+    try {
+      const [envRes, statusRes] = await Promise.all([
+        fetch(`${BGREMOVE_API_URL}/api/v1/env/status`),
+        fetch(`${BGREMOVE_API_URL}/api/v1/status`),
+      ]);
+      if (!envRes.ok || !statusRes.ok) throw new Error("Background removal status failed");
+      const envData = (await envRes.json()) as EnvStatus;
+      const statusData = (await statusRes.json()) as { models?: { background_removal?: BgRemoveModelStatus } };
+      setBgRemoveEnv(envData);
+      setBgRemoveStatus(statusData.models?.background_removal ?? null);
+    } catch {
+      setBgRemoveEnv(null);
+      setBgRemoveStatus(null);
+    }
+  };
+
+  const handleBgRemoveEnvInstall = async () => {
+    setBgRemoveProgress({ status: "starting", percent: 0, message: t("settings.bgremove.env_installing") });
+    try {
+      const res = await fetch(`${BGREMOVE_API_URL}/api/v1/env/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("env install failed");
+      setBgRemoveProgress({ status: "complete", percent: 100, message: t("settings.bgremove.env_installed") });
+    } catch {
+      setBgRemoveProgress({ status: "error", percent: 0, message: t("settings.bgremove.env_install_failed") });
+    } finally {
+      fetchBgRemoveStatus();
+    }
+  };
+
   useEffect(() => {
     if (!vieneuConfigs) return;
     const backbones = Object.keys(vieneuConfigs.backbones || {});
@@ -421,6 +467,7 @@ export default function Settings() {
     fetchF5Status();
     fetchVieneuStatus();
     fetchWhisperStatus();
+    fetchBgRemoveStatus();
     refreshServices();
   }, []);
 
@@ -530,6 +577,102 @@ export default function Settings() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
+              <CardTitle>{t("settings.bgremove.title")}</CardTitle>
+              <CardDescription>{t("settings.bgremove.desc")}</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchBgRemoveStatus}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.bgremove.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {bgRemoveEnv?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {bgRemoveEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!bgRemoveEnv?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleBgRemoveEnvInstall}
+                          disabled={bgRemoveProgress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {bgRemoveProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {t("settings.bgremove.install_env")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {bgRemoveEnv?.installed_modules?.length
+                      ? bgRemoveEnv.installed_modules.join(", ")
+                      : bgRemoveEnv?.missing?.length
+                        ? bgRemoveEnv.missing.join(", ")
+                        : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("settings.bgremove.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {bgRemoveStatus?.model_loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                      ) : bgRemoveStatus?.model_loaded ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {bgRemoveStatus?.model_loading
+                          ? t("settings.bgremove.model_loading")
+                          : bgRemoveStatus?.model_loaded
+                            ? t("settings.tools.status.ready")
+                            : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {bgRemoveStatus
+                      ? `${bgRemoveStatus.model_id || "BiRefNet"} (${bgRemoveStatus.device || "cpu"})${
+                          bgRemoveStatus.model_error ? ` - ${bgRemoveStatus.model_error}` : ""
+                        }`
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          {bgRemoveProgress && (
+            <div className="text-xs text-muted-foreground">
+              {bgRemoveProgress.message} {bgRemoveProgress.percent ?? 0}%
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
               <CardTitle>{t("settings.tools.title")}</CardTitle>
               <CardDescription>{t("settings.tools.desc")}</CardDescription>
             </div>
@@ -542,6 +685,7 @@ export default function Settings() {
                 fetchF5Status();
                 fetchVieneuStatus();
                 fetchWhisperStatus();
+                fetchBgRemoveStatus();
                 refreshServices();
               }}
               disabled={loading}

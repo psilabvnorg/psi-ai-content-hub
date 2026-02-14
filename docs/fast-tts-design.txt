@@ -1,0 +1,135 @@
+FAST TTS DESIGN (Simple Guide)
+==============================
+
+1) Service overview
+-------------------
+Service name: VieNeu TTS Service
+Version: 1.0.0
+OpenAPI: /openapi.json
+Base URL: http://127.0.0.1:6903
+
+
+2) Main API endpoints
+---------------------
+System
+- GET /api/v1/health -> Health check
+- GET /api/v1/status -> Service status
+
+Environment
+- GET /api/v1/env/status -> Check Python dependencies
+- POST /api/v1/env/install -> Install dependencies
+
+Models
+- GET /api/v1/models/configs -> List model configs
+- POST /api/v1/models/download -> Download model files
+- POST /api/v1/models/load -> Load model into memory
+- POST /api/v1/models/unload -> Unload model
+
+Voices + Generation
+- GET /api/v1/voices -> List preset voices
+- POST /api/v1/generate -> Start TTS generation task
+- GET /api/v1/generate/stream/{task_id} -> Stream progress
+- GET /api/v1/generate/download/{task_id} -> Download result audio
+
+Files
+- GET /api/v1/files/{file_id} -> Download file
+
+
+3) How Start Server button works
+---------------------------------
+Flow: React UI -> Electron Preload -> Electron Main Process
+
+Reference files (original flow)
+- UI button logic: client/src/pages/tools/TTSFast.tsx
+- Service hook: client/src/hooks/useManagedServices.ts
+- Electron preload bridge: electron/preload.cjs
+- Electron IPC + service startup: electron/main.cjs
+
+Step by step with source references:
+1. User clicks Start Server in the TTS page.
+   - File: client/src/pages/tools/TTSFast.tsx
+   - Function: handleToggleServer()
+
+2. UI calls managed service start.
+   - File: client/src/hooks/useManagedServices.ts
+   - Call: start("vieneu")
+   - Internal IPC call: window.electronAPI.services.start("vieneu")
+
+3. Preload forwards renderer request to main process.
+   - File: electron/preload.cjs
+   - Bridge maps services.start(...) to ipcRenderer.invoke('services:start', serviceId)
+
+4. Main process receives IPC and starts service.
+   - File: electron/main.cjs
+   - Handler: ipcMain.handle('services:start', ...)
+   - Calls: startManagedService(serviceId)
+
+5. startManagedService() validates runtime paths.
+   - File: electron/main.cjs
+   - Checks service exists in MANAGED_SERVICES
+   - Checks service root and venv python path
+
+6. Main process starts Python server process.
+   - File: electron/main.cjs
+   - Uses spawn(service.venvPythonPath, ['-m', service.entryModule], ...)
+   - For vieneu:
+     - service root: python_api/VieNeu-TTS
+     - entry module: app.main
+     - api url: http://127.0.0.1:6903
+
+7. Main process health-checks until ready.
+   - File: electron/main.cjs
+   - Function: waitForManagedServiceReady()
+   - Polls: /api/v1/status (about 20 seconds timeout)
+
+8. Status update is pushed back to UI.
+   - File: electron/main.cjs
+   - Function: broadcastManagedServicesStatus()
+   - Event: services:status-changed
+
+9. UI updates button state.
+   - File: client/src/hooks/useManagedServices.ts
+   - Hook listens for status changes and updates state
+   - In UI, button label changes from Start Server to Stop Server
+
+
+4) Managed service config (vieneu)
+-----------------------------------
+- id: vieneu
+- name: VieNeu TTS API
+- relative root: python_api/VieNeu-TTS
+- entry module: app.main
+- api url: http://127.0.0.1:6903
+
+
+5) Project paths
+----------------
+Backend
+- D:\AI\psi-ai-content-hub\python_api
+- venv folder: D:\AI\psi-ai-content-hub\python_api\venv
+- FastAPI app: D:\AI\psi-ai-content-hub\python_api\app
+- quick test script: D:\AI\psi-ai-content-hub\python_api\simple_test.py
+
+Frontend
+- D:\AI\psi-ai-content-hub\client\src\pages\tools\TTSFast.tsx
+
+
+6) Local setup (manual run)
+---------------------------
+Create venv:
+python -m venv venv
+
+Activate:
+venv\Scripts\activate
+
+Install dependencies:
+pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu118
+pip install -r requirements.txt
+
+Run quick test:
+python simple_test.py
+
+Start API server:
+python -m app.main
+
+ML AI model download location: C:\Users\ADMIN\AppData\Roaming\psi-ai-content-hub\models

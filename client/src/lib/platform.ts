@@ -4,7 +4,7 @@
  */
 
 export type Platform = 'web' | 'electron' | 'android' | 'ios';
-export type ApiService = 'app' | 'f5' | 'vieneu' | 'whisper';
+export type ApiService = 'app' | 'f5' | 'vieneu' | 'whisper' | 'bgremove';
 
 /**
  * Detect the current platform
@@ -48,6 +48,7 @@ export function getServiceApiUrl(service: ApiService): string {
     f5: env.VITE_F5_API_URL,
     vieneu: env.VITE_VIENEU_API_URL,
     whisper: env.VITE_WHISPER_API_URL,
+    bgremove: env.VITE_BGREMOVE_API_URL,
   } as const;
 
   if (specific[service]) {
@@ -67,6 +68,8 @@ export function getServiceApiUrl(service: ApiService): string {
       return 'http://127.0.0.1:6903';
     case 'whisper':
       return 'http://127.0.0.1:6904';
+    case 'bgremove':
+      return 'http://127.0.0.1:6905';
     default:
       return 'http://127.0.0.1:6901';
   }
