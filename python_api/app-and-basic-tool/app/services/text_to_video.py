@@ -84,6 +84,13 @@ class UploadedImageData:
     data: bytes
 
 
+@dataclass(frozen=True)
+class UploadedArtifactData:
+    filename: str
+    content_type: str | None
+    data: bytes
+
+
 @dataclass
 class TextToVideoSession:
     session_id: str
@@ -483,6 +490,85 @@ def start_audio_pipeline(job_store: JobStore, text: str, voice_id: str) -> str:
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
+
+
+def create_audio_session_from_upload(
+    job_store: JobStore,
+    audio_upload: UploadedArtifactData,
+    transcript_upload: UploadedArtifactData,
+) -> dict[str, object]:
+    _cleanup_expired_state()
+
+    audio_filename = audio_upload.filename.strip()
+    if not audio_filename:
+        raise RuntimeError("audio_file is required")
+    if not audio_upload.data:
+        raise RuntimeError("audio_file is empty")
+    if Path(audio_filename).suffix.lower() != ".wav":
+        raise RuntimeError("audio_file must be a .wav file")
+
+    transcript_filename = transcript_upload.filename.strip()
+    if not transcript_filename:
+        raise RuntimeError("transcript_file is required")
+    if not transcript_upload.data:
+        raise RuntimeError("transcript_file is empty")
+
+    try:
+        transcript_payload_raw = json.loads(transcript_upload.data.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("transcript_file is invalid JSON") from exc
+    if not isinstance(transcript_payload_raw, dict):
+        raise RuntimeError("transcript_file must be a JSON object")
+
+    session_root = TEMP_DIR / "t2v_sessions" / _new_id("session")
+    try:
+        session_root.mkdir(parents=True, exist_ok=True)
+        session_audio_dir = session_root / "audio"
+        session_audio_dir.mkdir(parents=True, exist_ok=True)
+
+        wav_path = session_audio_dir / "narration.wav"
+        wav_path.write_bytes(audio_upload.data)
+
+        transcript_path = session_audio_dir / "narration.json"
+        transcript_path.write_text(
+            json.dumps(transcript_payload_raw, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        audio_file = job_store.add_file(wav_path, wav_path.name)
+        transcript_file = job_store.add_file(transcript_path, transcript_path.name)
+
+        session_id = _new_id("t2v_session")
+        transcript_payload: dict[str, object] = transcript_payload_raw
+        session = TextToVideoSession(
+            session_id=session_id,
+            created_at=time.time(),
+            root_dir=session_root,
+            audio_path=wav_path,
+            transcript_path=transcript_path,
+            transcript_payload=transcript_payload,
+            audio_file_id=audio_file.file_id,
+            transcript_file_id=transcript_file.file_id,
+        )
+        _set_session(session)
+
+        return {
+            "created_at": time.time(),
+            "session_id": session_id,
+            "audio": {
+                "filename": audio_file.filename,
+                "download_url": f"/api/v1/files/{audio_file.file_id}",
+            },
+            "transcript": transcript_payload,
+            "transcript_file": {
+                "filename": transcript_file.filename,
+                "download_url": f"/api/v1/files/{transcript_file.file_id}",
+            },
+        }
+    except Exception:
+        if session_root.exists():
+            shutil.rmtree(session_root, ignore_errors=True)
+        raise
 
 
 def _stage_assets(

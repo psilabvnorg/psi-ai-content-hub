@@ -10,8 +10,10 @@ from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
 from ..services.text_to_video import (
+    UploadedArtifactData,
     UploadedImageData,
     audio_progress_store,
+    create_audio_session_from_upload,
     get_audio_result,
     get_render_result,
     get_studio_status,
@@ -35,6 +37,15 @@ def _to_uploaded_image(upload: UploadFile | None, field_name: str) -> UploadedIm
     return UploadedImageData(filename=upload.filename, content_type=upload.content_type, data=data)
 
 
+def _to_uploaded_artifact(upload: UploadFile | None, field_name: str) -> UploadedArtifactData:
+    if upload is None or not upload.filename:
+        raise HTTPException(status_code=400, detail=f"{field_name} is required")
+    data = upload.file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail=f"{field_name} is empty")
+    return UploadedArtifactData(filename=upload.filename, content_type=upload.content_type, data=data)
+
+
 @router.post("/audio")
 def create_audio_task(payload: dict = Body(...), job_store: JobStore = Depends(get_job_store)) -> dict:
     text = str(payload.get("text") or "").strip()
@@ -45,6 +56,25 @@ def create_audio_task(payload: dict = Body(...), job_store: JobStore = Depends(g
         raise HTTPException(status_code=400, detail="voice_id is required")
     task_id = start_audio_pipeline(job_store, text=text, voice_id=voice_id)
     return {"task_id": task_id}
+
+
+@router.post("/audio/upload")
+def upload_audio_artifacts(
+    audio_file: UploadFile | None = File(default=None),
+    transcript_file: UploadFile | None = File(default=None),
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    audio_upload = _to_uploaded_artifact(audio_file, "audio_file")
+    transcript_upload = _to_uploaded_artifact(transcript_file, "transcript_file")
+
+    try:
+        return create_audio_session_from_upload(
+            job_store=job_store,
+            audio_upload=audio_upload,
+            transcript_upload=transcript_upload,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/audio/stream/{task_id}")

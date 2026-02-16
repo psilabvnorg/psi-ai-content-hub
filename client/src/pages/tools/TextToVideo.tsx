@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Eye, FileText, ImagePlus, Loader2, Mic, Play, RefreshCw, Settings, Video, X } from "lucide-react";
+import { Download, Eye, FileText, ImagePlus, Loader2, Mic, Play, RefreshCw, Settings, Upload, Video, X } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { APP_API_URL } from "@/lib/api";
@@ -30,6 +30,7 @@ type AudioResultResponse = {
 };
 type RenderCreateResponse = { task_id: string };
 type RenderResultResponse = { video: { filename: string; download_url: string }; preview_url: string };
+type AudioInputMode = "generate" | "upload";
 type IntroConfigPayload = {
   templateId: string;
   title: string;
@@ -146,6 +147,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
+  const [audioInputMode, setAudioInputMode] = useState<AudioInputMode>("generate");
 
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioProgress, setAudioProgress] = useState<ProgressData | null>(null);
@@ -155,6 +157,10 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [transcriptResult, setTranscriptResult] = useState<TranscriptPayload | null>(null);
   const [transcriptExpanded, setTranscriptExpanded] = useState(false);
   const [t2vSessionId, setT2vSessionId] = useState<string | null>(null);
+  const [uploadedAudioFile, setUploadedAudioFile] = useState<File | null>(null);
+  const [uploadedTranscriptFile, setUploadedTranscriptFile] = useState<File | null>(null);
+  const uploadAudioInputRef = useRef<HTMLInputElement>(null);
+  const uploadTranscriptInputRef = useRef<HTMLInputElement>(null);
 
   const [introImage, setIntroImage] = useState<File | null>(null);
   const [introImagePreview, setIntroImagePreview] = useState<string | null>(null);
@@ -191,10 +197,19 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const sttBusy = isBusy("whisper");
 
   const charCount = text.length;
+  const isUploadMode = audioInputMode === "upload";
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const segments = transcriptResult?.segments || [];
   const audioReady = audioUrl !== null && transcriptResult !== null && t2vSessionId !== null;
   const renderReady = audioReady && introImage !== null && images.length > 0;
+  const canGenerateAudio =
+    text.trim().length > 0 &&
+    !overLimit &&
+    selectedVoice.length > 0 &&
+    appServerReachable &&
+    vcServerReachable &&
+    sttServerReachable;
+  const canUploadAudioArtifacts = uploadedAudioFile !== null && uploadedTranscriptFile !== null && appServerReachable;
 
   const fetchStatus = async () => {
     try {
@@ -247,6 +262,20 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     if (sttService?.status === "running" || sttService?.status === "stopped") fetchStatus();
   }, [sttService?.status]);
 
+  useEffect(() => {
+    setAudioUrl(null);
+    setAudioDownloadName(null);
+    setTranscriptResult(null);
+    setTranscriptExpanded(false);
+    setT2vSessionId(null);
+    setVideoUrl(null);
+    setVideoDownloadName(null);
+    setRenderProgress(null);
+    setRenderLogs([]);
+    setAudioProgress(null);
+    setAudioLogs([]);
+  }, [audioInputMode]);
+
   const refreshImagePreviews = async (files: File[]) => {
     const previews: string[] = [];
     for (const file of files) previews.push(await readAsDataUrl(file));
@@ -297,6 +326,42 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     }
     await start("whisper");
     await fetchStatus();
+  };
+
+  const handleUploadAudioAndTranscript = async () => {
+    if (!uploadedAudioFile || !uploadedTranscriptFile || !appServerReachable) return;
+    setIsGeneratingAudio(true);
+    setAudioProgress({ status: "starting", percent: 0, message: t("tool.t2v.uploading_artifacts") });
+    setAudioLogs([]);
+    resetAudioOutputs();
+
+    try {
+      const form = new FormData();
+      form.append("audio_file", uploadedAudioFile);
+      form.append("transcript_file", uploadedTranscriptFile);
+
+      const response = await fetch(`${APP_API_URL}/api/v1/text-to-video/audio/upload`, {
+        method: "POST",
+        body: form,
+      });
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(errorPayload.detail || "Failed to upload audio and transcript");
+      }
+
+      const result = (await response.json()) as AudioResultResponse;
+      setT2vSessionId(result.session_id);
+      setAudioUrl(toAbsoluteApiUrl(result.audio.download_url));
+      setAudioDownloadName(result.audio.filename);
+      setTranscriptResult(result.transcript);
+      setAudioProgress({ status: "complete", percent: 100, message: t("tool.t2v.upload_complete") });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Audio upload failed";
+      setAudioProgress({ status: "error", percent: 0, message });
+      setAudioLogs((prev) => [...prev, `[ERROR] ${message}`]);
+    } finally {
+      setIsGeneratingAudio(false);
+    }
   };
 
   const handleGenerateAudio = async () => {
@@ -537,25 +602,85 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
 
         <div className="space-y-3">
           <h3 className="text-sm font-bold uppercase">{t("tool.t2v.step1_title")}</h3>
-          <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-            <SelectTrigger className="bg-card border-border"><SelectValue placeholder={t("tool.t2v.choose_voice")} /></SelectTrigger>
-            <SelectContent>{voices.map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.name}</SelectItem>)}</SelectContent>
-          </Select>
-          <Textarea value={text} onChange={(event) => setText(event.target.value)} className="min-h-[140px] bg-card border-border resize-none" />
-          <div className="flex items-center justify-between">
-            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-              {charLimitEnabled ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS }) : `${charCount} characters`}
-            </p>
-            <Button size="sm" variant={charLimitEnabled ? "outline" : "secondary"} onClick={() => setCharLimitEnabled((v) => !v)} className="h-6 text-xs px-2">
-              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
-            </Button>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase text-muted-foreground">{t("tool.t2v.input_mode")}</label>
+            <Select value={audioInputMode} onValueChange={(value) => setAudioInputMode(value as AudioInputMode)}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="generate">{t("tool.t2v.mode_generate")}</SelectItem>
+                <SelectItem value="upload">{t("tool.t2v.mode_upload")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {isUploadMode ? (
+            <div className="space-y-3">
+              <input
+                ref={uploadAudioInputRef}
+                type="file"
+                accept=".wav,audio/wav"
+                className="hidden"
+                onChange={(event) => {
+                  setUploadedAudioFile(event.target.files?.[0] || null);
+                }}
+              />
+              <input
+                ref={uploadTranscriptInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(event) => {
+                  setUploadedTranscriptFile(event.target.files?.[0] || null);
+                }}
+              />
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">{t("tool.t2v.upload_audio_file")}</label>
+                <Button variant="outline" onClick={() => uploadAudioInputRef.current?.click()} className="w-full justify-start">
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploadedAudioFile?.name || t("tool.t2v.choose_wav")}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-muted-foreground">{t("tool.t2v.upload_transcript_file")}</label>
+                <Button variant="outline" onClick={() => uploadTranscriptInputRef.current?.click()} className="w-full justify-start">
+                  <FileText className="w-4 h-4 mr-2" />
+                  {uploadedTranscriptFile?.name || t("tool.t2v.choose_json")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <SelectTrigger className="bg-card border-border">
+                  <SelectValue placeholder={t("tool.t2v.choose_voice")} />
+                </SelectTrigger>
+                <SelectContent>{voices.map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.name}</SelectItem>)}</SelectContent>
+              </Select>
+              <Textarea value={text} onChange={(event) => setText(event.target.value)} className="min-h-[140px] bg-card border-border resize-none" />
+              <div className="flex items-center justify-between">
+                <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
+                  {charLimitEnabled ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS }) : `${charCount} characters`}
+                </p>
+                <Button size="sm" variant={charLimitEnabled ? "outline" : "secondary"} onClick={() => setCharLimitEnabled((v) => !v)} className="h-6 text-xs px-2">
+                  {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-sm font-bold uppercase">{t("tool.t2v.step2_generate_title")}</h3>
-          <Button className="w-full h-10 bg-accent text-accent-foreground rounded-xl font-bold" onClick={handleGenerateAudio} disabled={isGeneratingAudio || !text.trim() || overLimit || !selectedVoice || !appServerReachable || !vcServerReachable || !sttServerReachable}>
-            {isGeneratingAudio ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mic className="w-4 h-4 mr-2" />}{t("tool.t2v.generate_audio")}
+          <h3 className="text-sm font-bold uppercase">{isUploadMode ? t("tool.t2v.step2_upload_title") : t("tool.t2v.step2_generate_title")}</h3>
+          {isUploadMode && <p className="text-xs text-muted-foreground">{t("tool.t2v.upload_mode_server_hint")}</p>}
+          <Button
+            className="w-full h-10 bg-accent text-accent-foreground rounded-xl font-bold"
+            onClick={isUploadMode ? handleUploadAudioAndTranscript : handleGenerateAudio}
+            disabled={isGeneratingAudio || (isUploadMode ? !canUploadAudioArtifacts : !canGenerateAudio)}
+          >
+            {isGeneratingAudio ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : isUploadMode ? <Upload className="w-4 h-4 mr-2" /> : <Mic className="w-4 h-4 mr-2" />}
+            {isUploadMode ? t("tool.t2v.upload_audio") : t("tool.t2v.generate_audio")}
           </Button>
           <ProgressDisplay progress={audioProgress} logs={audioLogs} defaultMessage={t("tool.t2v.processing")} />
           {audioUrl && (
