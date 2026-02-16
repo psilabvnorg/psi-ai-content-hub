@@ -845,6 +845,14 @@ function createWindow() {
     console.error('Load failed:', errorCode, errorDescription);
   });
 
+  // Prevent the main window from navigating away (e.g. iframe content triggering top-level navigation)
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const appOrigin = isDev ? 'http://localhost:5000' : 'file://';
+    if (!url.startsWith(appOrigin)) {
+      event.preventDefault();
+    }
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import shutil
 import subprocess
 import threading
@@ -626,6 +627,8 @@ def start_studio() -> dict[str, object]:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             shell=(os.name == "nt"),
+            # On Unix, start in own process group so we can kill the whole tree
+            preexec_fn=os.setsid if os.name != "nt" else None,
         )
         return {"status": "started", "port": STUDIO_PORT}
 
@@ -639,15 +642,24 @@ def get_studio_status() -> dict[str, object]:
 
 
 def stop_studio() -> dict[str, object]:
-    """Stop Remotion Studio subprocess."""
+    """Stop Remotion Studio subprocess (kills entire process tree on Windows)."""
     global _studio_process
     with _studio_lock:
         if _studio_process is not None and _studio_process.poll() is None:
-            _studio_process.terminate()
-            try:
-                _studio_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                _studio_process.kill()
+            if os.name == "nt":
+                # On Windows with shell=True, terminate() only kills cmd.exe,
+                # not the child node process. Use taskkill /T to kill the tree.
+                subprocess.call(
+                    ["taskkill", "/F", "/T", "/PID", str(_studio_process.pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                os.killpg(os.getpgid(_studio_process.pid), signal.SIGTERM)
+                try:
+                    _studio_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(os.getpgid(_studio_process.pid), signal.SIGKILL)
             _studio_process = None
             return {"status": "stopped"}
         _studio_process = None

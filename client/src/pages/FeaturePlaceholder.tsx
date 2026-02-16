@@ -19,6 +19,7 @@ import BackgroundRemoval from "./tools/BackgroundRemoval";
 import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
 import BackendConsole from "./tools/BackendConsole";
+import LLM from "./tools/LLM";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -61,6 +62,7 @@ export default function FeaturePlaceholder({
       "voice-clone": "feature.tool.voice_clone.title",
       "stt": "feature.tool.stt.title",
       "backend-console": "feature.tool.backend_console.title",
+      "llm": "feature.tool.llm.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -110,6 +112,8 @@ export default function FeaturePlaceholder({
         return <ReupYoutube />;
       case "backend-console":
         return <BackendConsole />;
+      case "llm":
+        return <LLM />;
       case "settings":
         return <Settings />;
       default:

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Eye, FileText, ImagePlus, Loader2, Mic, Play, RefreshCw, Settings, Upload, Video, X } from "lucide-react";
+import { Download, Eye, FileText, ImagePlus, Loader2, Mic, Play, Settings, Upload, Video, X } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { APP_API_URL } from "@/lib/api";
@@ -178,8 +178,23 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [videoDownloadName, setVideoDownloadName] = useState<string | null>(null);
 
   const [isStaging, setIsStaging] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
+  const [studioRunning, setStudioRunning] = useState(false);
+
+  const stopStudio = useCallback(() => {
+    fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`, { method: "POST" }).catch(() => {});
+  }, []);
+
+  // Stop Remotion Studio when leaving the page or closing the app
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      navigator.sendBeacon(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      stopStudio();
+    };
+  }, [stopStudio]);
 
   const [appServerReachable, setAppServerReachable] = useState(false);
   const [vcServerReachable, setVcServerReachable] = useState(false);
@@ -229,6 +244,13 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       setSttServerReachable(true);
     } catch {
       setSttServerReachable(false);
+    }
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/status`);
+      const data = (await res.json()) as { running?: boolean };
+      setStudioRunning(data.running === true);
+    } catch {
+      setStudioRunning(false);
     }
   };
 
@@ -503,8 +525,8 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         throw new Error(err.detail || "Failed to stage preview");
       }
 
-      setShowPreview(true);
-      setPreviewKey((k) => k + 1);
+      setStudioRunning(true);
+      window.open("http://localhost:3100", "_blank");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Preview failed";
       setRenderProgress({ status: "error", percent: 0, message });
@@ -526,6 +548,16 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     const mins = Math.floor(seconds / 60);
     const secs = (seconds % 60).toFixed(1);
     return `${mins}:${secs.padStart(4, "0")}`;
+  };
+
+  const handleToggleStudio = async () => {
+    const endpoint = studioRunning ? "stop" : "start";
+    await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/${endpoint}`, { method: "POST" }).catch(() => {});
+    if (!studioRunning) {
+      // Give studio time to start before refreshing status
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    fetchStatus();
   };
 
   const statusRows: StatusRowConfig[] = [
@@ -558,6 +590,15 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       actionButtonLabel: sttRunning || sttServerReachable ? t("tool.common.stop_server") : t("tool.common.start_server"),
       actionDisabled: sttBusy || sttService?.status === "not_configured",
       onAction: handleToggleSttServer,
+    },
+    {
+      id: "studio",
+      label: t("tool.t2v.remotion_studio"),
+      isReady: studioRunning,
+      path: `http://localhost:3100`,
+      showActionButton: appServerReachable,
+      actionButtonLabel: studioRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
+      onAction: handleToggleStudio,
     },
   ];
 
@@ -777,31 +818,6 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             </Button>
           </div>
 
-          {showPreview && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-blue-400">{t("tool.t2v.preview_title")}</span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handlePreview} disabled={isStaging}>
-                    <RefreshCw className="w-3 h-3 mr-1" />{t("tool.t2v.refresh_preview")}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowPreview(false)}>
-                    <X className="w-3 h-3 mr-1" />{t("tool.t2v.close_preview")}
-                  </Button>
-                </div>
-              </div>
-              <div className="rounded-xl overflow-hidden border border-blue-500/45 bg-black">
-                <iframe
-                  key={previewKey}
-                  src="http://localhost:3100"
-                  className="w-full"
-                  style={{ height: "700px" }}
-                  title="Remotion Preview"
-                  allow="autoplay"
-                />
-              </div>
-            </div>
-          )}
           <ProgressDisplay progress={renderProgress} logs={renderLogs} defaultMessage={t("tool.t2v.processing")} />
           {videoUrl && (
             <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45 space-y-3">

@@ -22,6 +22,7 @@ from ..services.text_to_video import (
     start_audio_pipeline,
     start_render_pipeline,
     start_studio,
+    stop_studio,
 )
 
 
@@ -193,3 +194,8 @@ def start_preview_studio() -> dict:
 @router.get("/preview/studio/status")
 def preview_studio_status() -> dict:
     return get_studio_status()
+
+
+@router.post("/preview/studio/stop")
+def stop_preview_studio() -> dict:
+    return stop_studio()

@@ -7,7 +7,7 @@ import {
   Mic, Languages, Search, Settings, 
   Menu, Sparkles,
   Instagram, Facebook, Play,
-  Image as ImageIcon, Scissors, Gauge, Terminal
+  Image as ImageIcon, Scissors, Gauge, Terminal, BrainCircuit
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -138,6 +138,12 @@ const features = {
       titleKey: "feature.tool.backend_console.title" as I18nKey,
       icon: Terminal,
       descriptionKey: "feature.tool.backend_console.desc" as I18nKey,
+    },
+    {
+      id: "llm",
+      titleKey: "feature.tool.llm.title" as I18nKey,
+      icon: BrainCircuit,
+      descriptionKey: "feature.tool.llm.desc" as I18nKey,
     },
   ]
 };
