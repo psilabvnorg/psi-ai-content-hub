@@ -14,9 +14,12 @@ from ..services.text_to_video import (
     audio_progress_store,
     get_audio_result,
     get_render_result,
+    get_studio_status,
+    render_progress_store,
+    stage_preview,
     start_audio_pipeline,
     start_render_pipeline,
-    render_progress_store,
+    start_studio,
 )
 
 
@@ -109,3 +112,54 @@ def render_result(task_id: str) -> dict:
     if not payload:
         raise HTTPException(status_code=404, detail="result not found")
     return payload
+
+
+@router.post("/preview/stage")
+def create_preview(
+    session_id: str = Form(...),
+    orientation: Literal["vertical", "horizontal"] = Form(...),
+    intro_config_json: str = Form(...),
+    intro_image: UploadFile | None = File(default=None),
+    images: list[UploadFile] = File(default=[]),
+) -> dict:
+    clean_session_id = session_id.strip()
+    if not clean_session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    if len(images) < 1 or len(images) > 10:
+        raise HTTPException(status_code=400, detail="images must contain between 1 and 10 files")
+
+    try:
+        parsed_intro_config = json.loads(intro_config_json)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="intro_config_json is invalid JSON") from exc
+    if not isinstance(parsed_intro_config, dict):
+        raise HTTPException(status_code=400, detail="intro_config_json must be a JSON object")
+
+    intro_upload = _to_uploaded_image(intro_image, "intro_image")
+    image_uploads = [_to_uploaded_image(image, "images") for image in images]
+
+    try:
+        result = stage_preview(
+            session_id=clean_session_id,
+            orientation=orientation,
+            intro_image=intro_upload,
+            images=image_uploads,
+            intro_config=parsed_intro_config,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return result
+
+
+@router.post("/preview/studio/start")
+def start_preview_studio() -> dict:
+    try:
+        return start_studio()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/preview/studio/status")
+def preview_studio_status() -> dict:
+    return get_studio_status()

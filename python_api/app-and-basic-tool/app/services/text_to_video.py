@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -30,6 +31,10 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 REMOTION_ROOT = REPO_ROOT / "remotion" / "news"
 REMOTION_PUBLIC_MAIN = REMOTION_ROOT / "public" / "main"
 DEFAULT_INTRO_CONFIG_PATH = REMOTION_PUBLIC_MAIN / "video_4" / "config" / "intro-config.json"
+
+PREVIEW_DIR_NAME = "preview"
+PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / PREVIEW_DIR_NAME
+STUDIO_PORT = 3100
 
 ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
 INTRO_ALLOWED_KEYS = {
@@ -67,6 +72,9 @@ _audio_results: dict[str, dict[str, object]] = {}
 _render_results: dict[str, dict[str, object]] = {}
 _sessions: dict[str, "TextToVideoSession"] = {}
 _state_lock = threading.Lock()
+
+_studio_process: subprocess.Popen | None = None
+_studio_lock = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -477,6 +485,128 @@ def start_audio_pipeline(job_store: JobStore, text: str, voice_id: str) -> str:
     return task_id
 
 
+def _stage_assets(
+    staging_root: Path,
+    content_dir_name: str,
+    session: TextToVideoSession,
+    orientation: str,
+    intro_image: UploadedImageData,
+    images: list[UploadedImageData],
+    intro_config: dict[str, object],
+) -> None:
+    """Stage audio, images, and config files into a Remotion public directory."""
+    staging_audio_dir = staging_root / "audio"
+    staging_image_dir = staging_root / "image"
+    staging_config_dir = staging_root / "config"
+    staging_audio_dir.mkdir(parents=True, exist_ok=True)
+    staging_image_dir.mkdir(parents=True, exist_ok=True)
+    staging_config_dir.mkdir(parents=True, exist_ok=True)
+
+    shutil.copyfile(session.audio_path, staging_audio_dir / "narration.wav")
+    shutil.copyfile(session.transcript_path, staging_audio_dir / "narration.json")
+
+    intro_suffix = _resolve_image_suffix(intro_image.filename)
+    intro_filename = f"Intro{intro_suffix}"
+    (staging_image_dir / intro_filename).write_bytes(intro_image.data)
+
+    for index, image in enumerate(images, start=1):
+        suffix = _resolve_image_suffix(image.filename)
+        ordered_name = f"{index:02d}{suffix}"
+        (staging_image_dir / ordered_name).write_bytes(image.data)
+
+    _write_video_config(staging_config_dir, orientation)
+    _save_intro_config(staging_config_dir, content_dir_name, intro_filename, intro_config)
+
+
+def start_studio() -> dict[str, object]:
+    """Start Remotion Studio subprocess if not already running."""
+    global _studio_process
+    with _studio_lock:
+        if _studio_process is not None and _studio_process.poll() is None:
+            return {"status": "already_running", "port": STUDIO_PORT}
+
+        cmd = [
+            "npx",
+            "remotion",
+            "studio",
+            "--port",
+            str(STUDIO_PORT),
+            "--log",
+            "error",
+        ]
+        _studio_process = subprocess.Popen(
+            cmd,
+            cwd=str(REMOTION_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            shell=(os.name == "nt"),
+        )
+        return {"status": "started", "port": STUDIO_PORT}
+
+
+def get_studio_status() -> dict[str, object]:
+    """Check if Remotion Studio is running."""
+    with _studio_lock:
+        if _studio_process is not None and _studio_process.poll() is None:
+            return {"running": True, "port": STUDIO_PORT}
+        return {"running": False, "port": STUDIO_PORT}
+
+
+def stop_studio() -> dict[str, object]:
+    """Stop Remotion Studio subprocess."""
+    global _studio_process
+    with _studio_lock:
+        if _studio_process is not None and _studio_process.poll() is None:
+            _studio_process.terminate()
+            try:
+                _studio_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                _studio_process.kill()
+            _studio_process = None
+            return {"status": "stopped"}
+        _studio_process = None
+        return {"status": "not_running"}
+
+
+def stage_preview(
+    session_id: str,
+    orientation: str,
+    intro_image: UploadedImageData,
+    images: list[UploadedImageData],
+    intro_config: dict[str, object],
+) -> dict[str, object]:
+    """Stage files to the preview directory for Remotion Studio viewing."""
+    session = _get_session(session_id)
+    if not session:
+        raise RuntimeError("Session not found or expired")
+    if not session.audio_path.exists() or not session.transcript_path.exists():
+        raise RuntimeError("Session artifacts are missing")
+
+    _validate_image_upload(intro_image, "intro_image")
+    if len(images) < 1 or len(images) > 10:
+        raise RuntimeError("images must contain between 1 and 10 files")
+    for index, image in enumerate(images):
+        _validate_image_upload(image, f"images[{index}]")
+
+    if PREVIEW_STAGING_ROOT.exists():
+        shutil.rmtree(PREVIEW_STAGING_ROOT, ignore_errors=True)
+
+    _stage_assets(
+        staging_root=PREVIEW_STAGING_ROOT,
+        content_dir_name=PREVIEW_DIR_NAME,
+        session=session,
+        orientation=orientation,
+        intro_image=intro_image,
+        images=images,
+        intro_config=intro_config,
+    )
+
+    return {
+        "content_directory": f"main/{PREVIEW_DIR_NAME}",
+        "studio_url": f"http://localhost:{STUDIO_PORT}",
+    }
+
+
 def start_render_pipeline(
     job_store: JobStore,
     session_id: str,
@@ -512,27 +642,15 @@ def start_render_pipeline(
         try:
             render_progress_store.set_progress(task_id, "processing", 5, "Preparing Remotion staging assets...")
             content_dir_name = f"t2v_{task_id}"
-            staging_audio_dir = staging_root / "audio"
-            staging_image_dir = staging_root / "image"
-            staging_config_dir = staging_root / "config"
-            staging_audio_dir.mkdir(parents=True, exist_ok=True)
-            staging_image_dir.mkdir(parents=True, exist_ok=True)
-            staging_config_dir.mkdir(parents=True, exist_ok=True)
-
-            shutil.copyfile(session.audio_path, staging_audio_dir / "narration.wav")
-            shutil.copyfile(session.transcript_path, staging_audio_dir / "narration.json")
-
-            intro_suffix = _resolve_image_suffix(intro_image.filename)
-            intro_filename = f"Intro{intro_suffix}"
-            (staging_image_dir / intro_filename).write_bytes(intro_image.data)
-
-            for index, image in enumerate(images, start=1):
-                suffix = _resolve_image_suffix(image.filename)
-                ordered_name = f"{index:02d}{suffix}"
-                (staging_image_dir / ordered_name).write_bytes(image.data)
-
-            _write_video_config(staging_config_dir, orientation)
-            _save_intro_config(staging_config_dir, content_dir_name, intro_filename, intro_config)
+            _stage_assets(
+                staging_root=staging_root,
+                content_dir_name=content_dir_name,
+                session=session,
+                orientation=orientation,
+                intro_image=intro_image,
+                images=images,
+                intro_config=intro_config,
+            )
 
             output_path = TEMP_DIR / f"t2v_video_{task_id}.mp4"
             if output_path.exists():

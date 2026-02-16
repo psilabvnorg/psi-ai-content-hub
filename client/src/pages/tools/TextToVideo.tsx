@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, FileText, ImagePlus, Loader2, Mic, Play, Settings, Video, X } from "lucide-react";
+import { Download, Eye, FileText, ImagePlus, Loader2, Mic, Play, RefreshCw, Settings, Video, X } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { APP_API_URL } from "@/lib/api";
@@ -170,6 +170,10 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [renderLogs, setRenderLogs] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoDownloadName, setVideoDownloadName] = useState<string | null>(null);
+
+  const [isStaging, setIsStaging] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
 
   const [appServerReachable, setAppServerReachable] = useState(false);
   const [vcServerReachable, setVcServerReachable] = useState(false);
@@ -410,6 +414,40 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
+  const handlePreview = async () => {
+    if (!renderReady || !t2vSessionId || !introImage) return;
+    setIsStaging(true);
+
+    try {
+      await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/start`, { method: "POST" });
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      const form = new FormData();
+      form.append("session_id", t2vSessionId);
+      form.append("orientation", orientation);
+      form.append("intro_config_json", JSON.stringify(introConfig));
+      form.append("intro_image", introImage);
+      for (const image of images) form.append("images", image);
+
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/stage`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(err.detail || "Failed to stage preview");
+      }
+
+      setShowPreview(true);
+      setPreviewKey((k) => k + 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Preview failed";
+      setRenderProgress({ status: "error", percent: 0, message });
+    } finally {
+      setIsStaging(false);
+    }
+  };
+
   const downloadFile = (url: string, filename: string) => {
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -605,9 +643,40 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
           </div>
 
-          <Button className="w-full h-12 bg-accent text-accent-foreground rounded-xl font-bold" onClick={handleRenderVideo} disabled={isRendering || !renderReady}>
-            {isRendering ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Video className="w-5 h-5 mr-2" />}{t("tool.t2v.generate")}
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1 h-12 rounded-xl font-bold" variant="outline" onClick={handlePreview} disabled={isStaging || isRendering || !renderReady}>
+              {isStaging ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Eye className="w-5 h-5 mr-2" />}{t("tool.t2v.preview")}
+            </Button>
+            <Button className="flex-1 h-12 bg-accent text-accent-foreground rounded-xl font-bold" onClick={handleRenderVideo} disabled={isRendering || !renderReady}>
+              {isRendering ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Video className="w-5 h-5 mr-2" />}{t("tool.t2v.generate")}
+            </Button>
+          </div>
+
+          {showPreview && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-blue-400">{t("tool.t2v.preview_title")}</span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={handlePreview} disabled={isStaging}>
+                    <RefreshCw className="w-3 h-3 mr-1" />{t("tool.t2v.refresh_preview")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowPreview(false)}>
+                    <X className="w-3 h-3 mr-1" />{t("tool.t2v.close_preview")}
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-xl overflow-hidden border border-blue-500/45 bg-black">
+                <iframe
+                  key={previewKey}
+                  src="http://localhost:3100"
+                  className="w-full"
+                  style={{ height: "700px" }}
+                  title="Remotion Preview"
+                  allow="autoplay"
+                />
+              </div>
+            </div>
+          )}
           <ProgressDisplay progress={renderProgress} logs={renderLogs} defaultMessage={t("tool.t2v.processing")} />
           {videoUrl && (
             <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45 space-y-3">
