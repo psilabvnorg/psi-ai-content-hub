@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -157,9 +160,10 @@ const props = {
   },
 };
 
-// Build and run command
-const propsJson = JSON.stringify(props).replace(/'/g, "'\\''");
-const cmd = `npx remotion render MainVideo "${params.output}" --props='${propsJson}' --concurrency=${params.concurrency} --bundle-cache=false`;
+// Write props to a temp JSON file to avoid Windows shell escaping issues
+const propsFile = path.join(os.tmpdir(), `remotion-props-${Date.now()}.json`);
+fs.writeFileSync(propsFile, JSON.stringify(props, null, 2), 'utf-8');
+const cmd = `npx remotion render MainVideo "${params.output}" --props="${propsFile}" --concurrency=${params.concurrency} --bundle-cache=false`;
 
 // Derive expected caption JSON path from content directory
 const contentDir = params.contentDirectory;
@@ -178,4 +182,6 @@ try {
   execSync(cmd, { stdio: 'inherit' });
 } catch (error) {
   process.exit(1);
+} finally {
+  try { fs.unlinkSync(propsFile); } catch (_) {}
 }
