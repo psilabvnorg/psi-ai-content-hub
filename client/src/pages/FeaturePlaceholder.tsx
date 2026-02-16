@@ -17,6 +17,7 @@ import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
 import ReupYoutube from "./tools/ReupYoutube";
+import TextToVideo from "./tools/TextToVideo";
 import BackendConsole from "./tools/BackendConsole";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
@@ -103,6 +104,8 @@ export default function FeaturePlaceholder({
         return <ThumbnailCreator />;
       case "background-removal":
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
+      case "text-to-video":
+        return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
         return <ReupYoutube />;
       case "backend-console":
