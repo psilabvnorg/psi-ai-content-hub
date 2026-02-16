@@ -64,13 +64,14 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const [cfgStrength, setCfgStrength] = useState(2.0);
   const [nfeStep, setNfeStep] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(false);
+  const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const { servicesById, start, stop, isBusy } = useManagedServices();
   const serviceStatus = servicesById.f5;
   const serviceRunning = serviceStatus?.status === "running";
   const serviceBusy = isBusy("f5");
 
   const charCount = text.length;
-  const overLimit = charCount > MAX_CHARS;
+  const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
   const depsReady = status?.env?.installed === true;
   const modelReady = status?.model?.installed === true;
@@ -328,9 +329,21 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[100px] bg-card border-border resize-none"
           />
-          <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-            {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
+              {charLimitEnabled
+                ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })
+                : `${charCount} characters`}
+            </p>
+            <Button
+              size="sm"
+              variant={charLimitEnabled ? "outline" : "secondary"}
+              onClick={() => setCharLimitEnabled(!charLimitEnabled)}
+              className="h-6 text-xs px-2"
+            >
+              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

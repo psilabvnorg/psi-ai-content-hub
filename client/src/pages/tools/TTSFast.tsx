@@ -49,8 +49,9 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const [envMissing, setEnvMissing] = useState<string[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelStatus | undefined>();
 
+  const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const charCount = text.length;
-  const overLimit = charCount > MAX_CHARS;
+  const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const modelReady = modelStatus?.backbone_ready && modelStatus?.codec_ready;
   const statusReady = !serverUnreachable && envInstalled && modelReady;
   const { servicesById, start, stop, isBusy } = useManagedServices();
@@ -283,9 +284,21 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[120px] bg-card border-border resize-none"
           />
-          <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-            {t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
+              {charLimitEnabled
+                ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })
+                : `${charCount} characters`}
+            </p>
+            <Button
+              size="sm"
+              variant={charLimitEnabled ? "outline" : "secondary"}
+              onClick={() => setCharLimitEnabled(!charLimitEnabled)}
+              className="h-6 text-xs px-2"
+            >
+              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
+            </Button>
+          </div>
         </div>
 
         {/* Generate Button */}
