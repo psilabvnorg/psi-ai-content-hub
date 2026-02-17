@@ -9,3 +9,6 @@ pip install -r requirements.txt
 python -m app.main
 -----
 port 6901
+---
+testing
+pip install git+https://github.com/tronghieuit/valtec-tts.git
