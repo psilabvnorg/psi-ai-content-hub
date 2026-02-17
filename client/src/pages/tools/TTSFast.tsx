@@ -310,14 +310,6 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
         : modelStatus?.backbone_dir && modelStatus?.codec_dir
           ? `Backbone: ${modelStatus.backbone_dir}, Codec: ${modelStatus.codec_dir}`
           : undefined,
-      showActionButton: !serverUnreachable && modelReady,
-      actionButtonLabel: isModelLoading
-        ? "Loading..."
-        : deviceMismatch
-          ? `Reload on ${useGpu ? "GPU" : "CPU"}`
-          : modelStatus?.model_loaded ? "Unload Model" : "Load Model",
-      actionDisabled: isModelLoading,
-      onAction: handleLoadModel,
       showSecondaryAction: !modelReady,
       secondaryActionLabel: t("tool.common.download_model"),
       onSecondaryAction: onOpenSettings,
@@ -352,6 +344,22 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
           rows={statusRows}
           onRefresh={fetchStatus}
         />
+
+        {/* Load/Unload Model Button */}
+        {!serverUnreachable && modelReady && (
+          <Button
+            variant={modelStatus?.model_loaded && !deviceMismatch ? "destructive" : "default"}
+            onClick={handleLoadModel}
+            disabled={isModelLoading}
+            className="w-full"
+          >
+            {isModelLoading
+              ? "Loading..."
+              : deviceMismatch
+                ? `Reload on ${useGpu ? "GPU" : "CPU"}`
+                : modelStatus?.model_loaded ? "Unload Model" : "Load Model"}
+          </Button>
+        )}
 
         {/* Mode Selection */}
         <div className="space-y-2">

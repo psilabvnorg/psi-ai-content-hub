@@ -165,6 +165,16 @@ export function ServiceStatusTable({
                         {row.actionButtonLabel || t("tool.common.open_settings")}
                       </Button>
                     )}
+                    {!serverUnreachable && row.showSecondaryAction && row.onSecondaryAction && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={row.onSecondaryAction}
+                        className="ml-2"
+                      >
+                        {row.secondaryActionLabel || t("tool.common.open_settings")}
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-xs font-mono break-all">
