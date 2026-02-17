@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Volume2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { VIENEU_API_URL } from "@/lib/api";
@@ -29,6 +30,11 @@ type VieneuStatusResponse = {
   };
 };
 
+type ModelConfigs = {
+  backbones: Record<string, { repo: string; description?: string }>;
+  codecs: Record<string, { repo: string; description?: string }>;
+};
+
 export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -49,11 +55,16 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const [envMissing, setEnvMissing] = useState<string[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelStatus | undefined>();
 
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [useGpu, setUseGpu] = useState(true);
+  const [modelConfigs, setModelConfigs] = useState<ModelConfigs | null>(null);
+
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const charCount = text.length;
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const modelReady = modelStatus?.backbone_ready && modelStatus?.codec_ready;
-  const statusReady = !serverUnreachable && envInstalled && modelReady;
+  const modelLoaded = modelStatus?.model_loaded;
+  const statusReady = !serverUnreachable && envInstalled && modelReady && modelLoaded;
   const { servicesById, start, stop, isBusy } = useManagedServices();
   const serviceStatus = servicesById.vieneu;
   const serviceRunning = serviceStatus?.status === "running";
@@ -89,9 +100,71 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     } catch { /* */ }
   };
 
+  const fetchModelConfigs = async () => {
+    try {
+      const res = await fetch(`${VIENEU_API_URL}/api/v1/models/configs`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setModelConfigs(data);
+    } catch { /* */ }
+  };
+
+  const currentDevice = (modelStatus?.current_config?.device as string) || "";
+  const wantedDevice = useGpu ? "cuda" : "cpu";
+  const deviceMismatch = modelStatus?.model_loaded && currentDevice !== wantedDevice;
+
+  const loadModelOnDevice = async () => {
+    const configs = modelConfigs || (await fetch(`${VIENEU_API_URL}/api/v1/models/configs`).then(r => r.json()));
+    const backboneKeys = Object.keys(configs.backbones || {});
+    const codecKeys = Object.keys(configs.codecs || {});
+    if (!backboneKeys.length || !codecKeys.length) return;
+
+    const res = await fetch(`${VIENEU_API_URL}/api/v1/models/load`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ backbone: backboneKeys[0], codec: codecKeys[0], device: wantedDevice }),
+    });
+
+    if (res.ok && res.headers.get("content-type")?.includes("text/event-stream")) {
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk.includes('"complete"') || chunk.includes('"error"')) break;
+        }
+      }
+    }
+  };
+
+  const handleLoadModel = async () => {
+    if (isModelLoading) return;
+    setIsModelLoading(true);
+    try {
+      if (modelStatus?.model_loaded && !deviceMismatch) {
+        // Simple unload
+        await fetch(`${VIENEU_API_URL}/api/v1/models/unload`, { method: "POST" });
+      } else {
+        if (modelStatus?.model_loaded) {
+          // Unload first before reloading on different device
+          await fetch(`${VIENEU_API_URL}/api/v1/models/unload`, { method: "POST" });
+        }
+        await loadModelOnDevice();
+      }
+      await fetchStatus();
+    } catch (error) {
+      console.error("Error toggling model:", error);
+    } finally {
+      setIsModelLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
     fetchVoices();
+    fetchModelConfigs();
   }, []);
 
   useEffect(() => {
@@ -99,6 +172,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
       fetchStatus();
       fetchVoices();
+      fetchModelConfigs();
     }
   }, [serviceStatus?.status]);
 
@@ -230,13 +304,23 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     {
       id: "model",
       label: t("tool.tts_fast.model_status"),
-      isReady: modelReady || false,
-      path: modelStatus?.backbone_dir && modelStatus?.codec_dir
-        ? `Backbone: ${modelStatus.backbone_dir}, Codec: ${modelStatus.codec_dir}`
-        : undefined,
-      showActionButton: !modelReady,
-      actionButtonLabel: t("tool.common.download_model"),
-      onAction: onOpenSettings,
+      isReady: (modelReady && modelStatus?.model_loaded) || false,
+      path: modelStatus?.model_loaded
+        ? `Loaded: ${(modelStatus.current_config?.backbone as string) || "?"} (${(modelStatus.current_config?.device as string) || "?"})`
+        : modelStatus?.backbone_dir && modelStatus?.codec_dir
+          ? `Backbone: ${modelStatus.backbone_dir}, Codec: ${modelStatus.codec_dir}`
+          : undefined,
+      showActionButton: !serverUnreachable && modelReady,
+      actionButtonLabel: isModelLoading
+        ? "Loading..."
+        : deviceMismatch
+          ? `Reload on ${useGpu ? "GPU" : "CPU"}`
+          : modelStatus?.model_loaded ? "Unload Model" : "Load Model",
+      actionDisabled: isModelLoading,
+      onAction: handleLoadModel,
+      showSecondaryAction: !modelReady,
+      secondaryActionLabel: t("tool.common.download_model"),
+      onSecondaryAction: onOpenSettings,
     },
   ];
 
@@ -252,6 +336,15 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
             <p>API Docs: <a href="http://127.0.0.1:6903/docs" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline">http://127.0.0.1:6903/docs</a></p>
           </div>
         </div>
+
+        {/* CPU/GPU Toggle */}
+        {!serverUnreachable && modelReady && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`font-medium ${!useGpu ? "text-foreground" : "text-muted-foreground"}`}>CPU</span>
+            <Switch checked={useGpu} onCheckedChange={setUseGpu} />
+            <span className={`font-medium ${useGpu ? "text-foreground" : "text-muted-foreground"}`}>GPU</span>
+          </div>
+        )}
 
         {/* Status Table */}
         <ServiceStatusTable

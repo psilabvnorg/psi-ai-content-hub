@@ -32,17 +32,37 @@ if VIENEU_TTS_ROOT is None or not VIENEU_TTS_ROOT.exists():
         VIENEU_TTS_ROOT = _SAMPLE_CONFIG_ROOT
 
 progress_store = ProgressStore()
+_engine_lock = threading.Lock()
+_loading_in_progress = False
 tts_engine = None
 model_loaded = False
 current_config: Dict[str, Any] = {}
 task_files: Dict[str, str] = {}
+_ref_code_cache: Dict[str, Any] = {}
+_config_cache: Optional[Dict[str, Any]] = None
+_config_mtime: float = 0
+
+
+def _get_or_encode_reference(audio_path: str) -> Any:
+    """Cache reference voice codes to avoid re-encoding on repeated requests."""
+    global _ref_code_cache
+    if audio_path in _ref_code_cache:
+        return _ref_code_cache[audio_path]
+    ref_codes = tts_engine.encode_reference(audio_path)
+    _ref_code_cache[audio_path] = ref_codes
+    return ref_codes
 
 
 def _load_config() -> Dict[str, Any]:
+    global _config_cache, _config_mtime
     config_path = VIENEU_TTS_ROOT / "config.yaml"
     if not config_path.exists():
         return {}
     try:
+        mtime = config_path.stat().st_mtime
+        if _config_cache is not None and mtime == _config_mtime:
+            return _config_cache
+
         import yaml
 
         with open(config_path, "r", encoding="utf-8") as handle:
@@ -72,6 +92,8 @@ def _load_config() -> Dict[str, Any]:
                         text_path = _service_root / voice_info["text"]
                     voice_info["text"] = str(text_path)
 
+        _config_cache = config
+        _config_mtime = mtime
         return config
     except Exception as exc:
         log(f"Failed to load VieNeu config: {exc}", "error", log_name="vieneu-tts.log")
@@ -103,14 +125,17 @@ def get_voices(language: str = "vi") -> Dict[str, Any]:
 
 
 def model_status() -> dict:
+    with _engine_lock:
+        loaded = bool(model_loaded)
+        config_snapshot = dict(current_config)
     return {
         "model_dir": str(VIENEU_MODEL_DIR),
         "backbone_dir": str(VIENEU_BACKBONE_DIR),
         "codec_dir": str(VIENEU_CODEC_DIR),
         "backbone_ready": VIENEU_BACKBONE_DIR.exists() and any(VIENEU_BACKBONE_DIR.iterdir()),
         "codec_ready": VIENEU_CODEC_DIR.exists() and any(VIENEU_CODEC_DIR.iterdir()),
-        "model_loaded": bool(model_loaded),
-        "current_config": current_config,
+        "model_loaded": loaded,
+        "current_config": config_snapshot,
     }
 
 
@@ -154,7 +179,35 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
     progress_store.set_progress(task_id, "starting", 0, "Loading model...")
 
     def runner() -> None:
-        global tts_engine, model_loaded, current_config
+        global tts_engine, model_loaded, current_config, _ref_code_cache, _loading_in_progress
+        # If a load is already in progress (e.g. from startup prewarm), wait for it
+        waited = False
+        while True:
+            with _engine_lock:
+                if not _loading_in_progress:
+                    _loading_in_progress = True
+                    break
+            if not waited:
+                progress_store.set_progress(task_id, "loading", 10, "Waiting for current load to finish...")
+                waited = True
+            time.sleep(0.5)
+
+        # Resolve the requested device
+        import torch
+        if device == "auto":
+            requested_device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            requested_device = device
+
+        # If model was loaded by the other thread while we waited, check device match
+        with _engine_lock:
+            if waited and model_loaded and tts_engine is not None:
+                if current_config.get("device") == requested_device:
+                    _loading_in_progress = False
+                    progress_store.set_progress(task_id, "complete", 100, "Model already loaded")
+                    return
+                # Device mismatch — fall through to reload on the requested device
+
         try:
             config = _load_config()
             backbones = config.get("backbone_configs", {})
@@ -177,58 +230,57 @@ def load_model(job_store: JobStore, backbone: str, codec: str, device: str = "au
                 progress_store.set_progress(task_id, "error", 0, "Failed to download codec model")
                 return
 
-            progress_store.set_progress(task_id, "loading", 40, "Initializing TTS engine...")
+            progress_store.set_progress(task_id, "loading", 40, f"Initializing TTS engine on {requested_device}...")
 
-            if model_loaded and tts_engine is not None:
-                import torch
+            bb_device = requested_device
+            cc_device = "cpu" if "ONNX" in codec else requested_device
 
-                del tts_engine
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
+            new_engine = _load_tts_engine(str(VIENEU_BACKBONE_DIR), codec_repo, bb_device, cc_device)
 
-            import torch
-
-            if device == "auto":
-                bb_device = "cuda" if torch.cuda.is_available() else "cpu"
-                cc_device = "cpu" if "ONNX" in codec else ("cuda" if torch.cuda.is_available() else "cpu")
-            else:
-                bb_device = device
-                cc_device = "cpu" if "ONNX" in codec else device
-
-            tts_engine = _load_tts_engine(str(VIENEU_BACKBONE_DIR), codec_repo, bb_device, cc_device)
-
-            model_loaded = True
-            current_config = {
-                "backbone": backbone,
-                "codec": codec,
-                "device": bb_device,
-                "voice_samples": config.get("voice_samples", {}),
-                "max_chars_per_chunk": config.get("text_settings", {}).get("max_chars_per_chunk", 256),
-            }
+            with _engine_lock:
+                if model_loaded and tts_engine is not None:
+                    del tts_engine
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                tts_engine = new_engine
+                model_loaded = True
+                _ref_code_cache.clear()
+                current_config = {
+                    "backbone": backbone,
+                    "codec": codec,
+                    "device": bb_device,
+                    "voice_samples": config.get("voice_samples", {}),
+                    "max_chars_per_chunk": config.get("text_settings", {}).get("max_chars_per_chunk", 256),
+                }
             progress_store.set_progress(task_id, "complete", 100, "Model loaded")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
             log(f"TTS model load failed: {exc}", "error", log_name="vieneu-tts.log")
+        finally:
+            with _engine_lock:
+                _loading_in_progress = False
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
 
 
 def unload_model() -> None:
-    global tts_engine, model_loaded, current_config
-    if tts_engine is not None:
-        try:
-            import torch
+    global tts_engine, model_loaded, current_config, _ref_code_cache
+    with _engine_lock:
+        if tts_engine is not None:
+            try:
+                import torch
 
-            del tts_engine
-            tts_engine = None
-            model_loaded = False
-            current_config = {}
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            log("TTS model unloaded successfully", "info", log_name="vieneu-tts.log")
-        except Exception as exc:
-            log(f"Error unloading TTS model: {exc}", "error", log_name="vieneu-tts.log")
+                del tts_engine
+                tts_engine = None
+                model_loaded = False
+                current_config = {}
+                _ref_code_cache.clear()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                log("TTS model unloaded successfully", "info", log_name="vieneu-tts.log")
+            except Exception as exc:
+                log(f"Error unloading TTS model: {exc}", "error", log_name="vieneu-tts.log")
 
 
 def _get_backbone_path() -> Optional[str]:
@@ -244,14 +296,19 @@ def _get_backbone_path() -> Optional[str]:
 
 
 def _load_tts_engine(backbone_path: str, codec_repo: str, backbone_device: str, codec_device: str) -> Any:
+    import warnings
     from vieneu import VieNeuTTS
 
-    return VieNeuTTS(
-        backbone_repo=backbone_path,
-        backbone_device=backbone_device,
-        codec_repo=codec_repo,
-        codec_device=codec_device,
-    )
+    # Suppress the massive number of "copying from a non-meta parameter" warnings
+    # that PyTorch emits when loading state dicts with meta tensors.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*copying from a non-meta parameter.*")
+        return VieNeuTTS(
+            backbone_repo=backbone_path,
+            backbone_device=backbone_device,
+            codec_repo=codec_repo,
+            codec_device=codec_device,
+        )
 
 
 def _ensure_model_downloaded(repo_id: str, local_dir: Path) -> bool:
@@ -277,10 +334,15 @@ def _ensure_model_downloaded(repo_id: str, local_dir: Path) -> bool:
 
 
 def _ensure_model_loaded() -> bool:
-    global tts_engine, model_loaded, current_config
+    global tts_engine, model_loaded, current_config, _loading_in_progress
 
-    if model_loaded and tts_engine is not None:
-        return True
+    with _engine_lock:
+        if model_loaded and tts_engine is not None:
+            return True
+        if _loading_in_progress:
+            log("Model loading already in progress, skipping", "info", log_name="vieneu-tts.log")
+            return False
+        _loading_in_progress = True
 
     try:
         config = _load_config()
@@ -316,21 +378,26 @@ def _ensure_model_loaded() -> bool:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         codec_device = "cpu" if "ONNX" in default_codec else device
 
-        tts_engine = _load_tts_engine(backbone_path, codec_repo, device, codec_device)
+        new_engine = _load_tts_engine(backbone_path, codec_repo, device, codec_device)
 
-        model_loaded = True
-        current_config = {
-            "backbone": default_backbone,
-            "codec": default_codec,
-            "device": device,
-            "voice_samples": config.get("voice_samples", {}),
-            "max_chars_per_chunk": config.get("text_settings", {}).get("max_chars_per_chunk", 256),
-        }
+        with _engine_lock:
+            tts_engine = new_engine
+            model_loaded = True
+            current_config = {
+                "backbone": default_backbone,
+                "codec": default_codec,
+                "device": device,
+                "voice_samples": config.get("voice_samples", {}),
+                "max_chars_per_chunk": config.get("text_settings", {}).get("max_chars_per_chunk", 256),
+            }
         log("TTS model loaded successfully", "info", log_name="vieneu-tts.log")
         return True
     except Exception as exc:
         log(f"Failed to auto-load TTS model: {exc}", "error", log_name="vieneu-tts.log")
         return False
+    finally:
+        with _engine_lock:
+            _loading_in_progress = False
 
 
 def generate(
@@ -346,7 +413,12 @@ def generate(
 
     def runner() -> None:
         try:
-            if not model_loaded or tts_engine is None:
+            with _engine_lock:
+                if not model_loaded or tts_engine is None:
+                    need_load = True
+                else:
+                    need_load = False
+            if need_load:
                 progress_store.set_progress(task_id, "loading", 10, "Loading model...")
                 if not _ensure_model_loaded():
                     progress_store.set_progress(task_id, "error", 0, "Failed to load model")
@@ -357,7 +429,10 @@ def generate(
             import soundfile as sf
             import torch
 
-            voice_samples = current_config.get("voice_samples", {})
+            with _engine_lock:
+                engine = tts_engine
+                config_snap = dict(current_config)
+            voice_samples = config_snap.get("voice_samples", {})
             if mode == "preset":
                 if not voice_id or voice_id not in voice_samples:
                     progress_store.set_progress(task_id, "error", 0, "Voice not found")
@@ -370,7 +445,7 @@ def generate(
                     return
                 with open(text_path, "r", encoding="utf-8") as handle:
                     ref_text_raw = handle.read().strip()
-                ref_codes = tts_engine.encode_reference(ref_audio_path)
+                ref_codes = _get_or_encode_reference(ref_audio_path)
             else:
                 if not sample_voice_id or not sample_text_id:
                     progress_store.set_progress(task_id, "error", 0, "Sample IDs required")
@@ -383,12 +458,12 @@ def generate(
                     progress_store.set_progress(task_id, "error", 0, "Sample not found")
                     return
                 ref_text_raw = ref_text_path.read_text(encoding="utf-8").strip()
-                ref_codes = tts_engine.encode_reference(str(ref_audio_path))
+                ref_codes = _get_or_encode_reference(str(ref_audio_path))
 
             if isinstance(ref_codes, torch.Tensor):
                 ref_codes = ref_codes.cpu().numpy()
 
-            max_chars = current_config.get("max_chars_per_chunk", 256)
+            max_chars = config_snap.get("max_chars_per_chunk", 256)
             chunks = split_text_into_chunks(text, max_chars=max_chars)
             total = len(chunks)
             all_segments = []
@@ -398,7 +473,7 @@ def generate(
             for idx, chunk in enumerate(chunks):
                 percent = 20 + int((idx / max(total, 1)) * 60)
                 progress_store.set_progress(task_id, "generating", percent, f"Generating {idx + 1}/{total}")
-                wav = tts_engine.infer(chunk, ref_codes=ref_codes, ref_text=ref_text_raw)
+                wav = engine.infer(chunk, ref_codes=ref_codes, ref_text=ref_text_raw)
                 if wav is not None and len(wav) > 0:
                     all_segments.append(wav)
                     if idx < total - 1:
@@ -418,15 +493,9 @@ def generate(
             progress_store.set_progress(task_id, "complete", 100, "Complete")
             progress_store.add_log(task_id, json.dumps({"download_url": f"/api/v1/files/{file_record.file_id}"}))
 
-            progress_store.add_log(task_id, "Offloading model to save memory...")
-            unload_model()
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
             log(f"TTS generate failed: {exc}", "error", log_name="vieneu-tts.log")
-            try:
-                unload_model()
-            except Exception:
-                pass
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
