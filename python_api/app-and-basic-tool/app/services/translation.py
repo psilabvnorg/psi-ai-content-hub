@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import gc
 import threading
+import time
+import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
 from python_api.common.jobs import JobStore
+from python_api.common.logging import log
 from python_api.common.progress import ProgressStore
 from python_api.common.paths import MODEL_TRANSLATION_DIR
 
@@ -32,6 +35,27 @@ LANGUAGE_MAP: Dict[str, str] = {
 }
 
 
+def _model_downloaded() -> bool:
+    """Check if model files are already present in MODEL_DIR."""
+    if not MODEL_DIR.exists():
+        return False
+    has_config = (MODEL_DIR / "config.json").exists()
+    has_model = any(MODEL_DIR.glob("*.bin")) or any(MODEL_DIR.glob("*.safetensors")) or any(MODEL_DIR.glob("*.pt"))
+    return has_config or has_model
+
+
+def _download_model_files(task_id: str) -> None:
+    """Download model snapshot from Hugging Face Hub to MODEL_DIR."""
+    from huggingface_hub import snapshot_download
+
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    translation_progress.set_progress(task_id, "downloading", 10, f"Downloading {MODEL_ID}...")
+    log(f"Downloading translation model {MODEL_ID} to {MODEL_DIR}...", "info", log_name="translation.log")
+    snapshot_download(repo_id=MODEL_ID, local_dir=str(MODEL_DIR), local_dir_use_symlinks=False)
+    log(f"Translation model downloaded to {MODEL_DIR}", "info", log_name="translation.log")
+    translation_progress.set_progress(task_id, "downloaded", 90, "Model files downloaded.")
+
+
 def _ensure_model_loaded(task_id: str) -> None:
     """Lazy-load Tencent HY-MT model into module-level cache."""
     global _model, _tokenizer, _current_device
@@ -44,16 +68,14 @@ def _ensure_model_loaded(task_id: str) -> None:
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        MODEL_DIR.mkdir(parents=True, exist_ok=True)
+        model_path = str(MODEL_DIR) if _model_downloaded() else MODEL_ID
 
         _tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_ID,
-            cache_dir=str(MODEL_DIR),
+            model_path,
             trust_remote_code=True,
         )
         _model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID,
-            cache_dir=str(MODEL_DIR),
+            model_path,
             device_map="auto",
             trust_remote_code=True,
         )
@@ -129,6 +151,27 @@ def _translate_segment(
     text_tokens = outputs[0][prompt_tokens:]
     decoded = _tokenizer.decode(text_tokens, skip_special_tokens=True).strip()
     return " ".join(decoded.split())
+
+
+def download_model(job_store: JobStore) -> str:
+    """Download and cache the Tencent HY-MT model to MODEL_DIR, streaming progress via SSE."""
+    task_id = f"translation_model_{uuid.uuid4().hex}"
+    translation_progress.set_progress(task_id, "starting", 0, "Starting model download...")
+
+    def runner() -> None:
+        try:
+            if _model_downloaded():
+                translation_progress.set_progress(task_id, "complete", 100, "Model already downloaded.")
+                log(f"Translation model already present at {MODEL_DIR}", "info", log_name="translation.log")
+                return
+            _download_model_files(task_id)
+            translation_progress.set_progress(task_id, "complete", 100, "Model downloaded successfully.")
+        except Exception as exc:
+            translation_progress.set_progress(task_id, "error", 0, str(exc))
+            log(f"Translation model download failed: {exc}", "error", log_name="translation.log")
+
+    threading.Thread(target=runner, daemon=True).start()
+    return task_id
 
 
 def start_translation(

@@ -134,6 +134,18 @@ const features = {
       descriptionKey: "feature.tool.stt.desc" as I18nKey,
     },
     {
+      id: "translator",
+      titleKey: "feature.tool.translator.title" as I18nKey,
+      icon: Languages,
+      descriptionKey: "feature.tool.translator.desc" as I18nKey,
+    },
+    {
+      id: "image-finder",
+      titleKey: "feature.tool.image_finder.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.image_finder.desc" as I18nKey,
+    },
+    {
       id: "backend-console",
       titleKey: "feature.tool.backend_console.title" as I18nKey,
       icon: Terminal,

@@ -27,6 +27,7 @@ from src.multilingual_video_pipeline.services.visual_asset_manager import (
     ImageSearchResult,
 )
 from src.multilingual_video_pipeline.models import AssetType
+from src.multilingual_video_pipeline.models import Scene, TranscriptSegment, VisualAsset
 
 
 class TestImageSourceValidation:
@@ -404,6 +405,103 @@ class TestImageDownloadAndExistence:
         # File should not be re-downloaded (mtime unchanged)
         assert first_mtime == second_mtime, \
             "File was re-downloaded instead of using cache"
+
+
+class TestSemanticApiAndMapping:
+    def test_semantic_search_calls_image_finder_api(self):
+        manager = VisualAssetManager()
+
+        with TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "assets"
+            cached_image = Path(tmpdir) / "cached.jpg"
+            Image.new("RGB", (1280, 720), color=(20, 20, 20)).save(cached_image)
+
+            def fake_download(result: ImageSearchResult) -> VisualAsset:
+                return VisualAsset(
+                    asset_id=f"asset_{hash(result.url)}",
+                    asset_type=AssetType.STATIC_IMAGE,
+                    file_path=cached_image,
+                    source_url=result.url,
+                    width=1280,
+                    height=720,
+                    duration=None,
+                    tags=result.tags,
+                )
+
+            image_finder_payload = {
+                "status": "ok",
+                "keywords": "city skyline night",
+                "search_query": "city skyline night latest, up to date information",
+                "images": [
+                    {
+                        "url": "https://example.com/a.jpg",
+                        "source": "bing",
+                        "description": "city skyline",
+                        "tags": ["city", "skyline"],
+                    },
+                    {
+                        "url": "https://example.com/b.jpg",
+                        "source": "bing",
+                        "description": "night skyline",
+                        "tags": ["night", "skyline"],
+                    },
+                ],
+            }
+
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = image_finder_payload
+
+            with patch("src.multilingual_video_pipeline.services.visual_asset_manager.requests.post", return_value=mock_response) as post_mock:
+                with patch.object(manager, "download_image", side_effect=fake_download) as download_mock:
+                    assets = manager.semantic_search_and_download(
+                        text="Sample transcript for images",
+                        limit=2,
+                        output_dir=output_dir,
+                        llm_api_url="http://127.0.0.1:6900",
+                    )
+
+            assert post_mock.call_count == 1
+            assert "/api/v1/image-finder/search" in post_mock.call_args.args[0]
+            assert download_mock.call_count == 2
+            assert len(assets) == 2
+            assert (output_dir / "Image_001.jpg").exists()
+            assert (output_dir / "Image_002.jpg").exists()
+
+    def test_create_scene_asset_map_maps_each_scene(self):
+        manager = VisualAssetManager()
+
+        segment_one = TranscriptSegment(text="football match stadium", start_time=0.0, end_time=3.0, confidence=0.95)
+        segment_two = TranscriptSegment(text="city skyline at night", start_time=3.0, end_time=6.0, confidence=0.95)
+        scene_one = Scene("scene_000", segment_one, None, None, segment_one.duration)
+        scene_two = Scene("scene_001", segment_two, None, None, segment_two.duration)
+
+        asset_one = VisualAsset(
+            asset_id="asset_football",
+            asset_type=AssetType.STATIC_IMAGE,
+            file_path=Path("asset_football.jpg"),
+            source_url="https://example.com/football.jpg",
+            width=1280,
+            height=720,
+            duration=None,
+            tags=["football", "stadium"],
+        )
+        asset_two = VisualAsset(
+            asset_id="asset_city",
+            asset_type=AssetType.STATIC_IMAGE,
+            file_path=Path("asset_city.jpg"),
+            source_url="https://example.com/city.jpg",
+            width=1280,
+            height=720,
+            duration=None,
+            tags=["city", "skyline", "night"],
+        )
+
+        scene_map = manager.create_scene_asset_map([scene_one, scene_two], [asset_one, asset_two])
+        scene_map_by_id = {entry["scene_id"]: entry["asset_id"] for entry in scene_map}
+
+        assert scene_map_by_id["scene_000"] == "asset_football"
+        assert scene_map_by_id["scene_001"] == "asset_city"
 
 
 if __name__ == "__main__":

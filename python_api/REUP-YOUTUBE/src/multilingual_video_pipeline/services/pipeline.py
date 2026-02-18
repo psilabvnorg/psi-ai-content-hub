@@ -602,7 +602,7 @@ class MultilingualVideoPipeline(LoggerMixin):
         service: VisualAssetManager = self._services['visual_assets']
         
         try:
-            from ..models import Transcript
+            from ..models import Scene, Transcript
             
             # Create stage-specific output directory
             stage_output_dir = ensure_directory(output_dir / "visual_assets")
@@ -623,12 +623,24 @@ class MultilingualVideoPipeline(LoggerMixin):
                 output_dir=stage_assets_dir,
             )
             remotion_assets = service.prepare_for_remotion(downloaded_assets, stage_output_dir)
+            scene_inputs = [
+                Scene(
+                    scene_id=f"scene_{idx:03d}",
+                    transcript_segment=segment,
+                    visual_asset=None,
+                    audio_segment=None,
+                    duration=segment.duration,
+                )
+                for idx, segment in enumerate(transcript.segments)
+            ]
+            scene_asset_map = service.create_scene_asset_map(scene_inputs, downloaded_assets)
 
             asset_info = {
                 'total_assets': len(downloaded_assets),
                 'assets_dir': str(stage_assets_dir),
                 'intro_image': remotion_assets['intro_image'],
                 'content_images': remotion_assets['content_images'],
+                'scene_asset_map': scene_asset_map,
                 'assets': [
                     {
                         'id': asset.asset_id,

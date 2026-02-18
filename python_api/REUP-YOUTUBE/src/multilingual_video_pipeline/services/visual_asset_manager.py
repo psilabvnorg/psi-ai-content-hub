@@ -7,9 +7,7 @@ Features delivered for task 7.1:
 - match_images_to_scenes for simple contextual alignment
 """
 
-import io
 import hashlib
-import random
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -366,6 +364,20 @@ class VisualAssetManager(LoggerMixin):
 
         return asset_by_scene
 
+    def create_scene_asset_map(
+        self,
+        scenes: Iterable[Scene],
+        assets: List[VisualAsset],
+    ) -> List[Dict[str, str]]:
+        """Create serializable scene-to-asset mapping for downstream stages."""
+        scene_list = list(scenes)
+        matched = self.match_images_to_scenes(scene_list, assets)
+        return [
+            {"scene_id": scene.scene_id, "asset_id": matched[scene.scene_id].asset_id}
+            for scene in scene_list
+            if scene.scene_id in matched
+        ]
+
     def _tokenize(self, text: str) -> List[str]:
         return [t.lower() for t in text.split() if t]
 
@@ -382,9 +394,10 @@ class VisualAssetManager(LoggerMixin):
         target_ratio = 16 / 9
         ratio_penalty = abs(asset_ratio - target_ratio)
 
-        random_bonus = random.random() * 0.05  # helps vary selection when scores tie
+        tie_break_seed = f"{scene.scene_id}:{asset.asset_id}"
+        tie_break_bonus = (int(hashlib.md5(tie_break_seed.encode()).hexdigest()[:6], 16) % 50) / 1000.0
 
-        return overlap * 1.5 + (1 - ratio_penalty) + random_bonus
+        return overlap * 1.5 + (1 - ratio_penalty) + tie_break_bonus
 
     # ---------------------------
     # Semantic search (Ollama → Bing → Download)
@@ -401,22 +414,156 @@ class VisualAssetManager(LoggerMixin):
         timeout_seconds: int = 300,
         lang: str = "en",
     ) -> List[VisualAsset]:
-        """
-        Summarize input text via Ollama, use the summary as a Bing image search query,
-        download images, and return them as VisualAssets.
-
-        Flow mirrors scripts/semantic-image-search.py main path:
-        Text → Ollama summarization → Bing image search → Download.
-        """
-
+        """Find images via ImageFinder API (LLM + Bing), then download locally."""
         if not text or not text.strip():
             raise VisualAssetError("Input text cannot be empty")
 
-        # Step 1: Summarize text
-        summary: Optional[str] = None
         if llm_api_url is None:
             llm_api_url = getattr(self.settings, "api_base_url", "http://127.0.0.1:6900")
 
+        try:
+            finder_payload = self._search_with_image_finder_api(
+                text=text,
+                llm_api_url=llm_api_url,
+                limit=limit,
+                model=model,
+                target_words=words,
+                lang=lang,
+                timeout_seconds=timeout_seconds,
+            )
+            assets = self._download_image_finder_results(
+                finder_payload=finder_payload,
+                output_dir=Path(output_dir),
+                limit=limit,
+            )
+            if assets:
+                return assets
+            self.logger.warning("ImageFinder API returned no images, falling back to local downloader")
+        except Exception as exc:
+            self.logger.warning(
+                "ImageFinder API search failed, falling back to local semantic flow",
+                error=str(exc),
+            )
+
+        return self._semantic_search_local(
+            text=text,
+            words=words,
+            limit=limit,
+            output_dir=output_dir,
+            llm_api_url=llm_api_url,
+            ollama_url=ollama_url,
+            model=model,
+            timeout_seconds=timeout_seconds,
+            lang=lang,
+        )
+
+    def _search_with_image_finder_api(
+        self,
+        text: str,
+        llm_api_url: str,
+        limit: int,
+        model: str,
+        target_words: int,
+        lang: str,
+        timeout_seconds: int,
+    ) -> Dict[str, Any]:
+        payload = {
+            "text": text,
+            "number_of_images": limit,
+            "target_words": target_words,
+            "model": model,
+            "lang": lang,
+            "timeout_seconds": min(timeout_seconds, 120),
+        }
+        response = requests.post(
+            f"{llm_api_url}/api/v1/image-finder/search",
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+        response_payload = response.json()
+        if not isinstance(response_payload, dict):
+            raise VisualAssetError("Unexpected ImageFinder API response payload")
+        return response_payload
+
+    def _download_image_finder_results(
+        self,
+        finder_payload: Dict[str, Any],
+        output_dir: Path,
+        limit: int,
+    ) -> List[VisualAsset]:
+        image_items = finder_payload.get("images")
+        if not isinstance(image_items, list):
+            raise VisualAssetError("ImageFinder response missing 'images' list")
+
+        keywords = finder_payload.get("keywords")
+        fallback_tag = keywords if isinstance(keywords, str) and keywords.strip() else "semantic-search"
+        ensure_directory(output_dir)
+
+        assets: List[VisualAsset] = []
+        for index, item in enumerate(image_items[:limit], start=1):
+            if not isinstance(item, dict):
+                continue
+            image_url = item.get("url")
+            if not isinstance(image_url, str) or not image_url.strip():
+                continue
+
+            tags = item.get("tags")
+            normalized_tags = (
+                [str(tag) for tag in tags if isinstance(tag, str) and tag.strip()]
+                if isinstance(tags, list)
+                else []
+            )
+            if not normalized_tags:
+                normalized_tags = [fallback_tag]
+
+            source = item.get("source")
+            description = item.get("description")
+
+            search_result = ImageSearchResult(
+                url=image_url.strip(),
+                width=640,
+                height=360,
+                source=source if isinstance(source, str) and source.strip() else "bing",
+                description=description if isinstance(description, str) and description.strip() else fallback_tag,
+                tags=normalized_tags,
+            )
+            downloaded = self.download_image(search_result)
+
+            suffix = downloaded.file_path.suffix if downloaded.file_path.suffix else ".jpg"
+            staged_file = output_dir / f"Image_{index:03d}{suffix}"
+            shutil.copy2(downloaded.file_path, staged_file)
+            width, height = self._probe_image_size(staged_file, downloaded.width, downloaded.height)
+
+            assets.append(
+                VisualAsset(
+                    asset_id=downloaded.asset_id,
+                    asset_type=AssetType.STATIC_IMAGE,
+                    file_path=staged_file,
+                    source_url=image_url,
+                    width=width,
+                    height=height,
+                    duration=None,
+                    tags=normalized_tags,
+                )
+            )
+        self.logger.info("ImageFinder download completed", count=len(assets), directory=str(output_dir))
+        return assets
+
+    def _semantic_search_local(
+        self,
+        text: str,
+        words: int,
+        limit: int,
+        output_dir: Path | str,
+        llm_api_url: str,
+        ollama_url: str,
+        model: str,
+        timeout_seconds: int,
+        lang: str,
+    ) -> List[VisualAsset]:
+        summary: Optional[str] = None
         try:
             summary = self._summarize_with_llm_api(
                 text=text,
@@ -436,10 +583,7 @@ class VisualAssetManager(LoggerMixin):
                 target_words=words,
                 timeout_seconds=timeout_seconds,
             )
-        word_count = len(summary.split())
-        self.logger.info("Text summarized", words=word_count)
 
-        # Step 2: Prepare search query (language-specific appended phrase)
         phrase_by_lang = {
             "en": "latest, up to date information",
             "vi": "thông tin mới nhất",
@@ -448,9 +592,8 @@ class VisualAssetManager(LoggerMixin):
         }
         phrase = phrase_by_lang.get(lang.lower(), phrase_by_lang["en"])
         search_query = f"{summary} {phrase}"
-        self.logger.info("Search query prepared", query=search_query)
+        self.logger.info("Local fallback search query prepared", query=search_query)
 
-        # Step 3: Search + download via bing-image-downloader
         try:
             from bing_image_downloader import downloader  # type: ignore
         except Exception as exc:
@@ -461,7 +604,6 @@ class VisualAssetManager(LoggerMixin):
         output_path = Path(output_dir)
         ensure_directory(output_path)
 
-        # Execute download (same options as the script)
         downloader.download(
             query=search_query,
             limit=limit,
@@ -473,34 +615,28 @@ class VisualAssetManager(LoggerMixin):
             verbose=True,
         )
 
-        # Inspect downloaded directory
         image_dir = output_path / search_query
         assets: List[VisualAsset] = []
         if image_dir.exists():
             image_files = sorted(image_dir.glob("Image_*.*"))
             for img_path in image_files:
                 width, height = self._probe_image_size(img_path, 640, 360)
-                # Build asset_id deterministically from path + query
                 asset_id = hashlib.sha1(f"{search_query}:{img_path.name}".encode()).hexdigest()
                 assets.append(
                     VisualAsset(
                         asset_id=asset_id,
                         asset_type=AssetType.STATIC_IMAGE,
                         file_path=img_path,
-                        source_url=None,  # original URL undisclosed by downloader
+                        source_url=None,
                         width=width,
                         height=height,
                         duration=None,
                         tags=[summary],
                     )
                 )
-            self.logger.info(
-                "Bing download completed",
-                count=len(image_files),
-                directory=str(image_dir),
-            )
+            self.logger.info("Local Bing download completed", count=len(image_files), directory=str(image_dir))
         else:
-            self.logger.warning("No images were downloaded", directory=str(image_dir))
+            self.logger.warning("No images were downloaded by local fallback", directory=str(image_dir))
 
         return assets
 

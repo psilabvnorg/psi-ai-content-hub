@@ -20,6 +20,8 @@ import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
 import BackendConsole from "./tools/BackendConsole";
 import LLM from "./tools/LLM";
+import Translator from "./tools/Translator";
+import ImageFinder from "./tools/ImageFinder";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -63,6 +65,8 @@ export default function FeaturePlaceholder({
       "stt": "feature.tool.stt.title",
       "backend-console": "feature.tool.backend_console.title",
       "llm": "feature.tool.llm.title",
+      translator: "feature.tool.translator.title",
+      "image-finder": "feature.tool.image_finder.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -114,6 +118,10 @@ export default function FeaturePlaceholder({
         return <BackendConsole />;
       case "llm":
         return <LLM />;
+      case "translator":
+        return <Translator onOpenSettings={() => onSelectFeature("settings")} />;
+      case "image-finder":
+        return <ImageFinder onOpenSettings={() => onSelectFeature("settings")} />;
       case "settings":
         return <Settings />;
       default:

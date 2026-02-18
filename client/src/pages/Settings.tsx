@@ -72,6 +72,14 @@ type BgRemoveModelStatus = {
   device?: "cuda" | "cpu";
 };
 
+type TranslationModelStatus = {
+  loaded?: boolean;
+  model_id?: string;
+  model_dir?: string | null;
+  device?: string | null;
+  supported_languages?: Record<string, string>;
+};
+
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
 const MANAGED_SERVICE_LABELS: Record<string, string> = {
   app: "App API",
@@ -133,6 +141,8 @@ export default function Settings() {
   const [bgRemoveEnv, setBgRemoveEnv] = useState<EnvStatus | null>(null);
   const [bgRemoveStatus, setBgRemoveStatus] = useState<BgRemoveModelStatus | null>(null);
   const [bgRemoveProgress, setBgRemoveProgress] = useState<ProgressData | null>(null);
+  const [translationModelStatus, setTranslationModelStatus] = useState<TranslationModelStatus | null>(null);
+  const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
   const {
     services,
     supported: servicesSupported,
@@ -436,6 +446,38 @@ export default function Settings() {
     }
   };
 
+  const fetchTranslationStatus = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/translation/status`);
+      if (!res.ok) throw new Error("Translation status failed");
+      setTranslationModelStatus((await res.json()) as TranslationModelStatus);
+    } catch {
+      setTranslationModelStatus(null);
+    }
+  };
+
+  const handleTranslationDownloadModel = async () => {
+    setTranslationProgress({ status: "starting", percent: 0, message: "Downloading Tencent HY-MT model..." });
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/translation/download`, { method: "POST" });
+      if (!res.ok) throw new Error("Download request failed");
+      await consumeSseStream(res, (data) => setTranslationProgress(data));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Download failed";
+      setTranslationProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchTranslationStatus();
+    }
+  };
+
+  const handleTranslationUnloadModel = async () => {
+    try {
+      await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
+    } finally {
+      void fetchTranslationStatus();
+    }
+  };
+
   const handleBgRemoveEnvInstall = async () => {
     setBgRemoveProgress({ status: "starting", percent: 0, message: t("settings.bgremove.env_installing") });
     try {
@@ -468,6 +510,7 @@ export default function Settings() {
     fetchVieneuStatus();
     fetchWhisperStatus();
     fetchBgRemoveStatus();
+    fetchTranslationStatus();
     refreshServices();
   }, []);
 
@@ -1098,6 +1141,82 @@ export default function Settings() {
           {whisperProgress && (
             <div className="text-xs text-muted-foreground">
               {whisperProgress.message} {whisperProgress.percent ?? 0}%
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Translation Model</CardTitle>
+              <CardDescription>Tencent HY-MT1.5-1.8B — multilingual translation model used by the pipeline.</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { void fetchTranslationStatus(); }}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.image_finder.model")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {translationModelStatus?.loaded ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {translationModelStatus?.loaded
+                          ? t("settings.tools.status.ready")
+                          : t("settings.tools.status.not_ready")}
+                      </span>
+                      {translationModelStatus?.device && (
+                        <span className="text-xs text-muted-foreground ml-1">({translationModelStatus.device})</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {translationModelStatus?.model_dir || translationModelStatus?.model_id || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { void handleTranslationDownloadModel(); }}
+              disabled={translationProgress?.status === "starting"}
+            >
+              {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Download / Load Model
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => { void handleTranslationUnloadModel(); }}
+              disabled={!translationModelStatus?.loaded}
+            >
+              Unload Model
+            </Button>
+          </div>
+
+          {translationProgress && (
+            <div className="text-xs text-muted-foreground">
+              {translationProgress.message} {translationProgress.percent ?? 0}%
             </div>
           )}
         </CardContent>
