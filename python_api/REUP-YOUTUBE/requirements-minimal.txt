@@ -1,0 +1,6 @@
+# Minimal requirements for testing and development
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+structlog>=23.1.0
+pytest>=7.4.0
+hypothesis>=6.82.0

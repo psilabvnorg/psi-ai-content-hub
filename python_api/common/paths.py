@@ -20,3 +20,6 @@ MODEL_ROOT.mkdir(parents=True, exist_ok=True)
 MODEL_F5_DIR = MODEL_ROOT / "f5-tts"
 MODEL_VIENEU_DIR = MODEL_ROOT / "vieneu-tts"
 MODEL_WHISPER_DIR = MODEL_ROOT / "whisper"
+MODEL_TRANSLATION_DIR = MODEL_ROOT / "translation"
+
+MODEL_TRANSLATION_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,4 @@
+1. design
+
+Ở bước Transcription, Translation, có cách nào chia nhỏ ra và xử lý song song ko. 
+Nếu download được subtitles thì có vẻ chia được. 
