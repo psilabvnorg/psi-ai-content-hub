@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
+import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, IMAGE_FINDER_API_URL, TRANSLATION_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { useManagedServices } from "@/hooks/useManagedServices";
@@ -74,6 +74,7 @@ type BgRemoveModelStatus = {
 
 type TranslationModelStatus = {
   loaded?: boolean;
+  downloaded?: boolean;
   model_id?: string;
   model_dir?: string | null;
   device?: string | null;
@@ -83,12 +84,14 @@ type TranslationModelStatus = {
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
 const MANAGED_SERVICE_LABELS: Record<string, string> = {
   app: "App API",
+  imagefinder: "Image Finder API",
+  translation: "Translation API",
   f5: "F5 Voice Clone API",
   vieneu: "VieNeu TTS API",
   whisper: "Whisper STT API",
   bgremove: "Background Removal API",
 };
-const MANAGED_SERVICE_IDS = ["app", "f5", "vieneu", "whisper", "bgremove"] as const;
+const MANAGED_SERVICE_IDS = ["app", "imagefinder", "translation", "f5", "vieneu", "whisper", "bgremove"] as const;
 
 function isManagedServiceId(value: string): value is (typeof MANAGED_SERVICE_IDS)[number] {
   return MANAGED_SERVICE_IDS.includes(value as (typeof MANAGED_SERVICE_IDS)[number]);
@@ -141,8 +144,11 @@ export default function Settings() {
   const [bgRemoveEnv, setBgRemoveEnv] = useState<EnvStatus | null>(null);
   const [bgRemoveStatus, setBgRemoveStatus] = useState<BgRemoveModelStatus | null>(null);
   const [bgRemoveProgress, setBgRemoveProgress] = useState<ProgressData | null>(null);
+  const [translationEnv, setTranslationEnv] = useState<EnvStatus | null>(null);
   const [translationModelStatus, setTranslationModelStatus] = useState<TranslationModelStatus | null>(null);
   const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
+  const [imageFinderEnv, setImageFinderEnv] = useState<EnvStatus | null>(null);
+  const [imageFinderProgress, setImageFinderProgress] = useState<ProgressData | null>(null);
   const {
     services,
     supported: servicesSupported,
@@ -446,20 +452,71 @@ export default function Settings() {
     }
   };
 
+  const fetchImageFinderStatus = async () => {
+    try {
+      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/status`);
+      if (!res.ok) throw new Error("ImageFinder status failed");
+      setImageFinderEnv((await res.json()) as EnvStatus);
+    } catch {
+      setImageFinderEnv(null);
+    }
+  };
+
+  const handleImageFinderEnvInstall = async () => {
+    setImageFinderProgress({ status: "starting", percent: 0, message: "Installing ImageFinder environment..." });
+    try {
+      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Environment install failed");
+      setImageFinderProgress({ status: "complete", percent: 100, message: "ImageFinder environment installed" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Environment install failed";
+      setImageFinderProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchImageFinderStatus();
+    }
+  };
+
   const fetchTranslationStatus = async () => {
     try {
-      const res = await fetch(`${APP_API_URL}/api/v1/translation/status`);
-      if (!res.ok) throw new Error("Translation status failed");
-      setTranslationModelStatus((await res.json()) as TranslationModelStatus);
+      const [envRes, modelRes] = await Promise.all([
+        fetch(`${TRANSLATION_API_URL}/api/v1/env/status`),
+        fetch(`${TRANSLATION_API_URL}/api/v1/translation/status`),
+      ]);
+      if (!envRes.ok || !modelRes.ok) throw new Error("Translation status failed");
+      setTranslationEnv((await envRes.json()) as EnvStatus);
+      setTranslationModelStatus((await modelRes.json()) as TranslationModelStatus);
     } catch {
+      setTranslationEnv(null);
       setTranslationModelStatus(null);
+    }
+  };
+
+  const handleTranslationEnvInstall = async () => {
+    setTranslationProgress({ status: "starting", percent: 0, message: "Installing translation environment..." });
+    try {
+      const res = await fetch(`${TRANSLATION_API_URL}/api/v1/env/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Environment install failed");
+      setTranslationProgress({ status: "complete", percent: 100, message: "Translation environment installed" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Environment install failed";
+      setTranslationProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchTranslationStatus();
     }
   };
 
   const handleTranslationDownloadModel = async () => {
     setTranslationProgress({ status: "starting", percent: 0, message: "Downloading Tencent HY-MT model..." });
     try {
-      const res = await fetch(`${APP_API_URL}/api/v1/translation/download`, { method: "POST" });
+      const res = await fetch(`${TRANSLATION_API_URL}/api/v1/translation/download`, { method: "POST" });
       if (!res.ok) throw new Error("Download request failed");
       await consumeSseStream(res, (data) => setTranslationProgress(data));
     } catch (err) {
@@ -472,7 +529,7 @@ export default function Settings() {
 
   const handleTranslationUnloadModel = async () => {
     try {
-      await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
+      await fetch(`${TRANSLATION_API_URL}/api/v1/translation/unload`, { method: "POST" });
     } finally {
       void fetchTranslationStatus();
     }
@@ -511,6 +568,7 @@ export default function Settings() {
     fetchWhisperStatus();
     fetchBgRemoveStatus();
     fetchTranslationStatus();
+    fetchImageFinderStatus();
     refreshServices();
   }, []);
 
@@ -611,6 +669,74 @@ export default function Settings() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Image Finder</CardTitle>
+              <CardDescription>Search engine dependencies — DuckDuckGo, Selenium, Unsplash, and Pillow.</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { void fetchImageFinderStatus(); }}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Environment</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {imageFinderEnv?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {imageFinderEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!imageFinderEnv?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { void handleImageFinderEnvInstall(); }}
+                          disabled={imageFinderProgress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {imageFinderProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          Install Environment
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {imageFinderEnv?.installed_modules?.length
+                      ? imageFinderEnv.installed_modules.join(", ")
+                      : imageFinderEnv?.missing?.length
+                        ? imageFinderEnv.missing.join(", ")
+                        : "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          {imageFinderProgress && (
+            <div className="text-xs text-muted-foreground">
+              {imageFinderProgress.message} {imageFinderProgress.percent ?? 0}%
             </div>
           )}
         </CardContent>
@@ -1170,10 +1296,44 @@ export default function Settings() {
               </TableHeader>
               <TableBody>
                 <TableRow>
+                  <TableCell className="font-medium">Environment</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {translationEnv?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {translationEnv?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!translationEnv?.installed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { void handleTranslationEnvInstall(); }}
+                          disabled={translationProgress?.status === "starting"}
+                          className="ml-2"
+                        >
+                          {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          Install Environment
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {translationEnv?.installed_modules?.length
+                      ? translationEnv.installed_modules.join(", ")
+                      : translationEnv?.missing?.length
+                        ? translationEnv.missing.join(", ")
+                        : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
                   <TableCell className="font-medium">{t("tool.image_finder.model")}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {translationModelStatus?.loaded ? (
+                      {translationModelStatus?.loaded || translationModelStatus?.downloaded ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       ) : (
                         <XCircle className="w-4 h-4 text-red-500" />
@@ -1181,7 +1341,9 @@ export default function Settings() {
                       <span className="text-sm">
                         {translationModelStatus?.loaded
                           ? t("settings.tools.status.ready")
-                          : t("settings.tools.status.not_ready")}
+                          : translationModelStatus?.downloaded
+                            ? t("settings.tools.status.ready")
+                            : t("settings.tools.status.not_ready")}
                       </span>
                       {translationModelStatus?.device && (
                         <span className="text-xs text-muted-foreground ml-1">({translationModelStatus.device})</span>
@@ -1200,7 +1362,7 @@ export default function Settings() {
             <Button
               variant="outline"
               onClick={() => { void handleTranslationDownloadModel(); }}
-              disabled={translationProgress?.status === "starting"}
+              disabled={translationProgress?.status === "starting" || !translationEnv?.installed}
             >
               {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Download / Load Model

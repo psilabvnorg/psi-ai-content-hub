@@ -71,7 +71,9 @@ class Settings(BaseSettings):
     # External API settings
     google_api_key: Optional[str] = Field(default=None, env="GOOGLE_API_KEY")
     civitai_api_key: Optional[str] = Field(default=None, env="CIVITAI_API_KEY")
-    api_base_url: str = Field(default="http://127.0.0.1:6900", description="app-and-basic-tool API base URL")
+    api_base_url: str = Field(default="http://127.0.0.1:6901", description="App API base URL")
+    translation_api_url: str = Field(default="http://127.0.0.1:6906", description="Translation API base URL")
+    image_finder_api_url: str = Field(default="http://127.0.0.1:6907", description="ImageFinder API base URL")
     whisper_api_url: str = Field(default="http://127.0.0.1:6904", description="Whisper STT API base URL")
     vieneu_tts_api_url: str = Field(default="http://127.0.0.1:6903", description="VieNeu-TTS API base URL")
     use_api_services: bool = Field(default=True, description="Use REST APIs instead of in-process processing")

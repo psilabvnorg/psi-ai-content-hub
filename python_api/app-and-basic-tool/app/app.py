@@ -9,12 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from .deps import job_store
 from .routers import env as env_router
 from .routers import files as files_router
-from .routers import image_finder as image_finder_router
 from .routers import media as media_router
 from .routers import system as system_router
 from .routers import text_to_video as text_to_video_router
 from .routers import llm as llm_router
-from .routers import translation as translation_router
 from .routers import tools as tools_router
 from .services.text_to_video import cleanup_text_to_video_state
 
@@ -44,8 +42,6 @@ def create_app() -> FastAPI:
     app.include_router(system_router.router)
     app.include_router(media_router.router)
     app.include_router(text_to_video_router.router)
-    app.include_router(translation_router.router)
-    app.include_router(image_finder_router.router)
     app.include_router(files_router.router)
     app.include_router(llm_router.router)
     app.include_router(tools_router.router)

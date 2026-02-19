@@ -458,7 +458,7 @@ class TestSemanticApiAndMapping:
                         text="Sample transcript for images",
                         limit=2,
                         output_dir=output_dir,
-                        llm_api_url="http://127.0.0.1:6900",
+                        llm_api_url="http://127.0.0.1:6907",
                     )
 
             assert post_mock.call_count == 1

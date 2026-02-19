@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+requests>=2.31.0
+selenium
+pillow
+duckduckgo_search
+python-dotenv
+webdriver_manager

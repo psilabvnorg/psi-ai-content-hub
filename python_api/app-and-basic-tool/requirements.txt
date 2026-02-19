@@ -3,7 +3,3 @@ uvicorn
 python-multipart
 requests>=2.31.0
 yt-dlp
-transformers>=4.40.0
-huggingface_hub>=0.23.0
-torch>=2.0.0
-accelerate>=0.27.0

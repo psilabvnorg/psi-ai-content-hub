@@ -10,7 +10,9 @@ The pipeline delegates heavy processing to REST API microservices running in the
 
 | Service | Port | Responsibility |
 |---------|------|----------------|
-| **app-and-basic-tool** | 6901 | Video download, audio extraction, translation (Tencent HY-MT), Remotion rendering, LLM keyword extraction |
+| **app-and-basic-tool** | 6901 | Video download, audio extraction, Remotion rendering |
+| **Translation** | 6906 | Tencent HY-MT translation (segment-based API) |
+| **ImageFinder** | 6907 | LLM query generation + multi-source image search and ranking |
 | **whisper-stt** | 6904 | Speech-to-text transcription with word-level timestamps |
 | **VieNeu-TTS** | 6903 | Text-to-speech synthesis |
 
@@ -30,8 +32,8 @@ The pipeline delegates heavy processing to REST API microservices running in the
 |---|-------|--------|-------------|
 | 1 | **Video Ingestion** | API (port 6901) | Downloads YouTube video via yt-dlp, extracts audio to WAV |
 | 2 | **Transcription** | API (port 6904) | Whisper large-v3 with word-level timestamps and punctuation |
-| 3 | **Translation** | API (port 6901) | Tencent HY-MT1.5-1.8B-FP8 model, segment-by-segment with context |
-| 4 | **Visual Assets** | In-process + API | LLM extracts keywords, Bing image search downloads images, renamed to `01.jpg`..`10.jpg` for Remotion |
+| 3 | **Translation** | API (port 6906) | Tencent HY-MT1.5-1.8B-FP8 model, segment-by-segment with context |
+| 4 | **Visual Assets** | API + In-process | ImageFinder API searches/scores images, pipeline stages/renames files to `01.jpg`..`10.jpg` for Remotion |
 | 5 | **TTS Synthesis** | API (port 6903) | VieNeu-TTS generates narration audio per language |
 | 6 | **Remotion Content Prep** | In-process | Prepares caption JSON, video-config, intro-config for Remotion |
 | 7 | **Video Rendering** | API (port 6901) | Remotion renders video with image slideshow, captions, and intro overlay |
@@ -100,7 +102,7 @@ python_api/REUP-YOUTUBE/
 
 - Python 3.9+
 - FFmpeg installed and in PATH
-- All three API services running (see ports table above)
+- Required API services running (see ports table above)
 
 ## Installation
 
@@ -130,7 +132,9 @@ Settings are managed via `config.py` using pydantic-settings. Configure through 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `USE_API_SERVICES` | `True` | Use REST APIs (set `False` for legacy in-process mode) |
-| `API_BASE_URL` | `http://127.0.0.1:6900` | app-and-basic-tool API |
+| `API_BASE_URL` | `http://127.0.0.1:6901` | app-and-basic-tool API |
+| `TRANSLATION_API_URL` | `http://127.0.0.1:6906` | Translation API |
+| `IMAGE_FINDER_API_URL` | `http://127.0.0.1:6907` | ImageFinder API |
 | `WHISPER_API_URL` | `http://127.0.0.1:6904` | Whisper STT API |
 | `VIENEU_TTS_API_URL` | `http://127.0.0.1:6903` | VieNeu-TTS API |
 | `API_TIMEOUT` | `600` | API request timeout (seconds) |
@@ -175,9 +179,11 @@ result = pipeline.process_job(job_id)
 
 Ensure API services are started:
 
-1. **app-and-basic-tool** on port 6901 — handles video download, translation, and Remotion rendering
-2. **whisper-stt** on port 6904 — handles transcription (Whisper model must be loaded)
-3. **VieNeu-TTS** on port 6903 — handles TTS (model must be loaded via `/api/v1/models/load`)
+1. **app-and-basic-tool** on port 6901 — handles video download and Remotion rendering
+2. **Translation** on port 6906 — handles transcript translation (`/api/v1/translation/translate`)
+3. **ImageFinder** on port 6907 — handles image search (`/api/v1/image-finder/search`)
+4. **whisper-stt** on port 6904 — handles transcription (Whisper model must be loaded)
+5. **VieNeu-TTS** on port 6903 — handles TTS (model must be loaded via `/api/v1/models/load`)
 
 The translation model (Tencent HY-MT1.5-1.8B-FP8, ~4GB FP8) auto-downloads on first use to `%APPDATA%/psi-ai-content-hub/models/translation/`. First translation request takes 30-60s for model loading; subsequent requests reuse the cached model.
 
@@ -237,10 +243,10 @@ See [docs/implementation-plan.md](docs/implementation-plan.md) for full API requ
 | Video Download | POST | `/api/v1/video/download` | app-and-basic-tool |
 | Audio Extraction | POST | `/api/v1/video/extract-audio` | app-and-basic-tool |
 | Transcription | POST | `/api/v1/transcribe` | whisper-stt |
-| Translation | POST | `/api/v1/translation/translate` | app-and-basic-tool |
-| Translation Status | GET | `/api/v1/translation/status` | app-and-basic-tool |
+| Translation | POST | `/api/v1/translation/translate` | Translation |
+| Translation Status | GET | `/api/v1/translation/status` | Translation |
 | TTS Generate | POST | `/api/v1/generate` | VieNeu-TTS |
-| LLM Keywords | POST | `/api/v1/llm/generate` | app-and-basic-tool |
+| Image Search | POST | `/api/v1/image-finder/search` | ImageFinder |
 | Audio Upload | POST | `/api/v1/text-to-video/audio/upload` | app-and-basic-tool |
 | Remotion Render | POST | `/api/v1/text-to-video/render` | app-and-basic-tool |
 

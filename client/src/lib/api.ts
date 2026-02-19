@@ -6,6 +6,8 @@
 import { getApiUrl, getServiceApiUrl, isLocalApiAvailable, getPlatformConfig } from './platform';
 
 export const APP_API_URL = getServiceApiUrl('app');
+export const IMAGE_FINDER_API_URL = getServiceApiUrl('imagefinder');
+export const TRANSLATION_API_URL = getServiceApiUrl('translation');
 export const F5_API_URL = getServiceApiUrl('f5');
 export const VIENEU_API_URL = getServiceApiUrl('vieneu');
 export const WHISPER_API_URL = getServiceApiUrl('whisper');

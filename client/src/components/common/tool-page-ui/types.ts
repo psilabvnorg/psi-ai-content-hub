@@ -28,6 +28,7 @@ export type StatusRowConfig = {
   showActionButton?: boolean;
   actionButtonLabel?: string;
   actionDisabled?: boolean;
+  actionLoading?: boolean;
   onAction?: () => void;
   showSecondaryAction?: boolean;
   secondaryActionLabel?: string;

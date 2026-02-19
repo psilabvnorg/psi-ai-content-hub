@@ -489,7 +489,7 @@ class MultilingualVideoPipeline(LoggerMixin):
                 )
 
                 create_payload = api_client.post_json(
-                    self.settings.api_base_url,
+                    self.settings.translation_api_url,
                     "/api/v1/translation/translate",
                     {
                         "source_lang": source_lang,
@@ -503,7 +503,7 @@ class MultilingualVideoPipeline(LoggerMixin):
                     raise PipelineError("Translation API response missing job_id")
 
                 result_envelope = api_client.poll_for_completion(
-                    base_url=self.settings.api_base_url,
+                    base_url=self.settings.translation_api_url,
                     task_id=task_id,
                     stream_path="/api/v1/translation/translate/stream",
                     result_path="/api/v1/translation/translate/result",
@@ -621,6 +621,7 @@ class MultilingualVideoPipeline(LoggerMixin):
                 words=15,
                 limit=limit,
                 output_dir=stage_assets_dir,
+                llm_api_url=getattr(self.settings, "image_finder_api_url", "http://127.0.0.1:6907"),
             )
             remotion_assets = service.prepare_for_remotion(downloaded_assets, stage_output_dir)
             scene_inputs = [

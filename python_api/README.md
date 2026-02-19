@@ -1,6 +1,6 @@
 # PSI AI CONTENT HUB Python APIs
 
-This folder contains five standalone FastAPI services. Each service runs in its own venv and listens on its own port.
+This folder contains standalone FastAPI services. Each service runs in its own venv and listens on its own port.
 
 ## Services & Ports
 
@@ -9,6 +9,8 @@ This folder contains five standalone FastAPI services. Each service runs in its 
 3. `VieNeu-TTS` → `6903`
 4. `whisper-stt` → `6904`
 5. `background-removal` → `6905`
+6. `Translation` → `6906`
+7. `ImageFinder` → `6907`
 
 ## Shared Model Directory
 
@@ -44,6 +46,7 @@ Each service handles its own model downloads:
 - F5‑TTS: `POST /api/v1/models/download`
 - VieNeu‑TTS: `POST /api/v1/models/download`
 - Whisper‑STT: `POST /api/v1/models/download`
+- Translation: `POST /api/v1/translation/download`
 
 ## System Tools (App Service Only)
 

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import gc
 import threading
-import time
 import uuid
-from pathlib import Path
 from typing import Dict, Optional
 
 from python_api.common.jobs import JobStore
@@ -20,8 +18,8 @@ _tokenizer = None
 _current_device: Optional[str] = None
 _model_lock = threading.Lock()
 
-MODEL_ID = "tencent/HY-MT1.5-1.8B-FP8"
-MODEL_DIR = MODEL_TRANSLATION_DIR / "HY-MT1.5-1.8B-FP8"
+MODEL_ID = "facebook/nllb-200-1.3B"
+MODEL_DIR = MODEL_TRANSLATION_DIR / "nllb-200-1.3B"
 
 LANGUAGE_MAP: Dict[str, str] = {
     "vi": "Vietnamese",
@@ -33,6 +31,30 @@ LANGUAGE_MAP: Dict[str, str] = {
     "fr": "French",
     "es": "Spanish",
 }
+
+LANGUAGE_CODE_MAP: Dict[str, str] = {
+    "vi": "vie_Latn",
+    "en": "eng_Latn",
+    "ja": "jpn_Jpan",
+    "de": "deu_Latn",
+    "zh": "zho_Hans",
+    "ko": "kor_Hang",
+    "fr": "fra_Latn",
+    "es": "spa_Latn",
+}
+
+
+def _detect_runtime_device() -> tuple[str, str | None]:
+    """Detect runtime compute device, preferring CUDA when available."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0)
+            return "cuda", gpu_name
+    except Exception:
+        pass
+    return "cpu", None
 
 
 def _model_downloaded() -> bool:
@@ -56,32 +78,40 @@ def _download_model_files(task_id: str) -> None:
     translation_progress.set_progress(task_id, "downloaded", 90, "Model files downloaded.")
 
 
-def _ensure_model_loaded(task_id: str) -> None:
-    """Lazy-load Tencent HY-MT model into module-level cache."""
+def _ensure_model_loaded(task_id: str, preferred_device: str) -> None:
+    """Lazy-load NLLB-200 model into module-level cache."""
     global _model, _tokenizer, _current_device
 
     with _model_lock:
         if _model is not None and _tokenizer is not None:
             return
 
-        translation_progress.set_progress(task_id, "loading_model", 5, "Loading Tencent HY-MT model...")
+        import torch
 
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        effective_device = preferred_device if preferred_device in {"cuda", "cpu"} else "cpu"
+        translation_progress.set_progress(
+            task_id,
+            "loading_model",
+            5,
+            f"Loading NLLB-200 model on {effective_device.upper()}...",
+        )
+
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
         model_path = str(MODEL_DIR) if _model_downloaded() else MODEL_ID
 
         _tokenizer = AutoTokenizer.from_pretrained(
             model_path,
-            trust_remote_code=True,
         )
-        _model = AutoModelForCausalLM.from_pretrained(
+        _model = AutoModelForSeq2SeqLM.from_pretrained(
             model_path,
-            device_map="auto",
-            trust_remote_code=True,
+            torch_dtype=torch.float16 if effective_device == "cuda" else torch.float32,
+            low_cpu_mem_usage=True,
         )
+        _model.to(torch.device(effective_device))
         _model.eval()
-        _current_device = str(next(_model.parameters()).device)
-        translation_progress.add_log(task_id, f"Model loaded on {_current_device}")
+        _current_device = effective_device
+        translation_progress.add_log(task_id, f"Model loaded on {_current_device.upper()}")
 
 
 def _translate_segment(
@@ -100,61 +130,59 @@ def _translate_segment(
     if source_lang.lower() == target_lang.lower():
         return text.strip()
 
-    src_name = LANGUAGE_MAP.get(source_lang, source_lang)
-    tgt_name = LANGUAGE_MAP.get(target_lang, target_lang)
+    _ = preserve_emotion
 
-    prompt = f"Translate the following {src_name} text to {tgt_name}."
-    if preserve_emotion:
-        prompt += " Preserve the original tone and emotion."
-    if context:
-        prompt += f"\n\nContext: {context}"
-    prompt += f"\n\nText: {text}\n\nTranslation in {tgt_name}:"
+    src_code = LANGUAGE_CODE_MAP.get(source_lang.lower())
+    tgt_code = LANGUAGE_CODE_MAP.get(target_lang.lower())
+    if not src_code or not tgt_code:
+        raise RuntimeError(f"Unsupported translation language pair: {source_lang} -> {target_lang}")
 
-    if hasattr(_tokenizer, "apply_chat_template"):
-        messages = [{"role": "user", "content": prompt}]
-        inputs = _tokenizer.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_tensors="pt",
-        )
-    else:
-        inputs = _tokenizer(prompt, return_tensors="pt").input_ids
+    if hasattr(_tokenizer, "src_lang"):
+        _tokenizer.src_lang = src_code
 
+    text_for_model = text.strip()
+    if context.strip():
+        text_for_model = f"{context.strip()} {text_for_model}".strip()
+
+    encoded_inputs = _tokenizer(
+        text_for_model,
+        return_tensors="pt",
+        truncation=True,
+        max_length=1024,
+    )
     device = next(_model.parameters()).device
-    inputs = inputs.to(device)
+    inputs = {key: value.to(device) for key, value in encoded_inputs.items()}
 
-    pad_token_id = _tokenizer.pad_token_id
-    if pad_token_id is None:
-        pad_token_id = _tokenizer.eos_token_id
-
-    eos_token_id = _tokenizer.eos_token_id
-    if eos_token_id is None:
-        eos_token_id = pad_token_id
+    forced_bos_token_id: int | None = None
+    language_to_id = getattr(_tokenizer, "lang_code_to_id", None)
+    if isinstance(language_to_id, dict):
+        raw_id = language_to_id.get(tgt_code)
+        if isinstance(raw_id, int):
+            forced_bos_token_id = raw_id
+    if forced_bos_token_id is None:
+        raw_id = _tokenizer.convert_tokens_to_ids(tgt_code)
+        if isinstance(raw_id, int):
+            forced_bos_token_id = raw_id
+    if not isinstance(forced_bos_token_id, int) or forced_bos_token_id < 0:
+        raise RuntimeError(f"Failed to resolve NLLB language token for target language: {target_lang}")
 
     import torch
 
     with torch.no_grad():
-        outputs = _model.generate(
-            inputs,
+        output_tokens = _model.generate(
+            **inputs,
+            forced_bos_token_id=forced_bos_token_id,
             max_new_tokens=max_new_tokens,
-            temperature=0.7,
-            top_p=0.6,
-            top_k=20,
-            repetition_penalty=1.05,
-            do_sample=True,
-            pad_token_id=pad_token_id,
-            eos_token_id=eos_token_id,
+            num_beams=4,
         )
 
-    prompt_tokens = int(inputs.shape[-1])
-    text_tokens = outputs[0][prompt_tokens:]
-    decoded = _tokenizer.decode(text_tokens, skip_special_tokens=True).strip()
+    decoded_items = _tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+    decoded = decoded_items[0].strip() if decoded_items else ""
     return " ".join(decoded.split())
 
 
 def download_model(job_store: JobStore) -> str:
-    """Download and cache the Tencent HY-MT model to MODEL_DIR, streaming progress via SSE."""
+    """Download and cache the NLLB-200 model to MODEL_DIR, streaming progress via SSE."""
     task_id = f"translation_model_{uuid.uuid4().hex}"
     translation_progress.set_progress(task_id, "starting", 0, "Starting model download...")
 
@@ -188,7 +216,13 @@ def start_translation(
     def runner() -> None:
         try:
             translation_progress.set_progress(job.job_id, "starting", 0, "Starting translation...")
-            _ensure_model_loaded(job.job_id)
+            preferred_device, gpu_name = _detect_runtime_device()
+            if preferred_device == "cuda":
+                translation_progress.add_log(job.job_id, f"CUDA detected. Using GPU: {gpu_name or 'NVIDIA GPU'}")
+            else:
+                translation_progress.add_log(job.job_id, "CUDA not detected. Falling back to CPU.")
+
+            _ensure_model_loaded(job.job_id, preferred_device=preferred_device)
 
             if segments:
                 normalized_segments = [seg for seg in segments if isinstance(seg, dict) and str(seg.get("text", "")).strip()]
@@ -287,6 +321,7 @@ def get_model_status() -> dict:
     """Return current translation model state."""
     return {
         "loaded": _model is not None and _tokenizer is not None,
+        "downloaded": _model_downloaded(),
         "model_id": MODEL_ID,
         "model_dir": str(MODEL_DIR),
         "device": _current_device,

@@ -1,4 +1,4 @@
-"""Unit tests for pipeline translation stage using app-and-basic-tool API."""
+"""Unit tests for pipeline translation stage using Translation API."""
 
 from pathlib import Path
 from unittest.mock import Mock
@@ -27,7 +27,7 @@ def _make_transcript(path: Path) -> Path:
 def test_stage_translation_uses_api_and_writes_translated_script(tmp_path: Path) -> None:
     pipeline = MultilingualVideoPipeline.__new__(MultilingualVideoPipeline)
     pipeline.progress_callback = Mock()
-    pipeline.settings = Mock(api_base_url="http://127.0.0.1:6900")
+    pipeline.settings = Mock(api_base_url="http://127.0.0.1:6900", translation_api_url="http://127.0.0.1:6906")
 
     api_client = Mock()
     api_client.post_json.return_value = {"job_id": "job_translate_1"}
@@ -76,7 +76,7 @@ def test_stage_translation_uses_api_and_writes_translated_script(tmp_path: Path)
 def test_stage_translation_raises_on_missing_segments(tmp_path: Path) -> None:
     pipeline = MultilingualVideoPipeline.__new__(MultilingualVideoPipeline)
     pipeline.progress_callback = Mock()
-    pipeline.settings = Mock(api_base_url="http://127.0.0.1:6900")
+    pipeline.settings = Mock(api_base_url="http://127.0.0.1:6900", translation_api_url="http://127.0.0.1:6906")
 
     api_client = Mock()
     api_client.post_json.return_value = {"job_id": "job_translate_2"}

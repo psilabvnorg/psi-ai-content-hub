@@ -414,12 +414,12 @@ class VisualAssetManager(LoggerMixin):
         timeout_seconds: int = 300,
         lang: str = "en",
     ) -> List[VisualAsset]:
-        """Find images via ImageFinder API (LLM + Bing), then download locally."""
+        """Find images via ImageFinder API, then download locally."""
         if not text or not text.strip():
             raise VisualAssetError("Input text cannot be empty")
 
         if llm_api_url is None:
-            llm_api_url = getattr(self.settings, "api_base_url", "http://127.0.0.1:6900")
+            llm_api_url = getattr(self.settings, "image_finder_api_url", "http://127.0.0.1:6907")
 
         try:
             finder_payload = self._search_with_image_finder_api(
@@ -648,7 +648,7 @@ class VisualAssetManager(LoggerMixin):
         target_words: int,
         timeout_seconds: int,
     ) -> str:
-        """Summarize text using app-and-basic-tool LLM API."""
+        """Summarize text using ImageFinder LLM API."""
         prompt = (
             f"Extract {target_words} words or less for image search keywords. "
             "Return only keywords, no explanation."
