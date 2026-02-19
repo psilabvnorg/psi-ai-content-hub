@@ -73,22 +73,29 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   // --- Data fetching ---
   const fetchStatus = async () => {
     try {
-      const [envRes, statusRes] = await Promise.all([
-        fetch(`${VIENEU_API_URL}/api/v1/env/status`),
-        fetch(`${VIENEU_API_URL}/api/v1/status`),
-      ]);
-      if (!envRes.ok || !statusRes.ok) throw new Error("status");
-      
+      const envRes = await fetch(`${VIENEU_API_URL}/api/v1/env/status`);
+      if (!envRes.ok) throw new Error("env");
       const envData = await envRes.json();
-      const statusData = (await statusRes.json()) as VieneuStatusResponse;
-      
       setServerUnreachable(false);
       setEnvInstalled(envData.installed || false);
       setEnvModules(envData.installed_modules || []);
       setEnvMissing(envData.missing || []);
-      setModelStatus(statusData.models?.vieneu_tts);
     } catch {
       setServerUnreachable(true);
+      setModelStatus(undefined);
+      return;
+    }
+
+    try {
+      const statusRes = await fetch(`${VIENEU_API_URL}/api/v1/status`);
+      if (statusRes.ok) {
+        const statusData = (await statusRes.json()) as VieneuStatusResponse;
+        setModelStatus(statusData.models?.vieneu_tts);
+      } else {
+        setModelStatus(undefined);
+      }
+    } catch {
+      setModelStatus(undefined);
     }
   };
 

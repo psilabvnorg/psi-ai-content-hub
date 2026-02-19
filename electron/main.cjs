@@ -22,6 +22,21 @@ const MANAGED_SERVICES = [
     apiUrl: 'http://127.0.0.1:6901',
   },
   {
+    id: 'imagefinder',
+    name: 'Image Finder API',
+    relativeRoot: path.join('python_api', 'ImageFinder'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6907',
+    bootstrapPackages: ['fastapi', 'uvicorn', 'python-multipart', 'Pillow', 'requests', 'httpx'],
+  },
+  {
+    id: 'translation',
+    name: 'Translation API',
+    relativeRoot: path.join('python_api', 'Translation'),
+    entryModule: 'app.main',
+    apiUrl: 'http://127.0.0.1:6906',
+  },
+  {
     id: 'f5',
     name: 'F5 Voice Clone API',
     relativeRoot: path.join('python_api', 'F5-TTS'),
@@ -50,6 +65,51 @@ const MANAGED_SERVICES = [
     apiUrl: 'http://127.0.0.1:6905',
   },
 ];
+
+const BOOTSTRAP_PACKAGES = {
+  app: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  imagefinder: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  translation: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  f5: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  vieneu: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  whisper: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  bgremove: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+};
 
 // Check if dev server is running on port 5000
 const isDev = !app.isPackaged;
@@ -259,13 +319,33 @@ async function startManagedService(serviceId) {
     return buildManagedServiceStatus(serviceId);
   }
 
+  // If venv doesn't exist, create it and install minimum packages to boot the FastAPI server.
+  // This allows /api/v1/env/install to be reached from the UI to install the full package set.
   if (!fs.existsSync(service.venvPythonPath)) {
     setManagedServiceRuntime(serviceId, {
-      status: 'not_configured',
+      status: 'starting',
       pid: null,
-      error: `Missing venv python: ${service.venvPythonPath}`,
+      error: null,
     });
-    return buildManagedServiceStatus(serviceId);
+
+    const systemPython = process.platform === 'win32' ? 'python' : 'python3';
+    const venvDir = path.join(service.serviceRoot, 'venv');
+    console.log(`[ManagedService:${serviceId}] Creating venv at ${venvDir}...`);
+
+    try {
+      await runCommand(systemPython, ['-m', 'venv', venvDir], { shell: true });
+      console.log(`[ManagedService:${serviceId}] Installing bootstrap packages...`);
+      const bootstrapPkgs = service.bootstrapPackages || ['fastapi', 'uvicorn', 'python-multipart'];
+      await runCommand(service.venvPythonPath, ['-m', 'pip', 'install', '--quiet', ...bootstrapPkgs], { shell: true });
+      console.log(`[ManagedService:${serviceId}] Bootstrap complete.`);
+    } catch (error) {
+      setManagedServiceRuntime(serviceId, {
+        status: 'error',
+        pid: null,
+        error: `Failed to create venv: ${error.message}`,
+      });
+      return buildManagedServiceStatus(serviceId);
+    }
   }
 
   setManagedServiceRuntime(serviceId, {

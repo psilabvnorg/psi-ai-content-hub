@@ -4,7 +4,7 @@
  */
 
 export type Platform = 'web' | 'electron' | 'android' | 'ios';
-export type ApiService = 'app' | 'f5' | 'vieneu' | 'whisper' | 'bgremove';
+export type ApiService = 'app' | 'imagefinder' | 'translation' | 'f5' | 'vieneu' | 'whisper' | 'bgremove';
 
 /**
  * Detect the current platform
@@ -45,6 +45,8 @@ export function getServiceApiUrl(service: ApiService): string {
   const env = import.meta.env;
   const specific = {
     app: env.VITE_APP_API_URL,
+    imagefinder: env.VITE_IMAGE_FINDER_API_URL,
+    translation: env.VITE_TRANSLATION_API_URL,
     f5: env.VITE_F5_API_URL,
     vieneu: env.VITE_VIENEU_API_URL,
     whisper: env.VITE_WHISPER_API_URL,
@@ -62,6 +64,10 @@ export function getServiceApiUrl(service: ApiService): string {
   switch (service) {
     case 'app':
       return 'http://127.0.0.1:6901';
+    case 'imagefinder':
+      return 'http://127.0.0.1:6907';
+    case 'translation':
+      return 'http://127.0.0.1:6906';
     case 'f5':
       return 'http://127.0.0.1:6902';
     case 'vieneu':

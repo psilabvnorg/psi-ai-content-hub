@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from python_api.common.paths import TEMP_DIR
 from ..deps import get_job_store
@@ -85,6 +86,38 @@ def video_extract_audio(
     )
     file_record = job_store.add_file(output_path, output_path.name)
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
+
+
+class ExtractAudioFromFileIdRequest(BaseModel):
+    file_id: str
+    format: str = "mp3"
+
+
+@router.post("/video/extract-audio-from-fileid")
+def video_extract_audio_from_fileid(
+    payload: ExtractAudioFromFileIdRequest,
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    """Extract audio from an already-downloaded video file stored on the server.
+
+    @param payload - Request body with file_id of the downloaded video and desired format.
+    @return dict with status, filename, and download_url for the extracted audio.
+    """
+    if payload.format not in ("mp3", "wav"):
+        raise HTTPException(status_code=400, detail="format must be mp3 or wav")
+    file_record = job_store.get_file(payload.file_id)
+    if not file_record:
+        raise HTTPException(status_code=404, detail="File not found")
+    input_path = file_record.path
+    if not input_path.exists():
+        raise HTTPException(status_code=404, detail="File no longer exists on disk")
+    output_path = input_path.with_suffix(f".audio.{payload.format}")
+    codec = "libmp3lame" if payload.format == "mp3" else "pcm_s16le"
+    subprocess.check_call(
+        [_get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
+    )
+    audio_record = job_store.add_file(output_path, output_path.name)
+    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{audio_record.file_id}"}
 
 
 @router.post("/audio/convert")

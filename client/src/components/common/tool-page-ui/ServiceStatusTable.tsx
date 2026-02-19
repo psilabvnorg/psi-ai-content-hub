@@ -88,9 +88,9 @@ export function ServiceStatusTable({
                         variant={!serverUnreachable ? "destructive" : "default"}
                         onClick={serverRow.onAction}
                         className="ml-2"
-                        disabled={serverRow.actionDisabled}
+                        disabled={serverRow.actionDisabled || serverRow.actionLoading}
                       >
-                        {serverRow.actionDisabled ? (
+                        {serverRow.actionLoading ? (
                           <>
                             <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                             {t("tool.common.starting")}
