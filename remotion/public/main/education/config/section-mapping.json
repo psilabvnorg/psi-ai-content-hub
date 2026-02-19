@@ -1,0 +1,8 @@
+{
+  "videoTitle": "Timeline of World War II",
+  "sections": [
+    { "title": "Pre-War Era",  "startMs": 0     },
+    { "title": "World War II", "startMs": 15000 },
+    { "title": "Post-War Era", "startMs": 45000 }
+  ]
+}

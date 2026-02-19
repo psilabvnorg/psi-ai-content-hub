@@ -1,0 +1,12 @@
+{
+  "orientation": "vertical",
+  "imageDurationInFrames": 300,
+  "accentColor": "#A855F7",
+  "artistName": "Tiến Bịp - The Podcast",
+  "waveformStyle": "bars",
+  "numberOfBars": 64,
+  "title": "Hướng dẫn cách làm giàu nhanh",
+  "heroImage": "main/podcast/image/Intro.PNG",
+  "textBackgroundColor": "#000000",
+  "textBackgroundOpacity": 0.45
+}
