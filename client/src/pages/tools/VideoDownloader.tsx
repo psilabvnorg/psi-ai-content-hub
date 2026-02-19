@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Download, Loader2, CheckCircle2, AlertCircle, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { APP_API_URL } from "@/lib/api";
@@ -29,7 +29,18 @@ export default function VideoDownloader() {
   const [error, setError] = useState<string | null>(null);
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [convertToH264, setConvertToH264] = useState(false);
+  const modeRef = useRef<"video" | "audio">("video");
+  const [downloadMode, setDownloadMode] = useState<"video" | "audio">("video");
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioResult, setAudioResult] = useState<{ download_url?: string; filename?: string } | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const { toast } = useToast();
+  useEffect(() => {
+    if (!result || downloadMode !== "audio") return;
+    void handleExtractAudio(result.download_url ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, downloadMode]);
+
   useEffect(() => {
     if (!downloadId) return;
     let closed = false;
@@ -160,6 +171,50 @@ export default function VideoDownloader() {
         window.open(`${APP_API_URL}${result.download_url}`, "_blank");
   };
 
+  const handleExtractAudio = async (downloadUrl: string) => {
+    const fileId = downloadUrl.split("/").pop();
+    if (!fileId) return;
+    setAudioLoading(true);
+    setAudioResult(null);
+    setAudioError(null);
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/video/extract-audio-from-fileid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_id: fileId, format: "mp3" }),
+      });
+      if (!response.ok) {
+        const err = await response.json() as { detail?: string };
+        throw new Error(err.detail ?? "Audio extraction failed");
+      }
+      const data = await response.json() as { download_url?: string; filename?: string };
+      setAudioResult(data);
+      toast({ title: t("tool.common.success"), description: "Audio extracted successfully" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Audio extraction failed";
+      setAudioError(message);
+      toast({ title: t("tool.common.error"), description: message, variant: "destructive" });
+    } finally {
+      setAudioLoading(false);
+    }
+  };
+
+  const handleDownloadVideo = () => {
+    modeRef.current = "video";
+    setDownloadMode("video");
+    setAudioResult(null);
+    setAudioError(null);
+    void handleDownload();
+  };
+
+  const handleDownloadAudio = () => {
+    modeRef.current = "audio";
+    setDownloadMode("audio");
+    setAudioResult(null);
+    setAudioError(null);
+    void handleDownload();
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -219,19 +274,34 @@ export default function VideoDownloader() {
             </div>
           )}
 
-          <Button onClick={handleDownload} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t("tool.video_downloader.downloading")}
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                {t("tool.video_downloader.download")}
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleDownloadVideo} disabled={loading} className="flex-1">
+              {loading && modeRef.current === "video" ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t("tool.video_downloader.downloading")}
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  {t("tool.video_downloader.download")}
+                </>
+              )}
+            </Button>
+            <Button onClick={handleDownloadAudio} disabled={loading} variant="outline" className="flex-1">
+              {loading && modeRef.current === "audio" ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t("tool.video_downloader.downloading")}
+                </>
+              ) : (
+                <>
+                  <Music className="w-4 h-4 mr-2" />
+                  Download Audio
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -240,30 +310,63 @@ export default function VideoDownloader() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
-              {t("tool.common.download_complete")}
+              {downloadMode === "audio" ? "Audio Processing" : t("tool.common.download_complete")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">{t("tool.video_downloader.filename")}</p>
-              <p className="font-medium">{result.filename}</p>
-            </div>
-            {result.original_codec && result.original_codec !== 'h264' && (
+            {downloadMode === "video" && (
+              <div>
+                <p className="text-sm text-muted-foreground">{t("tool.video_downloader.filename")}</p>
+                <p className="font-medium">{result.filename}</p>
+              </div>
+            )}
+            {downloadMode === "video" && result.original_codec && result.original_codec !== 'h264' && (
               <div>
                 <p className="text-sm text-muted-foreground">{t("tool.video_downloader.original_codec")}</p>
                 <p className="font-medium uppercase">{result.original_codec}</p>
               </div>
             )}
-            {result.converted && (
+            {downloadMode === "video" && result.converted && (
               <div className="flex items-center gap-2 p-2 bg-accent/12 border border-accent/45 rounded text-xs text-accent">
                 <CheckCircle2 className="w-4 h-4" />
                 {t("tool.video_downloader.converted_note")}
               </div>
             )}
-            <Button onClick={handleSaveFile} variant="download" className="w-full">
-              <Download className="w-4 h-4 mr-2" />
-              {t("tool.video_downloader.save_file")}
-            </Button>
+            {downloadMode === "video" && (
+              <Button onClick={handleSaveFile} variant="download" className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                {t("tool.video_downloader.save_file")}
+              </Button>
+            )}
+
+            {downloadMode === "audio" && audioLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Extracting audio…</span>
+              </div>
+            )}
+            {downloadMode === "audio" && audioError && (
+              <div className="flex items-start gap-2 p-3 bg-destructive/12 border border-destructive/45 rounded-lg">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+                <p className="text-sm text-destructive">{audioError}</p>
+              </div>
+            )}
+            {downloadMode === "audio" && audioResult?.download_url && (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("tool.video_downloader.filename")}</p>
+                  <p className="font-medium">{audioResult.filename}</p>
+                </div>
+                <Button
+                  onClick={() => window.open(`${APP_API_URL}${audioResult.download_url}`, "_blank")}
+                  variant="download"
+                  className="w-full"
+                >
+                  <Music className="w-4 h-4 mr-2" />
+                  Download Audio File
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

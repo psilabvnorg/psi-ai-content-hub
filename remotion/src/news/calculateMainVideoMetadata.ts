@@ -76,12 +76,12 @@ export const calculateMainVideoMetadata: CalculateMetadataFunction<
 
   // Load captions - use the helper to find matching JSON file
   let captionsSource: unknown = props.captions;
-  
+
   if ((!Array.isArray(captionsSource) || captionsSource.length === 0) && audioSrc) {
     try {
       const audioDir = `${props.contentDirectory}/audio`;
       const captionPath = getCaptionFileForAudio(audioSrc, audioDir);
-      
+
       if (captionPath) {
         const response = await fetch(captionPath + `?t=${Date.now()}`);
         if (response.ok) {

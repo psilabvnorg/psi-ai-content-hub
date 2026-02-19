@@ -1,6 +1,6 @@
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
 import { z } from 'zod';
-import { IntroOverlay, introSchema } from '../Intro';
+import { IntroOverlay, introSchema } from '../components/Intro';
 import { LoopingImageSlider } from '../components/LoopingImageSlider';
 import { CaptionDisplay } from '../components/CaptionDisplay';
 import type { Caption } from '@remotion/captions';
@@ -37,7 +37,7 @@ export const mainVideoSchema = z.object({
 
 export type MainVideoProps = z.infer<typeof mainVideoSchema>;
 
-export const MainVideo: React.FC<MainVideoProps> = ({
+export const News: React.FC<MainVideoProps> = ({
   introProps,
   images,
   audioSrc,

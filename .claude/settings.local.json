@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(dir \"D:\\\\AI\\\\psi-ai-content-hub\\\\remotion\\\\news\\\\src\" /b /s)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''D:\\\\AI\\\\psi-ai-content-hub\\\\remotion\\\\news\\\\src'' -Recurse | Select-Object FullName\")",
+      "Bash(cmd /c \"dir /b \"\"D:\\\\AI\\\\psi-ai-content-hub\\\\remotion\\\\news\\\\public\\\\main\\\\music-playlist\"\"\")",
+      "Bash(cmd /c dir:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -66,6 +66,51 @@ const MANAGED_SERVICES = [
   },
 ];
 
+const BOOTSTRAP_PACKAGES = {
+  app: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  imagefinder: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  translation: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  f5: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  vieneu: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  whisper: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+  bgremove: [
+    'fastapi', 'uvicorn', 'python-multipart',
+    'Pillow', 'requests', 'httpx',
+    'ddgs',                      // replaces duckduckgo_search
+    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
+  ],
+};
+
 // Check if dev server is running on port 5000
 const isDev = !app.isPackaged;
 

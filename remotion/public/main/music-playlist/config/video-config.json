@@ -1,0 +1,12 @@
+{
+  "orientation": "vertical",
+  "imageDurationInFrames": 2000,
+  "accentColor": "#A855F7",
+  "artistName": "Son Tung M-TP",
+  "waveformStyle": "bars",
+  "numberOfBars": 64,
+  "title": "Son Tung M-TP Playlist",
+  "heroImage": "main/music-playlist/image/Intro.PNG",
+  "textBackgroundColor": "#000000",
+  "textBackgroundOpacity": 0.45
+}

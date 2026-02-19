@@ -16,19 +16,21 @@ def _extract_ddg_image_url(item: dict[str, object]) -> str:
     return ""
 
 
-def search_duckduckgo_images(query: str, limit: int = 5) -> list[ImageResult]:
-    """Search images using duckduckgo_search library."""
-    if limit <= 0:
-        return []
-
+def search_duckduckgo_images(query: str, max_results: int = 10) -> list[dict]:
+    try:
+        from ddgs import DDGS  # renamed from duckduckgo_search
+    except ImportError:
+        try:
+            from duckduckgo_search import DDGS  # fallback for older installs
+        except ImportError:
+            return []
     results: list[ImageResult] = []
     seen: set[str] = set()
 
     try:
-        from duckduckgo_search import DDGS
         with DDGS() as ddgs:
-            for item in ddgs.images(query, safesearch="off", max_results=max(10, limit * 3)):
-                if len(results) >= limit:
+            for item in ddgs.images(query, safesearch="off", max_results=max_results):
+                if len(results) >= max_results:
                     break
                 url = _extract_ddg_image_url(item)
                 if not url.startswith("http") or url in seen:
@@ -39,5 +41,5 @@ def search_duckduckgo_images(query: str, limit: int = 5) -> list[ImageResult]:
         LOGGER.warning("DuckDuckGo image search failed: %s", exc)
         return []
 
-    return results[:limit]
+    return results[:max_results]
 

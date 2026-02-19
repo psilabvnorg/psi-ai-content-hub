@@ -25,40 +25,29 @@ def _is_valid_google_image_url(url: str) -> bool:
 
 def search_google_images(
     query: str,
-    limit: int = 5,
-    timeout_seconds: int = 30,
-) -> list[ImageResult]:
+    max_results: int = 10,
+) -> list[dict]:
     """Search Google Images via Selenium and return candidate full image URLs."""
-    if limit <= 0:
+    try:
+        import undetected_chromedriver as uc
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+    except ImportError:
         return []
 
-    from selenium import webdriver
-    from selenium.common.exceptions import TimeoutException, WebDriverException
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.support.ui import WebDriverWait
-    from webdriver_manager.chrome import ChromeDriverManager
-
-    options = Options()
+    options = uc.ChromeOptions()
     options.add_argument("--headless=new")
-    options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-
-    driver = None
-    results: list[ImageResult] = []
-    seen: set[str] = set()
 
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
+        driver = uc.Chrome(options=options)  # auto-manages ChromeDriver version
+
         encoded_query = quote_plus(query)
         driver.get(f"https://www.google.com/search?tbm=isch&q={encoded_query}")
 
-        wait = WebDriverWait(driver, timeout_seconds)
+        wait = WebDriverWait(driver, 30)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "img")))
 
         for _ in range(4):
@@ -67,7 +56,7 @@ def search_google_images(
 
         thumbnails = driver.find_elements(By.CSS_SELECTOR, "img.Q4LuWd")
         for thumb in thumbnails:
-            if len(results) >= limit:
+            if max_results <= 0:
                 break
 
             try:
@@ -89,11 +78,11 @@ def search_google_images(
                 results.append(ImageResult(source="google", url=src))
                 break
 
-        if len(results) < limit:
+        if len(results) < max_results:
             # Fallback scrape for pages where preview selectors differ.
             all_images = driver.find_elements(By.TAG_NAME, "img")
             for image in all_images:
-                if len(results) >= limit:
+                if len(results) >= max_results:
                     break
                 src = image.get_attribute("src") or ""
                 if not src or not _is_valid_google_image_url(src) or src in seen:
@@ -110,5 +99,5 @@ def search_google_images(
             except Exception:
                 pass
 
-    return results[:limit]
+    return results[:max_results]
 
