@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
-from ..services.background_removal import get_result, process_upload, process_url, progress_store
+from ..services.background_removal import get_result, process_upload, process_url, progress_store, start_model_download, start_model_load, unload_model
 
 
 router = APIRouter(prefix="/api/v1", tags=["background-removal"])
@@ -51,3 +51,20 @@ def remove_result(task_id: str) -> dict:
     if not payload:
         raise HTTPException(status_code=404, detail="result not found")
     return payload
+
+
+@router.post("/remove/download")
+def download_model_endpoint() -> dict:
+    task_id = start_model_download()
+    return {"status": "downloading", "task_id": task_id}
+
+
+@router.post("/remove/load")
+def load_model_endpoint() -> dict:
+    task_id = start_model_load()
+    return {"status": "loading", "task_id": task_id}
+
+
+@router.post("/remove/unload")
+def unload_model_endpoint() -> dict:
+    return unload_model()

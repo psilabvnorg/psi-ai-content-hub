@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ type BgModelStatus = {
   model_loaded?: boolean;
   model_loading?: boolean;
   model_error?: string | null;
+  model_downloaded?: boolean;
+  model_downloading?: boolean;
+  model_download_error?: string | null;
   device?: "cuda" | "cpu";
 };
 
@@ -87,6 +90,10 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const [envStatus, setEnvStatus] = useState<EnvStatus | null>(null);
   const [modelStatus, setModelStatus] = useState<BgModelStatus | null>(null);
+  const [isInstallingEnv, setIsInstallingEnv] = useState(false);
+  const [isDownloadingModel, setIsDownloadingModel] = useState(false);
+  const [isLoadingModel, setIsLoadingModel] = useState(false);
+  const modelPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { servicesById, start, stop, isBusy } = useManagedServices();
   const serviceStatus = servicesById.bgremove;
@@ -96,6 +103,8 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const envReady = envStatus?.installed === true;
   const modelLoaded = modelStatus?.model_loaded === true;
   const modelLoading = modelStatus?.model_loading === true;
+  const modelDownloaded = modelStatus?.model_downloaded === true;
+  const modelDownloading = modelStatus?.model_downloading === true;
   const statusReady = !serverUnreachable && envReady && modelLoaded && !modelLoading;
 
   const resetProgressState = () => {
@@ -143,6 +152,145 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       return;
     }
     await start("bgremove");
+    await fetchStatus();
+  };
+
+  const handleInstallLibs = async () => {
+    setIsInstallingEnv(true);
+    setLogs([]);
+    setProgress({ status: "starting", percent: 0, message: "Starting installation..." });
+    try {
+      const res = await fetch(`${BGREMOVE_API_URL}/api/v1/env/install`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to start install");
+      const { task_id } = (await res.json()) as { task_id: string };
+
+      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/env/install/stream/${task_id}`);
+      source.onmessage = (event) => {
+        const data = JSON.parse(event.data as string) as { status: string; percent: number; logs?: string[] };
+        setProgress({ status: data.status as ProgressData["status"], percent: data.percent, message: "Installing dependencies..." });
+        if (data.logs?.length) {
+          setLogs((prev) => [...prev, ...data.logs!].slice(-200));
+        }
+        if (data.status === "complete") {
+          source.close();
+          setProgress({ status: "complete", percent: 100, message: "Dependencies installed. Restart the server to load the model." });
+          setIsInstallingEnv(false);
+          void fetchStatus();
+        } else if (data.status === "error") {
+          source.close();
+          setProgress({ status: "error", percent: 0, message: "Failed to install dependencies." });
+          setIsInstallingEnv(false);
+        }
+      };
+      source.onerror = () => {
+        source.close();
+        setProgress({ status: "error", percent: 0, message: "Lost connection during install." });
+        setIsInstallingEnv(false);
+      };
+    } catch {
+      setProgress({ status: "error", percent: 0, message: "Failed to start installation." });
+      setIsInstallingEnv(false);
+    }
+  };
+
+  const _startModelTask = async (
+    endpoint: string,
+    setSending: (v: boolean) => void,
+    startMsg: string,
+    failMsg: string,
+    onComplete: () => void,
+  ) => {
+    setSending(true);
+    setLogs([]);
+    setProgress({ status: "starting", percent: 0, message: startMsg });
+    try {
+      const res = await fetch(`${BGREMOVE_API_URL}${endpoint}`, { method: "POST" });
+      const { task_id } = (await res.json()) as { task_id: string | null };
+      if (!task_id) {
+        setSending(false);
+        void fetchStatus();
+        return;
+      }
+      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/remove/stream/${task_id}`);
+      source.onmessage = (event) => {
+        const payload = JSON.parse(event.data as string) as ProgressData & { logs?: string[] };
+        setProgress({ status: payload.status as ProgressData["status"], percent: payload.percent, message: payload.message });
+        if (payload.logs?.length) setLogs(payload.logs);
+        if (payload.status === "complete") {
+          source.close();
+          setSending(false);
+          onComplete();
+        } else if (payload.status === "error") {
+          source.close();
+          setSending(false);
+        }
+      };
+      source.onerror = () => {
+        source.close();
+        setSending(false);
+        void fetchStatus();
+      };
+    } catch {
+      setProgress({ status: "error", percent: 0, message: failMsg });
+      setSending(false);
+    }
+  };
+
+  const handleDownloadModel = async () => {
+    if (!envReady) {
+      setProgress({ status: "error", percent: 0, message: "Dependencies not installed. Please click 'Install Library' first." });
+      return;
+    }
+    await _startModelTask(
+      "/api/v1/remove/download",
+      setIsDownloadingModel,
+      "Downloading model files...",
+      "Failed to start model download.",
+      () => { void fetchStatus(); },
+    );
+  };
+
+  const handleLoadModel = async () => {
+    await _startModelTask(
+      "/api/v1/remove/load",
+      setIsLoadingModel,
+      "Loading model into memory...",
+      "Failed to start model load.",
+      () => { void fetchStatus(); },
+    );
+  };
+
+  useEffect(() => {
+    if (!isDownloadingModel) return;
+    if (modelLoaded) {
+      setIsDownloadingModel(false);
+      setProgress({ status: "complete", percent: 100, message: "Model loaded successfully." });
+      if (modelPollingRef.current) { clearInterval(modelPollingRef.current); modelPollingRef.current = null; }
+    } else if (modelStatus?.model_error && !modelStatus.model_loading) {
+      setIsDownloadingModel(false);
+      setProgress({ status: "error", percent: 0, message: modelStatus.model_error });
+      if (modelPollingRef.current) { clearInterval(modelPollingRef.current); modelPollingRef.current = null; }
+    }
+  }, [modelLoaded, modelStatus, isDownloadingModel]);
+
+  // Auto-poll when the model is loading via startup preload (not triggered by user)
+  useEffect(() => {
+    if (modelLoading && !isDownloadingModel) {
+      if (!modelPollingRef.current) {
+        modelPollingRef.current = setInterval(() => { void fetchStatus(); }, 3000);
+      }
+    } else if (!isDownloadingModel && modelPollingRef.current) {
+      clearInterval(modelPollingRef.current);
+      modelPollingRef.current = null;
+    }
+  }, [modelLoading, isDownloadingModel]);
+
+  useEffect(() => {
+    return () => { if (modelPollingRef.current) clearInterval(modelPollingRef.current); };
+  }, []);
+
+  const handleUnloadModel = async () => {
+    await fetch(`${BGREMOVE_API_URL}/api/v1/remove/unload`, { method: "POST" });
     await fetchStatus();
   };
 
@@ -261,7 +409,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         path: BGREMOVE_API_URL,
         showActionButton: Boolean(serviceStatus),
         actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
-        actionDisabled: serviceBusy || serviceStatus?.status === "not_configured",
+        actionDisabled: serviceBusy,
         onAction: handleToggleServer,
       },
       {
@@ -269,14 +417,15 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         label: t("tool.bg_remove.env_status"),
         isReady: envReady,
         path:
-          envStatus?.installed_modules?.length
-            ? envStatus.installed_modules.join(", ")
-            : envStatus?.missing?.length
-              ? envStatus.missing.join(", ")
+          envStatus?.missing?.length
+            ? envStatus.missing.join(", ")
+            : envStatus?.installed_modules?.length
+              ? envStatus.installed_modules.join(", ")
               : "--",
-        showActionButton: !envReady,
-        actionButtonLabel: t("tool.common.install_library"),
-        onAction: onOpenSettings,
+        showActionButton: !envReady && !serverUnreachable,
+        actionButtonLabel: isInstallingEnv ? t("tool.common.starting") : t("tool.common.install_library"),
+        actionDisabled: isInstallingEnv,
+        onAction: handleInstallLibs,
       },
       {
         id: "model",
@@ -287,12 +436,19 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
               modelStatus.model_error ? ` • ${modelStatus.model_error}` : ""
             }`
           : "--",
-        showActionButton: !modelLoaded,
-        actionButtonLabel: t("tool.common.open_settings"),
-        onAction: onOpenSettings,
+        // "Download Model" when not yet on disk; "Load Model" when downloaded but not in memory
+        showActionButton: !serverUnreachable && !modelLoaded,
+        actionButtonLabel: !modelDownloaded
+          ? (isDownloadingModel || modelDownloading ? t("tool.common.starting") : t("tool.common.download_model"))
+          : (isLoadingModel || modelLoading ? t("tool.common.starting") : "Load Model"),
+        actionDisabled: isDownloadingModel || modelDownloading || isLoadingModel || modelLoading,
+        onAction: !modelDownloaded ? handleDownloadModel : handleLoadModel,
+        showSecondaryAction: !serverUnreachable && modelLoaded,
+        secondaryActionLabel: "Unload Model",
+        onSecondaryAction: handleUnloadModel,
       },
     ],
-    [t, serverUnreachable, serviceStatus, serviceRunning, serviceBusy, envReady, envStatus, modelLoaded, modelStatus, onOpenSettings],
+    [t, serverUnreachable, serviceStatus, serviceRunning, serviceBusy, envReady, envStatus, modelLoaded, modelLoading, modelDownloaded, modelDownloading, modelStatus, isInstallingEnv, isDownloadingModel, isLoadingModel, handleInstallLibs, handleDownloadModel, handleLoadModel, handleUnloadModel],
   );
 
   const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${BGREMOVE_API_URL}${path}`);

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check } from "lucide-react";
 import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, IMAGE_FINDER_API_URL, TRANSLATION_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -120,6 +120,58 @@ async function consumeSseStream(response: Response, onMessage: (data: ProgressDa
       }
     }
   }
+}
+
+const STORAGE_PATHS = [
+  {
+    label: "Model path",
+    path: "C:\\Users\\ADMIN\\AppData\\Roaming\\psi-ai-content-hub\\models\\",
+  },
+  {
+    label: "Temp media storage path",
+    path: "C:\\Users\\ADMIN\\AppData\\Local\\Temp\\psi_ai_content_hub",
+  },
+];
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCopy} title="Copy path">
+      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+    </Button>
+  );
+}
+
+function StorageLocationsCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FolderOpen className="h-5 w-5" />
+          File Storage Locations
+        </CardTitle>
+        <CardDescription>Where models and temporary files are stored on this machine</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {STORAGE_PATHS.map(({ label, path }) => (
+          <div key={label} className="flex items-center justify-between rounded-md border px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{label}</p>
+              <p className="truncate text-xs text-muted-foreground font-mono">{path}</p>
+            </div>
+            <CopyButton text={path} />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Settings() {
@@ -590,6 +642,8 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      <StorageLocationsCard />
 
       <Card>
         <CardHeader>

@@ -9,40 +9,62 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-import torch
-from PIL import Image, UnidentifiedImageError
-from torchvision import transforms
-from transformers import AutoModelForImageSegmentation
+try:
+    import torch
+    from PIL import Image, UnidentifiedImageError
+    from torchvision import transforms as _tv_transforms
+    from transformers import AutoModelForImageSegmentation
+
+    torch.set_float32_matmul_precision("high")
+    _device = "cuda" if torch.cuda.is_available() else "cpu"
+    _transform_image = _tv_transforms.Compose(
+        [
+            _tv_transforms.Resize((1024, 1024)),
+            _tv_transforms.ToTensor(),
+            _tv_transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+    _deps_available = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    Image = None  # type: ignore[assignment,misc]
+    UnidentifiedImageError = Exception  # type: ignore[assignment,misc]
+    AutoModelForImageSegmentation = None  # type: ignore[assignment,misc]
+    _device = "cpu"
+    _transform_image = None  # type: ignore[assignment]
+    _deps_available = False
 
 from python_api.common.jobs import JobStore
 from python_api.common.logging import log
-from python_api.common.paths import TEMP_DIR
+from python_api.common.paths import MODEL_BIREFNET_DIR, TEMP_DIR
 from python_api.common.progress import ProgressStore
 
 
 MODEL_ID = "ZhengPeng7/BiRefNet"
 RESULT_RETENTION_SECONDS = 60 * 60
 
-torch.set_float32_matmul_precision("high")
-
 progress_store = ProgressStore()
 
-_device = "cuda" if torch.cuda.is_available() else "cpu"
 _model: Optional[Any] = None
 _model_loading = False
 _model_error: Optional[str] = None
 _model_lock = threading.Lock()
 
+_model_downloading = False
+_model_download_error: Optional[str] = None
+_download_lock = threading.Lock()
+
 _task_results: Dict[str, Dict[str, Any]] = {}
 _result_lock = threading.Lock()
 
-_transform_image = transforms.Compose(
-    [
-        transforms.Resize((1024, 1024)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ]
-)
+
+def _is_model_on_disk() -> bool:
+    repo_dir = MODEL_BIREFNET_DIR / f"models--{MODEL_ID.replace('/', '--')}"
+    snapshots_dir = repo_dir / "snapshots"
+    try:
+        return snapshots_dir.exists() and any(snapshots_dir.iterdir())
+    except Exception:
+        return False
 
 
 def _new_task_id(prefix: str) -> str:
@@ -56,7 +78,9 @@ def _save_png(image: Image.Image, name: str) -> Path:
     return file_path
 
 
-def _open_image_from_bytes(data: bytes) -> Image.Image:
+def _open_image_from_bytes(data: bytes) -> Any:
+    if not _deps_available or Image is None:
+        raise RuntimeError("Dependencies not installed. Use 'Install Library' to install required packages.")
     try:
         with Image.open(io.BytesIO(data)) as image:
             return image.convert("RGB")
@@ -86,6 +110,14 @@ def _download_image_from_url(url: str) -> bytes:
 def _ensure_model_loaded(task_id: Optional[str] = None) -> bool:
     global _model, _model_loading, _model_error
 
+    if not _deps_available:
+        msg = "Dependencies not installed. Use 'Install Library' in the Environment Status row to install required packages."
+        if task_id:
+            progress_store.set_progress(task_id, "error", 0, msg)
+        with _model_lock:
+            _model_error = msg
+        return False
+
     while True:
         with _model_lock:
             if _model is not None:
@@ -98,19 +130,35 @@ def _ensure_model_loaded(task_id: Optional[str] = None) -> bool:
                 break
         time.sleep(0.2)
 
+    loading_done = threading.Event()
+
+    def _tick_progress() -> None:
+        percent = 15
+        while not loading_done.is_set() and percent < 90:
+            loading_done.wait(timeout=4)
+            if not loading_done.is_set():
+                percent = min(percent + 3, 90)
+                if task_id:
+                    progress_store.set_progress(task_id, "loading_model", percent, "Downloading / loading model weights...")
+
     try:
         if task_id:
             progress_store.add_log(task_id, "Loading segmentation model...")
-            progress_store.set_progress(task_id, "loading_model", 10, "Loading background removal model...")
-        loaded_model = AutoModelForImageSegmentation.from_pretrained(MODEL_ID, trust_remote_code=True)
+            progress_store.set_progress(task_id, "loading_model", 10, "Downloading model files...")
+            threading.Thread(target=_tick_progress, daemon=True).start()
+        loaded_model = AutoModelForImageSegmentation.from_pretrained(MODEL_ID, trust_remote_code=True, cache_dir=str(MODEL_BIREFNET_DIR))
+        loading_done.set()
         loaded_model.to(_device)
         loaded_model.eval()
         with _model_lock:
             _model = loaded_model
             _model_error = None
             _model_loading = False
+        if task_id:
+            progress_store.set_progress(task_id, "complete", 100, "Model loaded successfully.")
         return True
     except Exception as exc:
+        loading_done.set()
         err = str(exc)
         with _model_lock:
             _model = None
@@ -118,34 +166,100 @@ def _ensure_model_loaded(task_id: Optional[str] = None) -> bool:
             _model_loading = False
         if task_id:
             progress_store.add_log(task_id, f"Model load failed: {err}")
+            progress_store.set_progress(task_id, "error", 0, err)
         log(f"Background removal model load failed: {err}", "error", log_name="background-removal.log")
         return False
 
 
-def start_model_preload() -> None:
+def start_model_download() -> Optional[str]:
+    global _model_downloading, _model_download_error
+
+    if not _deps_available:
+        return None
+
+    with _download_lock:
+        if _model_downloading:
+            return None
+        if _is_model_on_disk():
+            return None
+        _model_downloading = True
+        _model_download_error = None
+
+    task_id = _new_task_id("bgdownload")
+    progress_store.set_progress(task_id, "downloading", 5, "Downloading model files...")
+
     def runner() -> None:
-        _ensure_model_loaded()
+        global _model_downloading, _model_download_error
+        loading_done = threading.Event()
+
+        def _tick() -> None:
+            percent = 5
+            while not loading_done.is_set() and percent < 90:
+                loading_done.wait(timeout=4)
+                if not loading_done.is_set():
+                    percent = min(percent + 2, 90)
+                    progress_store.set_progress(task_id, "downloading", percent, "Downloading model files...")
+
+        try:
+            threading.Thread(target=_tick, daemon=True).start()
+            from huggingface_hub import snapshot_download
+            snapshot_download(MODEL_ID, cache_dir=str(MODEL_BIREFNET_DIR))
+            loading_done.set()
+            with _download_lock:
+                _model_downloading = False
+                _model_download_error = None
+            progress_store.set_progress(task_id, "complete", 100, "Download complete. Click 'Load Model' to load into memory.")
+        except Exception as exc:
+            loading_done.set()
+            err = str(exc)
+            with _download_lock:
+                _model_downloading = False
+                _model_download_error = err
+            progress_store.set_progress(task_id, "error", 0, err)
+            log(f"Model download failed: {err}", "error", log_name="background-removal.log")
+
+    threading.Thread(target=runner, daemon=True).start()
+    return task_id
+
+
+def start_model_load() -> Optional[str]:
+    if not _deps_available:
+        return None
 
     with _model_lock:
         already_ready = _model is not None
         already_loading = _model_loading
     if already_ready or already_loading:
-        return
+        return None
+
+    task_id = _new_task_id("bgload")
+    progress_store.set_progress(task_id, "starting", 0, "Loading model into memory...")
+
+    def runner() -> None:
+        _ensure_model_loaded(task_id)
+
     threading.Thread(target=runner, daemon=True).start()
+    return task_id
 
 
 def model_status() -> dict:
     with _model_lock:
-        return {
-            "model_id": MODEL_ID,
-            "model_loaded": _model is not None,
-            "model_loading": _model_loading,
-            "model_error": _model_error,
-            "device": _device,
-        }
+        with _download_lock:
+            return {
+                "model_id": MODEL_ID,
+                "model_loaded": _model is not None,
+                "model_loading": _model_loading,
+                "model_error": _model_error if _deps_available else "torch/torchvision/transformers not installed",
+                "model_downloaded": _is_model_on_disk(),
+                "model_downloading": _model_downloading,
+                "model_download_error": _model_download_error,
+                "device": _device,
+            }
 
 
 def _run_inference(image: Image.Image) -> Image.Image:
+    if not _deps_available or _transform_image is None or torch is None:
+        raise RuntimeError("Dependencies not installed")
     with _model_lock:
         model = _model
     if model is None:
@@ -226,7 +340,9 @@ def process_upload(job_store: JobStore, filename: str, image_data: bytes) -> str
 def process_url(job_store: JobStore, url: str) -> str:
     image_data = _download_image_from_url(url)
     # Validate URL payload before queueing so clients get a clean 400 on non-images.
-    _open_image_from_bytes(image_data)
+    # Skip early validation when deps are not yet installed; the task thread will report the error.
+    if _deps_available:
+        _open_image_from_bytes(image_data)
     parsed = urlparse(url)
     name = Path(parsed.path).name or "image"
     base_name = Path(name).stem or "image"
@@ -247,6 +363,19 @@ def get_result(task_id: str) -> Optional[dict]:
         "processed_url": f"/api/v1/files/{processed_id}",
         "download_url": f"/api/v1/files/{processed_id}?download=1",
     }
+
+
+def unload_model() -> dict:
+    global _model, _model_error
+    with _model_lock:
+        if _model is not None:
+            del _model
+            _model = None
+            _model_error = None
+            if _device == "cuda":
+                torch.cuda.empty_cache()
+            return {"status": "unloaded"}
+        return {"status": "not_loaded"}
 
 
 def cleanup_results() -> None:

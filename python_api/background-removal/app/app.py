@@ -36,10 +36,6 @@ def create_app() -> FastAPI:
     app.include_router(bg_router.router)
     app.include_router(files_router.router)
 
-    @app.on_event("startup")
-    def startup_preload_model() -> None:
-        background_removal.start_model_preload()
-
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app
 
