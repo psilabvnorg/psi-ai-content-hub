@@ -93,7 +93,19 @@ def find_images(
 
     normalized_count = max(1, min(20, int(number_of_images)))
     normalized_words = max(5, min(30, int(target_words)))
-    keywords, search_query = _build_search_query(cleaned_text, normalized_words, model, lang)
+    word_count = len(cleaned_text.split())
+    if word_count <= 50:
+        keywords = cleaned_text
+        phrase_by_lang = {
+            "en": "latest, up to date information",
+            "vi": "thong tin moi nhat",
+            "ja": "saishin joho",
+            "de": "aktuelle informationen",
+        }
+        suffix = phrase_by_lang.get(lang.lower(), phrase_by_lang["en"])
+        search_query = f"{keywords} {suffix}".strip()
+    else:
+        keywords, search_query = _build_search_query(cleaned_text, normalized_words, model, lang)
 
     pipeline_payload = run_pipeline(
         paragraph=cleaned_text,
