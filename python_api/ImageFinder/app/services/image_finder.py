@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from typing import Any
 
 from .image_pipeline.orchestrator import run_pipeline
@@ -85,6 +86,7 @@ def find_images(
     model: str = "deepseek-r1:8b",
     lang: str = "en",
     timeout_seconds: int = 60,
+    sources: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Generate image results from semantic text keywords using all configured sources."""
     cleaned_text = text.strip()
@@ -94,12 +96,12 @@ def find_images(
     normalized_count = max(1, min(20, int(number_of_images)))
     normalized_words = max(5, min(30, int(target_words)))
     word_count = len(cleaned_text.split())
-    if word_count <= 50:
+    if word_count <= 30:
         keywords = cleaned_text
         phrase_by_lang = {
             "en": "latest, up to date information",
             "vi": "thong tin moi nhat",
-            "ja": "saishin joho",
+            "ja": "最新情報",
             "de": "aktuelle informationen",
         }
         suffix = phrase_by_lang.get(lang.lower(), phrase_by_lang["en"])
@@ -113,6 +115,7 @@ def find_images(
         per_source_limit=5,
         top_k=normalized_count,
         timeout_seconds=timeout_seconds,
+        enabled_sources=sources,
     )
     images = pipeline_payload.get("images")
     if not isinstance(images, list):

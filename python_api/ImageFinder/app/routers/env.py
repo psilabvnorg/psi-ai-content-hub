@@ -24,6 +24,8 @@ _MODULE_TO_PACKAGE: Dict[str, str] = {
     "PIL": "pillow",
     "ddgs": "ddgs",
     "dotenv": "python-dotenv",
+    "bs4": "beautifulsoup4",
+    "lxml": "lxml",
     "webdriver_manager": "webdriver_manager",
     "setuptools": "setuptools",
 }

@@ -112,3 +112,4 @@ def set_unsplash_key(payload: dict = Body(...)) -> dict:
         "configured": bool(raw),
         "masked": _mask(raw) if raw else "",
     }
+

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException
 
+from ..services.image_pipeline.search import ALL_SOURCE_IDS
 from ..services.image_finder import ImageFinderError, find_images
 
 
@@ -17,6 +18,27 @@ def _parse_int(value: object, field_name: str, default: int) -> int:
         raise HTTPException(status_code=400, detail=f"{field_name} must be an integer")
 
 
+def _parse_sources(value: object) -> list[str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise HTTPException(status_code=400, detail="sources must be an array of source ids")
+
+    valid = set(ALL_SOURCE_IDS)
+    parsed: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise HTTPException(status_code=400, detail="sources must be an array of strings")
+        normalized = item.strip()
+        if not normalized:
+            continue
+        if normalized not in valid:
+            continue  # silently skip removed/unknown sources
+        parsed.append(normalized)
+
+    return parsed if parsed else None
+
+
 @router.post("/search")
 def image_finder_search(payload: dict = Body(...)) -> dict:
     text = str(payload.get("text") or "").strip()
@@ -25,6 +47,7 @@ def image_finder_search(payload: dict = Body(...)) -> dict:
     model = str(payload.get("model") or "deepseek-r1:8b").strip()
     lang = str(payload.get("lang") or "en").strip()
     timeout_seconds = _parse_int(payload.get("timeout_seconds"), "timeout_seconds", 60)
+    sources = _parse_sources(payload.get("sources"))
 
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
@@ -39,6 +62,7 @@ def image_finder_search(payload: dict = Body(...)) -> dict:
             model=model,
             lang=lang,
             timeout_seconds=timeout_seconds,
+            sources=sources,
         )
         return {"status": "ok", **result}
     except ImageFinderError as exc:

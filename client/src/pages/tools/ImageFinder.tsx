@@ -47,7 +47,50 @@ type ImageFinderResponse = {
   images?: ImageFinderImage[];
 };
 
+type ApiKeysStatusResponse = {
+  unsplash?: {
+    configured?: boolean;
+    masked?: string;
+  };
+};
+
 const IMAGE_COUNTS = ["5", "6", "7", "8", "9", "10"];
+const ALL_SOURCE_IDS = [
+  "google",
+  "bing",
+  "unsplash",
+  "civitai",
+  "kling_ai",
+  "artvee",
+  "wga",
+] as const;
+
+const SOURCE_GROUPS: Array<{
+  groupKey: "general" | "api" | "ai" | "art";
+  sources: readonly (typeof ALL_SOURCE_IDS)[number][];
+}> = [
+  { groupKey: "general", sources: ["google", "bing"] },
+  { groupKey: "api", sources: ["unsplash"] },
+  { groupKey: "ai", sources: ["civitai", "kling_ai"] },
+  { groupKey: "art", sources: ["artvee", "wga"] },
+];
+
+const SOURCE_GROUP_LABEL_KEYS = {
+  general: "tool.image_finder.source_group_general",
+  api: "tool.image_finder.source_group_api",
+  ai: "tool.image_finder.source_group_ai",
+  art: "tool.image_finder.source_group_art",
+} as const;
+
+const SOURCE_LABELS: Record<(typeof ALL_SOURCE_IDS)[number], string> = {
+  google: "Google",
+  bing: "Bing",
+  unsplash: "Unsplash",
+  civitai: "Civitai",
+  kling_ai: "KlingAI",
+  artvee: "Artvee",
+  wga: "WGA",
+};
 
 export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
@@ -56,6 +99,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
   const [text, setText] = useState("");
   const [numberOfImages, setNumberOfImages] = useState("5");
   const [model, setModel] = useState("deepseek-r1:8b");
+  const [selectedSources, setSelectedSources] = useState<string[]>([...ALL_SOURCE_IDS]);
 
   const [unsplashKey, setUnsplashKey] = useState("");
   const [unsplashKeyMasked, setUnsplashKeyMasked] = useState("");
@@ -123,11 +167,11 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
-  const fetchUnsplashKeyStatus = async () => {
+  const fetchApiKeyStatus = async () => {
     try {
       const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys`);
       if (!res.ok) return;
-      const data = (await res.json()) as { unsplash?: { configured?: boolean; masked?: string } };
+      const data = (await res.json()) as ApiKeysStatusResponse;
       setUnsplashConfigured(data.unsplash?.configured === true);
       setUnsplashKeyMasked(data.unsplash?.masked || "");
     } catch {
@@ -135,33 +179,63 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
-  const handleSaveUnsplashKey = async () => {
-    setUnsplashSaving(true);
-    setUnsplashSaveStatus("idle");
+  const handleSaveApiKey = async ({
+    sourceId,
+    keyValue,
+    setSaving,
+    setSaveStatus,
+    setConfigured,
+    setMasked,
+    setKeyValue,
+    setKeyVisible,
+  }: {
+    sourceId: string;
+    keyValue: string;
+    setSaving: (v: boolean) => void;
+    setSaveStatus: (v: "idle" | "saved" | "error") => void;
+    setConfigured: (v: boolean) => void;
+    setMasked: (v: string) => void;
+    setKeyValue: (v: string) => void;
+    setKeyVisible: (v: boolean) => void;
+  }) => {
+    setSaving(true);
+    setSaveStatus("idle");
     try {
-      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys/unsplash`, {
+      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys/${sourceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: unsplashKey.trim() }),
+        body: JSON.stringify({ key: keyValue.trim() }),
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { detail?: string };
         throw new Error(payload.detail || "Save failed");
       }
       const data = (await res.json()) as { configured?: boolean; masked?: string };
-      setUnsplashConfigured(data.configured === true);
-      setUnsplashKeyMasked(data.masked || "");
-      setUnsplashKey("");
-      setUnsplashKeyVisible(false);
-      setUnsplashSaveStatus("saved");
-      setTimeout(() => setUnsplashSaveStatus("idle"), 3000);
+      setConfigured(data.configured === true);
+      setMasked(data.masked || "");
+      setKeyValue("");
+      setKeyVisible(false);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 3000);
     } catch {
-      setUnsplashSaveStatus("error");
-      setTimeout(() => setUnsplashSaveStatus("idle"), 3000);
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
-      setUnsplashSaving(false);
+      setSaving(false);
     }
   };
+
+  const handleSaveUnsplashKey = () =>
+    handleSaveApiKey({
+      sourceId: "unsplash",
+      keyValue: unsplashKey,
+      setSaving: setUnsplashSaving,
+      setSaveStatus: setUnsplashSaveStatus,
+      setConfigured: setUnsplashConfigured,
+      setMasked: setUnsplashKeyMasked,
+      setKeyValue: setUnsplashKey,
+      setKeyVisible: setUnsplashKeyVisible,
+    });
 
   const fetchStatus = async () => {
     try {
@@ -204,14 +278,14 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
 
   useEffect(() => {
     void fetchStatus();
-    void fetchUnsplashKeyStatus();
+    void fetchApiKeyStatus();
   }, []);
 
   useEffect(() => {
     if (!imageFinderService) return;
     if (imageFinderService.status === "running" || imageFinderService.status === "stopped") {
       void fetchStatus();
-      void fetchUnsplashKeyStatus();
+      void fetchApiKeyStatus();
     }
   }, [imageFinderService?.status]);
 
@@ -229,6 +303,16 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     } catch {
       // Ignore transient service toggle errors; status refresh will reflect truth.
     }
+  };
+
+  const handleToggleSource = (sourceId: string, checked: boolean) => {
+    setSelectedSources((previous) => {
+      if (checked) {
+        if (previous.includes(sourceId)) return previous;
+        return [...previous, sourceId];
+      }
+      return previous.filter((source) => source !== sourceId);
+    });
   };
 
   const handleSearch = async () => {
@@ -249,6 +333,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
           text: text.trim(),
           number_of_images: Number(numberOfImages),
           model: model.trim(),
+          sources: selectedSources,
         }),
       });
 
@@ -328,7 +413,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     },
   ];
 
-  const canSearch = statusReady && !isSearching && text.trim().length > 0;
+  const canSearch = statusReady && !isSearching && text.trim().length > 0 && selectedSources.length > 0;
 
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
@@ -365,6 +450,33 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold text-muted-foreground uppercase">
+            {t("tool.image_finder.sources")}
+          </label>
+          {SOURCE_GROUPS.map(({ groupKey, sources }) => (
+            <div key={groupKey} className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">
+                {t(SOURCE_GROUP_LABEL_KEYS[groupKey])}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {sources.map((sourceId) => (
+                  <label key={sourceId} className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedSources.includes(sourceId)}
+                      onChange={(event) => {
+                        handleToggleSource(sourceId, event.target.checked);
+                      }}
+                    />
+                    <span className="text-sm">{SOURCE_LABELS[sourceId]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="space-y-2">
@@ -480,9 +592,21 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
                     <div className="w-full aspect-video rounded-md overflow-hidden bg-muted/40">
                       <img src={imageUrl} alt={`image-result-${index + 1}`} className="w-full h-full object-cover" />
                     </div>
-                    <div className="text-xs text-muted-foreground line-clamp-2">
-                      {image.description || image.source || t("tool.image_finder.image")}
+                    <div className="text-xs text-muted-foreground truncate" title={imageUrl}>
+                      <a
+                        href={imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-foreground"
+                      >
+                        {imageUrl.length > 60 ? `${imageUrl.slice(0, 60)}…` : imageUrl}
+                      </a>
                     </div>
+                    {image.source && (
+                      <div className="text-[11px] text-muted-foreground/70">
+                        via {image.source}
+                      </div>
+                    )}
                     {(typeof image.width === "number" || typeof image.height === "number" || typeof image.resolution === "number") && (
                       <div className="text-[11px] text-muted-foreground">
                         {typeof image.width === "number" && typeof image.height === "number"

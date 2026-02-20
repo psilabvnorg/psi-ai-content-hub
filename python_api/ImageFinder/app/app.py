@@ -7,6 +7,7 @@ from .routers import config as config_router
 from .routers import env as env_router
 from .routers import image_finder as image_finder_router
 from .routers import llm as llm_router
+from .routers import sources as sources_router
 from .routers import system as system_router
 
 
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(env_router.router)
     app.include_router(llm_router.router)
     app.include_router(image_finder_router.router)
+    app.include_router(sources_router.router)
     return app
 
 

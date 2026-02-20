@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Callable
 
 from .analyzer import analyze_images
@@ -19,6 +20,7 @@ def run_pipeline(
     per_source_limit: int = 5,
     top_k: int = 5,
     timeout_seconds: int = 30,
+    enabled_sources: Sequence[str] | None = None,
 ) -> dict[str, object]:
     """
     Run full image pipeline: query -> search -> download -> resolution analysis -> top-k selection.
@@ -33,6 +35,7 @@ def run_pipeline(
         query=search_query.query,
         per_source_limit=per_source_limit,
         timeout_seconds=timeout_seconds,
+        enabled_sources=enabled_sources,
     )
 
     downloaded_images, download_errors = download_images(
