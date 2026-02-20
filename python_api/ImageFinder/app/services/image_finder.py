@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .image_pipeline.orchestrator import run_pipeline
@@ -8,6 +9,15 @@ from .llm import generate
 
 class ImageFinderError(Exception):
     """Raised when image search generation fails."""
+
+
+# Regex to strip <think>...</think> blocks produced by deepseek-r1 and similar.
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove ``<think>...</think>`` reasoning blocks from LLM output."""
+    return _THINK_TAG_RE.sub("", text).strip()
 
 
 def _extract_visual_keywords(text: str, target_words: int, model: str) -> str:
@@ -20,13 +30,38 @@ def _extract_visual_keywords(text: str, target_words: int, model: str) -> str:
     @return A descriptive search phrase capturing the main visual elements and scene.
     """
     prompt = (
-        "Based on the following text, generate a short, descriptive phrase for an image search. "
-        "The phrase should capture the main visual elements and the overall scene. "
-        f"Aim for approximately {target_words} words. Do not add any explanation or quotation marks."
+        "You are an image search keyword generator. Your ONLY job is to output a short descriptive phrase "
+        "that can be used to find relevant images on Google Images.\n\n"
+        "RULES:\n"
+        "- ALWAYS output a search phrase, no matter what the input text is about.\n"
+        "- Even if the text is about data, statistics, numbers, or abstract topics, "
+        "find the most relevant visual subject (objects, people, places, products) and describe them.\n"
+        "- NEVER refuse. NEVER say 'I cannot' or explain what you are doing.\n"
+        "- Output ONLY the search phrase — no quotes, no explanation, no preamble.\n"
+        f"- Aim for approximately {target_words} words.\n\n"
+        "Examples:\n"
+        '  Input: "Toyota Fortuner sales increased 15% in Q3 2024"\n'
+        "  Output: Toyota Fortuner SUV showroom display modern design\n\n"
+        '  Input: "The S&P 500 dropped 3% amid inflation fears"\n'
+        "  Output: stock market trading floor screens financial data display\n\n"
+        '  Input: "Population growth in urban areas reached 2.1% in 2024"\n'
+        "  Output: aerial view modern city skyline dense urban buildings\n\n"
+        "Now generate a search phrase for this text:"
     )
-    search_phrase = generate(prompt=prompt, input_text=text, model=model).strip()
+    raw_output = generate(prompt=prompt, input_text=text, model=model)
+    search_phrase = _strip_think_tags(raw_output).strip().strip('"\'')
+
     if not search_phrase:
         raise ImageFinderError("Empty search phrase returned from LLM service")
+
+    # If the LLM still refused despite the prompt, fall back to extracting
+    # the most distinctive noun phrases from the original text.
+    refusal_markers = ("i cannot", "i can't", "i'm unable", "as an ai", "i need information")
+    if any(marker in search_phrase.lower() for marker in refusal_markers):
+        # Use the first ~target_words words of the original text as a fallback
+        words = text.split()[:target_words]
+        search_phrase = " ".join(words)
+
     return search_phrase
 
 

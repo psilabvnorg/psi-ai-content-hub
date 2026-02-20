@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from ..models import ImageResult
+from .bing import search_bing_images
 from .duckduckgo import search_duckduckgo_images
 from .google import search_google_images
 from .unsplash import search_unsplash_images
@@ -23,6 +24,7 @@ def run_all_sources(
 
     sources = (
         ("google", lambda: search_google_images(query, per_source_limit, timeout_seconds)),
+        ("bing", lambda: search_bing_images(query, per_source_limit, timeout_seconds)),
         ("duckduckgo", lambda: search_duckduckgo_images(query, per_source_limit)),
         ("unsplash", lambda: search_unsplash_images(query, per_source_limit, timeout_seconds)),
     )

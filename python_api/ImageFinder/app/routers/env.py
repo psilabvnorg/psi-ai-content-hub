@@ -20,10 +20,12 @@ _MODULE_TO_PACKAGE: Dict[str, str] = {
     "multipart": "python-multipart",
     "requests": "requests>=2.31.0",
     "selenium": "selenium",
+    "undetected_chromedriver": "undetected-chromedriver>=3.5.5",
     "PIL": "pillow",
-    "duckduckgo_search": "duckduckgo_search",
+    "ddgs": "ddgs",
     "dotenv": "python-dotenv",
     "webdriver_manager": "webdriver_manager",
+    "setuptools": "setuptools",
 }
 
 

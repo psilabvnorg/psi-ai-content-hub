@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .routers import config as config_router
 from .routers import env as env_router
 from .routers import image_finder as image_finder_router
 from .routers import llm as llm_router
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(system_router.router)
+    app.include_router(config_router.router)
     app.include_router(env_router.router)
     app.include_router(llm_router.router)
     app.include_router(image_finder_router.router)

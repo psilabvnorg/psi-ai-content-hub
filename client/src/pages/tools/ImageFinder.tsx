@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Image as ImageIcon, Loader2, Search } from "lucide-react";
+import { Check, Download, Eye, EyeOff, Image as ImageIcon, Key, Loader2, Search } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { IMAGE_FINDER_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
@@ -56,6 +56,13 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
   const [text, setText] = useState("");
   const [numberOfImages, setNumberOfImages] = useState("5");
   const [model, setModel] = useState("deepseek-r1:8b");
+
+  const [unsplashKey, setUnsplashKey] = useState("");
+  const [unsplashKeyMasked, setUnsplashKeyMasked] = useState("");
+  const [unsplashConfigured, setUnsplashConfigured] = useState(false);
+  const [unsplashKeyVisible, setUnsplashKeyVisible] = useState(false);
+  const [unsplashSaving, setUnsplashSaving] = useState(false);
+  const [unsplashSaveStatus, setUnsplashSaveStatus] = useState<"idle" | "saved" | "error">("idle");
 
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -116,6 +123,46 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
+  const fetchUnsplashKeyStatus = async () => {
+    try {
+      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { unsplash?: { configured?: boolean; masked?: string } };
+      setUnsplashConfigured(data.unsplash?.configured === true);
+      setUnsplashKeyMasked(data.unsplash?.masked || "");
+    } catch {
+      // Server may not support config endpoint yet — silently ignore.
+    }
+  };
+
+  const handleSaveUnsplashKey = async () => {
+    setUnsplashSaving(true);
+    setUnsplashSaveStatus("idle");
+    try {
+      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys/unsplash`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: unsplashKey.trim() }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(payload.detail || "Save failed");
+      }
+      const data = (await res.json()) as { configured?: boolean; masked?: string };
+      setUnsplashConfigured(data.configured === true);
+      setUnsplashKeyMasked(data.masked || "");
+      setUnsplashKey("");
+      setUnsplashKeyVisible(false);
+      setUnsplashSaveStatus("saved");
+      setTimeout(() => setUnsplashSaveStatus("idle"), 3000);
+    } catch {
+      setUnsplashSaveStatus("error");
+      setTimeout(() => setUnsplashSaveStatus("idle"), 3000);
+    } finally {
+      setUnsplashSaving(false);
+    }
+  };
+
   const fetchStatus = async () => {
     try {
       const envRes = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/status`);
@@ -157,12 +204,14 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
 
   useEffect(() => {
     void fetchStatus();
+    void fetchUnsplashKeyStatus();
   }, []);
 
   useEffect(() => {
     if (!imageFinderService) return;
     if (imageFinderService.status === "running" || imageFinderService.status === "stopped") {
       void fetchStatus();
+      void fetchUnsplashKeyStatus();
     }
   }, [imageFinderService?.status]);
 
@@ -316,6 +365,71 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-muted-foreground" />
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {t("tool.image_finder.unsplash_api_key")}
+            </label>
+            {unsplashConfigured && (
+              <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                {t("tool.image_finder.unsplash_configured")}
+                {unsplashKeyMasked ? ` (${unsplashKeyMasked})` : ""}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("tool.image_finder.unsplash_note")}{" "}
+            <a
+              href="https://unsplash.com/developers"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-accent hover:text-accent/80"
+            >
+              unsplash.com/developers
+            </a>
+          </p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                type={unsplashKeyVisible ? "text" : "password"}
+                value={unsplashKey}
+                onChange={(e) => setUnsplashKey(e.target.value)}
+                placeholder={unsplashConfigured ? t("tool.image_finder.unsplash_placeholder_update") : t("tool.image_finder.unsplash_placeholder")}
+                className="bg-card border-border pr-10 font-mono text-sm"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setUnsplashKeyVisible((v) => !v)}
+                tabIndex={-1}
+              >
+                {unsplashKeyVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleSaveUnsplashKey}
+              disabled={unsplashSaving || !unsplashKey.trim()}
+              className="min-w-[80px]"
+            >
+              {unsplashSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : unsplashSaveStatus === "saved" ? (
+                <><Check className="w-4 h-4 mr-1 text-green-600" />{t("tool.image_finder.unsplash_saved")}</>
+              ) : (
+                t("tool.image_finder.unsplash_save")
+              )}
+            </Button>
+          </div>
+          {unsplashSaveStatus === "error" && (
+            <p className="text-xs text-destructive">{t("tool.image_finder.unsplash_save_failed")}</p>
+          )}
         </div>
 
         <div className="space-y-2">

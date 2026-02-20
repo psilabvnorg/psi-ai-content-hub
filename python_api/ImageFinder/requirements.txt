@@ -4,6 +4,9 @@ python-multipart
 requests>=2.31.0
 selenium
 pillow
-duckduckgo_search
+ddgs
 python-dotenv
 webdriver_manager
+undetected-chromedriver>=3.5.5
+setuptools
+selenium>=4.15.0
