@@ -5,7 +5,8 @@ from .background_removal import (
     process_upload,
     process_url,
     progress_store,
-    start_model_preload,
+    start_model_download,
+    start_model_load,
 )
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "process_upload",
     "process_url",
     "progress_store",
-    "start_model_preload",
+    "start_model_download",
+    "start_model_load",
 ]
