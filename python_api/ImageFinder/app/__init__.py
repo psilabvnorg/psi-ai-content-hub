@@ -1,2 +1,0 @@
-"""ImageFinder FastAPI service package."""
-
