@@ -1,3 +1,5 @@
+--index-url https://download.pytorch.org/whl/cu124
+--extra-index-url https://pypi.org/simple
 fastapi
 uvicorn
 python-multipart
@@ -10,3 +12,4 @@ kornia
 scikit-image
 huggingface_hub
 transformers>=4.39.1
+opencv-python

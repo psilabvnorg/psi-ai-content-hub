@@ -21,6 +21,16 @@ def _guess_media_type(path: Path) -> str:
         return "image/jpeg"
     if suffix == ".webp":
         return "image/webp"
+    if suffix == ".mp4":
+        return "video/mp4"
+    if suffix == ".avi":
+        return "video/x-msvideo"
+    if suffix == ".mov":
+        return "video/quicktime"
+    if suffix == ".mkv":
+        return "video/x-matroska"
+    if suffix == ".webm":
+        return "video/webm"
     return "application/octet-stream"
 
 

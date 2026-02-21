@@ -19,6 +19,9 @@ def _cleanup_loop() -> None:
         time.sleep(60)
         job_store.cleanup()
         background_removal.cleanup_results()
+        background_removal.cleanup_video_results()
+        background_removal.cleanup_overlay_results()
+        background_removal.cleanup_video_overlay_results()
 
 
 def create_app() -> FastAPI:

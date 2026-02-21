@@ -16,6 +16,7 @@ import VoiceClone from "./tools/VoiceClone";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
+import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
 import BackendConsole from "./tools/BackendConsole";
@@ -60,6 +61,7 @@ export default function FeaturePlaceholder({
       "adjust-speed": "feature.tool.adjust_speed.title",
       "thumbnail": "feature.tool.thumbnail.title",
       "background-removal": "feature.tool.background_removal.title",
+      "merge-overlay": "feature.tool.merge_overlay.title",
       "tts-fast": "feature.tool.tts_fast.title",
       "voice-clone": "feature.tool.voice_clone.title",
       "stt": "feature.tool.stt.title",
@@ -110,6 +112,8 @@ export default function FeaturePlaceholder({
         return <ThumbnailCreator />;
       case "background-removal":
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
+      case "merge-overlay":
+        return <MergeOverlay />;
       case "text-to-video":
         return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
