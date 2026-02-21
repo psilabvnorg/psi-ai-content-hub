@@ -9,7 +9,7 @@ APPDATA = os.environ.get("APPDATA") or str(Path.home() / ".config")
 BASE_APP_DIR = Path(APPDATA) / "psi-ai-content-hub"
 
 LOG_DIR = BASE_APP_DIR / "logs"
-LOG_MAX_BYTES = 5 * 1024 * 1024
+LOG_MAX_BYTES = 10 * 1024 * 1024
 
 TEMP_DIR = Path(tempfile.gettempdir()) / "psi_ai_content_hub"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)

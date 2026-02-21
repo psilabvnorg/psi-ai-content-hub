@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +8,8 @@ import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, IMAGE_FINDER_API_URL, TRANSL
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { useManagedServices } from "@/hooks/useManagedServices";
+
+type LogLine = { line: string };
 
 type SystemStatus = {
   status: string;
@@ -201,6 +203,10 @@ export default function Settings() {
   const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
   const [imageFinderEnv, setImageFinderEnv] = useState<EnvStatus | null>(null);
   const [imageFinderProgress, setImageFinderProgress] = useState<ProgressData | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [logsServerUnreachable, setLogsServerUnreachable] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const logRef = useRef<HTMLDivElement>(null);
   const {
     services,
     supported: servicesSupported,
@@ -248,6 +254,18 @@ export default function Settings() {
       setStatus(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLogTail = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/logs/tail?lines=200`);
+      const data = (await res.json()) as { lines?: string[] };
+      setLogs(data.lines || []);
+      setLogsServerUnreachable(false);
+    } catch {
+      setLogs([]);
+      setLogsServerUnreachable(true);
     }
   };
 
@@ -622,7 +640,44 @@ export default function Settings() {
     fetchTranslationStatus();
     fetchImageFinderStatus();
     refreshServices();
+    fetchLogTail();
   }, []);
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    if (logsServerUnreachable) {
+      setIsStreaming(false);
+      return;
+    }
+    const es = new EventSource(`${APP_API_URL}/api/v1/logs/stream`);
+    setIsStreaming(true);
+    es.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as LogLine;
+        if (!payload.line) return;
+        setLogs((prev) => {
+          const next = [...prev, payload.line];
+          return next.length > 400 ? next.slice(-400) : next;
+        });
+      } catch {
+        // ignore
+      }
+    };
+    es.onerror = () => {
+      es.close();
+      setIsStreaming(false);
+      setLogsServerUnreachable(true);
+    };
+    return () => {
+      es.close();
+      setIsStreaming(false);
+    };
+  }, [logsServerUnreachable]);
 
   return (
     <div className="space-y-6">
@@ -1469,6 +1524,34 @@ export default function Settings() {
           <Button variant="destructive" className="w-full" onClick={handleCleanup}>
             {t("settings.cleanup.title")}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>{t("tool.backend_console.logs")}</CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {isStreaming ? t("tool.backend_console.streaming") : t("tool.backend_console.paused")}
+              </span>
+              <Button size="sm" variant="outline" onClick={fetchLogTail}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div
+            ref={logRef}
+            className="h-72 overflow-y-auto rounded-xl border border-border bg-black/90 text-zinc-100 p-3 font-mono text-xs"
+          >
+            {logs.length === 0 ? (
+              <div className="text-muted-foreground">{t("tool.backend_console.no_logs")}</div>
+            ) : (
+              logs.map((line, idx) => <div key={idx}>{line}</div>)
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

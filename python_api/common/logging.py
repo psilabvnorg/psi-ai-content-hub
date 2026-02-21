@@ -54,9 +54,6 @@ def log_line(log_file: Path, max_bytes: int, message: str, level: str = "info") 
 def _rotate_logs(log_file: Path, max_bytes: int) -> None:
     try:
         if log_file.exists() and log_file.stat().st_size > max_bytes:
-            backup = log_file.with_suffix(".log.1")
-            if backup.exists():
-                backup.unlink()
-            log_file.rename(backup)
+            log_file.unlink()
     except Exception:
         pass

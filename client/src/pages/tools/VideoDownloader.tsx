@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Loader2, CheckCircle2, AlertCircle, Music } from "lucide-react";
+import { Download, Loader2, CheckCircle2, AlertCircle, Music, Youtube, Facebook, Instagram, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { APP_API_URL } from "@/lib/api";
@@ -29,6 +29,7 @@ export default function VideoDownloader() {
   const [error, setError] = useState<string | null>(null);
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [convertToH264, setConvertToH264] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<"tiktok" | "youtube" | "facebook" | "instagram" | null>("tiktok");
   const modeRef = useRef<"video" | "audio">("video");
   const [downloadMode, setDownloadMode] = useState<"video" | "audio">("video");
   const [audioLoading, setAudioLoading] = useState(false);
@@ -124,7 +125,7 @@ export default function VideoDownloader() {
       return;
     }
 
-    const platform = detectPlatform(url);
+    const platform = selectedPlatform ?? detectPlatform(url);
     console.log("Starting download:", { url, platform, convertToH264 });
     
     setLoading(true);
@@ -222,6 +223,32 @@ export default function VideoDownloader() {
           <CardTitle>{t("tool.video_downloader.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-4 gap-2">
+            {(
+              [
+                { id: "tiktok", label: "TikTok", icon: Video },
+                { id: "youtube", label: "YouTube", icon: Youtube },
+                { id: "facebook", label: "Facebook", icon: Facebook },
+                { id: "instagram", label: "Instagram", icon: Instagram },
+              ] as const
+            ).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                disabled={loading}
+                onClick={() => setSelectedPlatform(selectedPlatform === id ? null : id)}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-semibold transition-all
+                  ${selectedPlatform === id
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-border bg-muted/40 text-muted-foreground hover:border-accent/60 hover:text-foreground"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <Icon className="w-5 h-5" />
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium">{t("tool.video_downloader.url")}</label>
             <Input
@@ -230,10 +257,12 @@ export default function VideoDownloader() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
               disabled={loading}
             />
-            <p className="text-xs text-muted-foreground">{t("tool.video_downloader.detect_hint")}</p>
+            {!selectedPlatform && (
+              <p className="text-xs text-muted-foreground">{t("tool.video_downloader.detect_hint")}</p>
+            )}
           </div>
 
-          {url && detectPlatform(url) === "tiktok" && (
+          {(selectedPlatform === "tiktok" || (!selectedPlatform && url && detectPlatform(url) === "tiktok")) && (
             <>
               <div className="flex items-center space-x-2">
                 <input

@@ -2,6 +2,27 @@ const { app, BrowserWindow, dialog, shell, ipcMain } = require('electron');
 const path = require('path');
 const { fork, spawn } = require('child_process');
 const fs = require('fs');
+const os = require('os');
+
+// Shared log file written by all managed services (except 'app' which uses its Python FileHandler)
+const _LOG_DIR = path.join(process.env.APPDATA || path.join(os.homedir(), '.config'), 'psi-ai-content-hub', 'logs');
+const _LOG_FILE = path.join(_LOG_DIR, 'app-service.log');
+const _LOG_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function appendToServiceLog(serviceId, text) {
+  try {
+    if (!fs.existsSync(_LOG_DIR)) fs.mkdirSync(_LOG_DIR, { recursive: true });
+    try {
+      if (fs.existsSync(_LOG_FILE) && fs.statSync(_LOG_FILE).size > _LOG_MAX_BYTES) {
+        fs.unlinkSync(_LOG_FILE);
+      }
+    } catch (_) {}
+    const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const lines = text.split('\n').filter((l) => l.trim());
+    const out = lines.map((l) => `${ts} [${serviceId}] ${l}`).join('\n') + '\n';
+    fs.appendFileSync(_LOG_FILE, out, 'utf8');
+  } catch (_) {}
+}
 
 let mainWindow;
 let serverProcess;
@@ -63,6 +84,7 @@ const MANAGED_SERVICES = [
     relativeRoot: path.join('python_api', 'background-removal'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6905',
+    startupTimeoutMs: 60000,
   },
 ];
 
@@ -221,7 +243,7 @@ function waitForProcessExit(processHandle, timeoutMs) {
   });
 }
 
-async function waitForManagedServiceReady(serviceId, timeoutMs = 20000) {
+async function waitForManagedServiceReady(serviceId, timeoutMs = 30000) {
   const service = getManagedServiceConfig(serviceId);
   if (!service) return false;
 
@@ -376,11 +398,16 @@ async function startManagedService(serviceId) {
   });
 
   processHandle.stdout.on('data', (data) => {
-    console.log(`[ManagedService:${serviceId}]`, data.toString().trim());
+    const text = data.toString().trim();
+    console.log(`[ManagedService:${serviceId}]`, text);
+    // 'app' service logs to app-service.log via its own Python FileHandler; skip to avoid duplication
+    if (serviceId !== 'app') appendToServiceLog(serviceId, text);
   });
 
   processHandle.stderr.on('data', (data) => {
-    console.error(`[ManagedService:${serviceId}:error]`, data.toString().trim());
+    const text = data.toString().trim();
+    console.error(`[ManagedService:${serviceId}:error]`, text);
+    if (serviceId !== 'app') appendToServiceLog(serviceId, text);
   });
 
   processHandle.on('error', (error) => {
@@ -408,7 +435,7 @@ async function startManagedService(serviceId) {
     });
   });
 
-  const ready = await waitForManagedServiceReady(serviceId);
+  const ready = await waitForManagedServiceReady(serviceId, service.startupTimeoutMs);
   if (!ready) {
     await stopManagedService(serviceId);
     setManagedServiceRuntime(serviceId, {

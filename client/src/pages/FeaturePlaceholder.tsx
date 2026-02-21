@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  ChevronLeft, Wand2, 
+import {
+  Wand2,
   Scissors, Gauge, Loader2, CheckCircle2
 } from "lucide-react";
 import VideoDownloader from "./tools/VideoDownloader";
@@ -19,17 +19,15 @@ import BackgroundRemoval from "./tools/BackgroundRemoval";
 import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
-import BackendConsole from "./tools/BackendConsole";
 import LLM from "./tools/LLM";
 import Translator from "./tools/Translator";
 import ImageFinder from "./tools/ImageFinder";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
-import BrandLogo from "@/components/BrandLogo";
 
-export default function FeaturePlaceholder({ 
-  id, 
+export default function FeaturePlaceholder({
+  id,
   onBack,
   onSelectFeature,
 }: {
@@ -65,7 +63,6 @@ export default function FeaturePlaceholder({
       "tts-fast": "feature.tool.tts_fast.title",
       "voice-clone": "feature.tool.voice_clone.title",
       "stt": "feature.tool.stt.title",
-      "backend-console": "feature.tool.backend_console.title",
       "llm": "feature.tool.llm.title",
       translator: "feature.tool.translator.title",
       "image-finder": "feature.tool.image_finder.title",
@@ -75,7 +72,7 @@ export default function FeaturePlaceholder({
   };
 
   const title = t(getTitleKeyFromId(id));
-  
+
   const handleAction = () => {
     setIsLoading(true);
     // Mocking the backend process
@@ -118,8 +115,6 @@ export default function FeaturePlaceholder({
         return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
         return <ReupYoutube />;
-      case "backend-console":
-        return <BackendConsole />;
       case "llm":
         return <LLM />;
       case "translator":
@@ -140,13 +135,13 @@ export default function FeaturePlaceholder({
       return (
         <div className="w-full space-y-4">
           <div className="relative">
-            <Input 
+            <Input
               placeholder={t("home.paste_url")}
               value={url}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
               className="h-12 rounded-xl pr-32"
             />
-            <Button 
+            <Button
               className="absolute right-1 top-1 bottom-1 rounded-lg text-xs"
               onClick={handleAction}
               disabled={isLoading || !url}
@@ -174,7 +169,7 @@ export default function FeaturePlaceholder({
               <Input placeholder="00:02:15" />
             </div>
           </div>
-          <Button 
+          <Button
             className="w-full h-12 rounded-xl font-bold"
             onClick={handleAction}
             disabled={isLoading}
@@ -194,11 +189,11 @@ export default function FeaturePlaceholder({
               <span className="text-sm font-bold text-foreground">{t("home.speed_multiplier")}</span>
               <span className="text-lg font-black text-accent">{speed}x</span>
             </div>
-            <input 
-              type="range" 
-              min="0.5" 
-              max="2.0" 
-              step="0.1" 
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
               value={speed}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(e.target.value)}
               className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-border accent-accent"
@@ -209,7 +204,7 @@ export default function FeaturePlaceholder({
               <span>{t("home.faster")}</span>
             </div>
           </div>
-          <Button 
+          <Button
             className="w-full h-12 rounded-xl font-bold"
             onClick={handleAction}
             disabled={isLoading}
@@ -222,7 +217,7 @@ export default function FeaturePlaceholder({
     }
 
     return (
-      <Button 
+      <Button
         className="w-full h-12 rounded-xl font-bold"
         onClick={handleAction}
         disabled={isLoading}
@@ -234,20 +229,7 @@ export default function FeaturePlaceholder({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background p-6 text-foreground">
-      <header className="mx-auto mb-12 flex w-full max-w-5xl items-center justify-between gap-4 border-b border-border pb-6">
-        <Button 
-          variant="ghost" 
-          onClick={onBack}
-          className="group font-bold"
-          data-testid="button-back"
-        >
-          <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          {t("home.back_dashboard")}
-        </Button>
-        <BrandLogo label={t("app.name")} imageClassName="h-10 border-white/15 bg-black" />
-      </header>
-
+    <div className="min-h-screen flex flex-col bg-background pt-16 text-foreground p-6">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center pt-4 text-center">
         {isSuccess ? (
           <div className="animate-in zoom-in duration-300 flex flex-col items-center">
@@ -262,12 +244,10 @@ export default function FeaturePlaceholder({
           </div>
         ) : (
           <>
-
             <h1 className="mb-4 text-3xl font-black tracking-tight text-foreground">
               {title}
             </h1>
 
-            
             {actualTool ? (
               <div className="mb-12 w-full">
                 {actualTool}

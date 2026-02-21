@@ -6,7 +6,9 @@
       "Bash(powershell -Command \"Get-ChildItem -Path ''D:\\\\AI\\\\psi-ai-content-hub\\\\remotion\\\\news\\\\src'' -Recurse | Select-Object FullName\")",
       "Bash(cmd /c \"dir /b \"\"D:\\\\AI\\\\psi-ai-content-hub\\\\remotion\\\\news\\\\public\\\\main\\\\music-playlist\"\"\")",
       "Bash(cmd /c dir:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(\"d:/AI/psi-ai-content-hub/python_api/background-removal/venv/Scripts/python.exe\" -c:*)",
+      "Bash(time:*)"
     ]
   }
 }
