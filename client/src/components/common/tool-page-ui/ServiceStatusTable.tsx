@@ -108,14 +108,6 @@ export function ServiceStatusTable({
                         )}
                       </Button>
                     )}
-                    {(() => {
-                      console.log('[ServiceStatusTable] Server row secondary action:', {
-                        showSecondaryAction: serverRow.showSecondaryAction,
-                        hasOnSecondaryAction: !!serverRow.onSecondaryAction,
-                        secondaryActionLabel: serverRow.secondaryActionLabel,
-                      });
-                      return null;
-                    })()}
                     {serverRow.showSecondaryAction && serverRow.onSecondaryAction && (
                       <Button
                         size="sm"
@@ -154,18 +146,25 @@ export function ServiceStatusTable({
                         ? t("settings.tools.status.ready") 
                         : t("settings.tools.status.not_ready")}
                     </span>
-                    {!serverUnreachable && row.showActionButton && row.onAction && (
+                    {row.showActionButton && row.onAction && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={row.onAction}
                         className="ml-2"
-                        disabled={row.actionDisabled}
+                        disabled={row.actionDisabled || row.actionLoading}
                       >
-                        {row.actionButtonLabel || t("tool.common.open_settings")}
+                        {row.actionLoading ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            {row.actionButtonLabel || t("tool.common.starting")}
+                          </>
+                        ) : (
+                          row.actionButtonLabel || t("tool.common.open_settings")
+                        )}
                       </Button>
                     )}
-                    {!serverUnreachable && row.showSecondaryAction && row.onSecondaryAction && (
+                    {row.showSecondaryAction && row.onSecondaryAction && (
                       <Button
                         size="sm"
                         variant="default"

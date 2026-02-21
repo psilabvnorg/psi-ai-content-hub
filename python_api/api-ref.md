@@ -358,7 +358,7 @@ POST
 /api/v1/env/install
 Env Install
 
-background-removal
+bg-remove-overlay
 
 
 POST

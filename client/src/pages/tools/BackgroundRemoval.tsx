@@ -567,9 +567,10 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
             : envStatus?.installed_modules?.length
               ? envStatus.installed_modules.join(", ")
               : "--",
-        showActionButton: !envReady && !serverUnreachable,
+        showActionButton: !envReady,
         actionButtonLabel: isInstallingEnv ? t("tool.common.starting") : t("tool.common.install_library"),
-        actionDisabled: isInstallingEnv,
+        actionDisabled: isInstallingEnv || serverUnreachable,
+        actionLoading: isInstallingEnv,
         onAction: handleInstallLibs,
       },
       {
@@ -587,6 +588,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
           ? (isDownloadingModel || modelDownloading ? t("tool.common.starting") : t("tool.common.download_model"))
           : (isLoadingModel || modelLoading ? t("tool.common.starting") : "Load Model"),
         actionDisabled: isDownloadingModel || modelDownloading || isLoadingModel || modelLoading,
+        actionLoading: isLoadingModel || modelLoading || isDownloadingModel || modelDownloading,
         onAction: !modelDownloaded ? handleDownloadModel : handleLoadModel,
         showSecondaryAction: !serverUnreachable && modelLoaded,
         secondaryActionLabel: "Unload Model",
@@ -597,6 +599,9 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   );
 
   const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${BGREMOVE_API_URL}${path}`);
+  const handleDownload = (downloadUrl: string, filename: string) => {
+    downloadFile(downloadUrl, filename, BGREMOVE_API_URL);
+  };
 
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">

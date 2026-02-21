@@ -94,12 +94,13 @@ The endpoint uses `importlib.util.find_spec()` on each module name. If any are m
 
 **Install Library flow:**
 1. User clicks **Install Library**.
-2. Frontend `POST /api/v1/env/install` → server starts `pip install -U <missing packages>` as a subprocess inside the `venv`.
-3. Server returns `{ task_id }`.
-4. Frontend opens an `EventSource` to `GET /api/v1/env/install/stream/{task_id}` and receives `{ status, percent, logs[] }` events every 500 ms.
-5. Progress bar and log output update live in the UI.
-6. On `status: "complete"` → stream closes, `fetchStatus()` re-runs to confirm all modules now pass.
-7. UI shows: **"Dependencies installed. Restart the server to load the model."** — a server restart is required because the running Python process does not automatically see newly installed packages.
+2. The button immediately shows a spinning indicator and is disabled for the duration.
+3. Frontend `POST /api/v1/env/install` → server starts `pip install -U <missing packages>` as a subprocess inside the `venv`.
+4. Server returns `{ task_id }`.
+5. Frontend opens an `EventSource` to `GET /api/v1/env/install/stream/{task_id}` and receives `{ status, percent, logs[] }` events every 500 ms.
+6. Progress bar and log output update live in the UI.
+7. On `status: "complete"` → stream closes, `fetchStatus()` re-runs to confirm all modules now pass.
+8. UI shows: **"Dependencies installed. Restart the server to load the model."** — a server restart is required because the running Python process does not automatically see newly installed packages.
 
 ---
 
@@ -132,7 +133,7 @@ The button shown changes based on state:
 | `true` | `false` | **Load Model** |
 | `true` | `true` | **Unload Model** |
 
-Buttons are disabled (labeled **Starting...**) while any operation is in progress.
+While any operation is in progress, the action button is disabled and displays a spinning indicator alongside the **Starting...** label to give the user visual feedback that work is underway.
 
 ---
 
@@ -175,12 +176,13 @@ models/birefnet/
 Loads the already-downloaded model files into CPU/GPU memory.
 
 1. User clicks **Load Model**.
-2. Frontend `POST /api/v1/remove/load`.
-3. Backend:
+2. The button immediately shows a spinning indicator and is disabled for the duration.
+3. Frontend `POST /api/v1/remove/load`.
+4. Backend:
    - Checks `_model_loading` and `_model is not None` — if already loaded/loading, returns `{ task_id: null }`.
    - Generates a `task_id` (prefix `bgload_`), sets initial progress.
    - Launches a background thread that calls `_ensure_model_loaded(task_id)`.
-4. Inside `_ensure_model_loaded`:
+5. Inside `_ensure_model_loaded`:
    - Acquires `_model_lock`, sets `_model_loading = true`.
    - Sets progress to 10% / "Downloading model files..." in `ProgressStore`.
    - Starts a ticker thread: increments progress 3% every 4 seconds (10% → 90%), while `from_pretrained` is running.
@@ -188,7 +190,7 @@ Loads the already-downloaded model files into CPU/GPU memory.
    - Calls `.to(device)` and `.eval()`.
    - Sets `_model = loaded_model`, `_model_loading = false`.
    - Sets progress to 100% / `status: "complete"`.
-5. Frontend stream closes on `complete`, `fetchStatus()` runs → row shows **Unload Model** button, "Remove Background" button activates.
+6. Frontend stream closes on `complete`, `fetchStatus()` runs → row shows **Unload Model** button, "Remove Background" button activates.
 
 **Device selection:** `"cuda"` if `torch.cuda.is_available()`, otherwise `"cpu"`.
 

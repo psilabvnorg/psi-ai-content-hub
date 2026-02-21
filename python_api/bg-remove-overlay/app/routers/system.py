@@ -4,7 +4,7 @@ import time
 
 from fastapi import APIRouter
 
-from ..services.background_removal import model_status
+from ..services.remove_overlay import model_status
 
 
 router = APIRouter(prefix="/api/v1", tags=["system"])

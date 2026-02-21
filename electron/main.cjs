@@ -81,7 +81,7 @@ const MANAGED_SERVICES = [
   {
     id: 'bgremove',
     name: 'Background Removal API',
-    relativeRoot: path.join('python_api', 'background-removal'),
+    relativeRoot: path.join('python_api', 'bg-remove-overlay'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6905',
     startupTimeoutMs: 60000,
@@ -92,6 +92,7 @@ const BOOTSTRAP_PACKAGES = {
   app: [
     'fastapi', 'uvicorn', 'python-multipart',
     'Pillow', 'requests', 'httpx',
+    'edge-tts',
     'ddgs',                      // replaces duckduckgo_search
     'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
   ],
@@ -357,7 +358,10 @@ async function startManagedService(serviceId) {
     try {
       await runCommand(systemPython, ['-m', 'venv', venvDir], { shell: true });
       console.log(`[ManagedService:${serviceId}] Installing bootstrap packages...`);
-      const bootstrapPkgs = service.bootstrapPackages || ['fastapi', 'uvicorn', 'python-multipart'];
+      const bootstrapPkgs =
+        service.bootstrapPackages ||
+        BOOTSTRAP_PACKAGES[serviceId] ||
+        ['fastapi', 'uvicorn', 'python-multipart'];
       await runCommand(service.venvPythonPath, ['-m', 'pip', 'install', '--quiet', ...bootstrapPkgs], { shell: true });
       console.log(`[ManagedService:${serviceId}] Bootstrap complete.`);
     } catch (error) {
@@ -367,6 +371,25 @@ async function startManagedService(serviceId) {
         error: `Failed to create venv: ${error.message}`,
       });
       return buildManagedServiceStatus(serviceId);
+    }
+  }
+
+  // Ensure edge-tts exists in existing App API venvs so Super Fast TTS only needs "Start Server".
+  if (serviceId === 'app') {
+    try {
+      await runCommand(service.venvPythonPath, ['-c', 'import edge_tts']);
+    } catch (_) {
+      console.log('[ManagedService:app] edge-tts missing, installing...');
+      try {
+        await runCommand(service.venvPythonPath, ['-m', 'pip', 'install', '--quiet', 'edge-tts'], { shell: true });
+      } catch (error) {
+        setManagedServiceRuntime(serviceId, {
+          status: 'error',
+          pid: null,
+          error: `Failed to install edge-tts: ${error.message}`,
+        });
+        return buildManagedServiceStatus(serviceId);
+      }
     }
   }
 

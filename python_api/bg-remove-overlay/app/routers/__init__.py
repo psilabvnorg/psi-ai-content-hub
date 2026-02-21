@@ -1,3 +1,3 @@
-from . import background_removal, env, files, system
+from . import remove_overlay, env, files, system
 
-__all__ = ["background_removal", "env", "files", "system"]
+__all__ = ["remove_overlay", "env", "files", "system"]

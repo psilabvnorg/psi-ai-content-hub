@@ -1,0 +1,1 @@
+const fs=require('fs'); const lines=fs.readFileSync('electron/main.cjs','utf8').split(/\r?\n/); ['edge-tts','BOOTSTRAP_PACKAGES[serviceId]','edge-tts missing, installing...'].forEach(p=,i)= console.log(p+':'+(i+1));});}); 

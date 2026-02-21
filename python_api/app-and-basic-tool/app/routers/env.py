@@ -15,6 +15,7 @@ _MODULE_TO_PACKAGE: Dict[str, str] = {
     "uvicorn": "uvicorn",
     "multipart": "python-multipart",
     "yt_dlp": "yt-dlp",
+    "edge_tts": "edge-tts",
 }
 
 
@@ -26,10 +27,19 @@ def _missing_modules() -> List[str]:
     return missing
 
 
+def _installed_modules() -> List[str]:
+    installed = []
+    for module in _MODULE_TO_PACKAGE:
+        if importlib.util.find_spec(module) is not None:
+            installed.append(module)
+    return installed
+
+
 @router.get("/status")
 def env_status() -> dict:
     missing = _missing_modules()
-    return {"installed": len(missing) == 0, "missing": missing}
+    installed = _installed_modules()
+    return {"installed": len(missing) == 0, "missing": missing, "installed_modules": installed}
 
 
 @router.post("/install")

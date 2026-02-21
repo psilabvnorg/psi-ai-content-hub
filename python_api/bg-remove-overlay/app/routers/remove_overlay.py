@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
-from ..services.background_removal import (
+from ..services.remove_overlay import (
     SUPPORTED_AUDIO_EXTS,
     SUPPORTED_VIDEO_EXTS,
     get_overlay_result,
@@ -31,7 +31,7 @@ from ..services.background_removal import (
 )
 
 
-router = APIRouter(prefix="/api/v1", tags=["background-removal"])
+router = APIRouter(prefix="/api/v1", tags=["bg-remove-overlay"])
 
 
 @router.post("/remove/upload")

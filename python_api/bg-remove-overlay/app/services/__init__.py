@@ -1,4 +1,4 @@
-from .background_removal import (
+from .remove_overlay import (
     cleanup_results,
     get_result,
     model_status,

@@ -8,7 +8,7 @@ This folder contains standalone FastAPI services. Each service runs in its own v
 2. `F5-TTS` → `6902`
 3. `VieNeu-TTS` → `6903`
 4. `whisper-stt` → `6904`
-5. `background-removal` → `6905`
+5. `bg-remove-overlay` → `6905`
 6. `Translation` → `6906`
 7. `ImageFinder` → `6907`
 

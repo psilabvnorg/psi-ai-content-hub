@@ -182,7 +182,7 @@ def _ensure_model_loaded(task_id: Optional[str] = None) -> bool:
         if task_id:
             progress_store.add_log(task_id, f"Model load failed: {err}")
             progress_store.set_progress(task_id, "error", 0, err)
-        log(f"Background removal model load failed: {err}", "error", log_name="background-removal.log")
+        log(f"Background removal model load failed: {err}", "error", log_name="bg-remove-overlay.log")
         return False
 
 
@@ -231,7 +231,7 @@ def start_model_download() -> Optional[str]:
                 _model_downloading = False
                 _model_download_error = err
             progress_store.set_progress(task_id, "error", 0, err)
-            log(f"Model download failed: {err}", "error", log_name="background-removal.log")
+            log(f"Model download failed: {err}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -362,7 +362,7 @@ def _process_task(job_store: JobStore, image_data: bytes, base_name: str) -> str
             progress_store.set_progress(task_id, "complete", 100, "Background removed")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Background removal task failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Background removal task failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -574,7 +574,7 @@ def _process_video_task(job_store: JobStore, video_path: Path, base_name: str) -
             )
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Video background removal task failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Video background removal task failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -682,7 +682,7 @@ def overlay_image(job_store: JobStore, processed_file_id: str, bg_data: bytes, b
             progress_store.set_progress(task_id, "complete", 100, "Overlay complete!")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Image overlay failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Image overlay failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -847,7 +847,7 @@ def overlay_video(
             progress_store.set_progress(task_id, "complete", 100, f"Overlay complete! {frame_idx} frames processed.")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Video overlay failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Video overlay failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -891,7 +891,7 @@ def _mux_audio_into_video(video_path: Path, audio_path: Path, output_path: Path)
 
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
-        log("FFmpeg not found on PATH — audio will not be added", "warning", log_name="background-removal.log")
+        log("FFmpeg not found on PATH — audio will not be added", "warning", log_name="bg-remove-overlay.log")
         return False
     try:
         result = subprocess.run(
@@ -908,10 +908,10 @@ def _mux_audio_into_video(video_path: Path, audio_path: Path, output_path: Path)
             timeout=600,
         )
         if result.returncode != 0:
-            log(f"FFmpeg mux failed: {result.stderr.decode(errors='replace')}", "error", log_name="background-removal.log")
+            log(f"FFmpeg mux failed: {result.stderr.decode(errors='replace')}", "error", log_name="bg-remove-overlay.log")
         return result.returncode == 0
     except Exception as exc:
-        log(f"FFmpeg mux exception: {exc}", "error", log_name="background-removal.log")
+        log(f"FFmpeg mux exception: {exc}", "error", log_name="bg-remove-overlay.log")
         return False
 
 
@@ -966,7 +966,7 @@ def overlay_image_upload(
             progress_store.set_progress(task_id, "complete", 100, "Overlay complete!")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Image overlay (upload) failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Image overlay (upload) failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -1156,7 +1156,7 @@ def overlay_video_upload(
             progress_store.set_progress(task_id, "complete", 100, f"Overlay complete! {frame_idx} frames processed.")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Video overlay (upload) failed: {exc}", "error", log_name="background-removal.log")
+            log(f"Video overlay (upload) failed: {exc}", "error", log_name="bg-remove-overlay.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id

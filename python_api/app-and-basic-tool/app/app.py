@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .deps import job_store
 from .routers import env as env_router
+from .routers import edge_tts as edge_tts_router
 from .routers import files as files_router
 from .routers import media as media_router
 from .routers import system as system_router
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(llm_router.router)
     app.include_router(tools_router.router)
     app.include_router(env_router.router)
+    app.include_router(edge_tts_router.router)
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app

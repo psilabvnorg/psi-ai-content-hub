@@ -7,11 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .deps import job_store
-from .routers import background_removal as bg_router
+from .routers import remove_overlay as bg_router
 from .routers import env as env_router
 from .routers import files as files_router
 from .routers import system as system_router
-from .services import background_removal
+from .services import remove_overlay as background_removal
 
 
 def _cleanup_loop() -> None:
