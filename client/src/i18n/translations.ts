@@ -545,7 +545,7 @@ export const translations = {
     "tool.stt.refresh_status": "Refresh Status",
     "tool.stt.server_unreachable": "Server Not Reachable",
     "tool.stt.server_unreachable_desc":
-      "STT service is not reachable at 127.0.0.1:6904. Start the service and retry.",
+      "STT service is not reachable at 127.0.0.1:6901/whisper. Start the app server and retry.",
     "tool.stt.retry": "Retry",
     "tool.stt.upload_audio": "Upload Audio File",
     "tool.stt.click_upload": "Click to upload audio file",
@@ -1250,7 +1250,7 @@ export const translations = {
     "tool.stt.refresh_status": "Làm mới trạng thái",
     "tool.stt.server_unreachable": "Không kết nối được server",
     "tool.stt.server_unreachable_desc":
-      "Dịch vụ STT chưa chạy ở 127.0.0.1:6904. Hãy khởi động dịch vụ rồi thử lại.",
+      "Dịch vụ STT chưa chạy ở 127.0.0.1:6901/whisper. Hãy khởi động App API rồi thử lại.",
     "tool.stt.retry": "Thử lại",
     "tool.stt.upload_audio": "Tải tệp âm thanh",
     "tool.stt.click_upload": "Nhấn để tải tệp âm thanh",

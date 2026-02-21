@@ -1,16 +1,28 @@
 # PSI AI CONTENT HUB Python APIs
 
-This folder contains standalone FastAPI services. Each service runs in its own venv and listens on its own port.
+This folder contains FastAPI services used by the desktop app.
 
-## Services & Ports
+## Services and Ports
 
-1. `app-and-basic-tool` → `6901`
-2. `F5-TTS` → `6902`
-3. `VieNeu-TTS` → `6903`
-4. `whisper-stt` → `6904`
-5. `bg-remove-overlay` → `6905`
-6. `Translation` → `6906`
-7. `ImageFinder` → `6907`
+1. `app-and-basic-tool` -> `6901`
+2. `F5-TTS` -> `6902`
+3. `VieNeu-TTS` -> `6903`
+
+Only `F5-TTS` stays isolated in its own venv/process. Non-F5 APIs are merged into `app-and-basic-tool`.
+
+## Merged API Bases on 6901
+
+- `http://127.0.0.1:6901/whisper`
+- `http://127.0.0.1:6901/bg-remove-overlay`
+- `http://127.0.0.1:6901/translation`
+- `http://127.0.0.1:6901/image-search`
+
+Endpoint shapes remain the same after these prefixes. Examples:
+
+- `/whisper/api/v1/transcribe`
+- `/bg-remove-overlay/api/v1/remove/upload`
+- `/translation/api/v1/translation/translate`
+- `/image-search/api/v1/image-finder/search`
 
 ## Shared Model Directory
 
@@ -28,27 +40,16 @@ python -m app.main
 
 ## API Base
 
-All routes are under `/api/v1`.
+All routes are still versioned under `/api/v1` (with the service prefix where applicable).
 
-## Per‑Service Environment Setup
+## Per-Service Environment Setup
 
-Each service exposes:
+Merged services expose:
+
+- `GET /<service-prefix>/api/v1/env/status`
+- `POST /<service-prefix>/api/v1/env/install`
+
+F5 still exposes:
 
 - `GET /api/v1/env/status`
 - `POST /api/v1/env/install`
-
-These operate **within that service’s venv**.
-
-## Model Download Endpoints
-
-Each service handles its own model downloads:
-
-- F5‑TTS: `POST /api/v1/models/download`
-- VieNeu‑TTS: `POST /api/v1/models/download`
-- Whisper‑STT: `POST /api/v1/models/download`
-- Translation: `POST /api/v1/translation/download`
-
-## System Tools (App Service Only)
-
-- `GET /api/v1/tools/status`
-- `POST /api/v1/tools/install`

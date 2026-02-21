@@ -81,9 +81,9 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
   const [envMissing, setEnvMissing] = useState<string[]>([]);
   const [modelStatus, setModelStatus] = useState<TranslationModelStatus | null>(null);
 
-  const translationService = servicesById.translation;
+  const translationService = servicesById.app;
   const translationRunning = translationService?.status === "running";
-  const translationBusy = isBusy("translation");
+  const translationBusy = isBusy("app");
   const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
 
   const modelReady = modelStatus?.loaded === true || modelStatus?.downloaded === true;
@@ -142,10 +142,10 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
     try {
       if (isElectron && translationService) {
         if (translationRunning) {
-          await stop("translation");
+          await stop("app");
           setServerUnreachable(true);
         } else {
-          await start("translation");
+          await start("app");
           await fetchStatus();
         }
       }

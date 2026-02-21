@@ -88,9 +88,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [result, setResult] = useState<ResultData | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const { servicesById, start, stop, isBusy } = useManagedServices();
-  const serviceStatus = servicesById.whisper;
+  const serviceStatus = servicesById.app;
   const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("whisper");
+  const serviceBusy = isBusy("app");
 
   const serverUnreachable = status?.server_unreachable === true;
   const depsNotOk = status?.env?.installed === false;
@@ -132,11 +132,11 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const handleToggleServer = async () => {
     if (!serviceStatus) return;
     if (serviceRunning) {
-      await stop("whisper");
+      await stop("app");
       setStatus({ server_unreachable: true });
       return;
     }
-    await start("whisper");
+    await start("app");
     await fetchStatus();
   };
 

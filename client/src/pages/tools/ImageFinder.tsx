@@ -122,9 +122,9 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
   const [envMissing, setEnvMissing] = useState<string[]>([]);
   const [llmStatus, setLlmStatus] = useState<LlmStatusResponse | null>(null);
 
-  const imageFinderService = servicesById.imagefinder;
+  const imageFinderService = servicesById.app;
   const imageFinderRunning = imageFinderService?.status === "running";
-  const imageFinderBusy = isBusy("imagefinder");
+  const imageFinderBusy = isBusy("app");
   const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
 
   const availableModels = useMemo(() => {
@@ -293,10 +293,10 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     try {
       if (isElectron && imageFinderService) {
         if (imageFinderRunning) {
-          await stop("imagefinder");
+          await stop("app");
           setServerUnreachable(true);
         } else {
-          await start("imagefinder");
+          await start("app");
           await fetchStatus();
         }
       }

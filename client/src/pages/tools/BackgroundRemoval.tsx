@@ -133,9 +133,9 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const modelPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { servicesById, start, stop, isBusy } = useManagedServices();
-  const serviceStatus = servicesById.bgremove;
+  const serviceStatus = servicesById.app;
   const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("bgremove");
+  const serviceBusy = isBusy("app");
 
   const envReady = envStatus?.installed === true;
   const modelLoaded = modelStatus?.model_loaded === true;
@@ -184,11 +184,11 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const handleToggleServer = async () => {
     if (!serviceStatus) return;
     if (serviceRunning) {
-      await stop("bgremove");
+      await stop("app");
       setServerUnreachable(true);
       return;
     }
-    await start("bgremove");
+    await start("app");
     await fetchStatus();
   };
 

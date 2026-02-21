@@ -43,21 +43,6 @@ const MANAGED_SERVICES = [
     apiUrl: 'http://127.0.0.1:6901',
   },
   {
-    id: 'imagefinder',
-    name: 'Image Finder API',
-    relativeRoot: path.join('python_api', 'ImageFinder'),
-    entryModule: 'app.main',
-    apiUrl: 'http://127.0.0.1:6907',
-    bootstrapPackages: ['fastapi', 'uvicorn', 'python-multipart', 'Pillow', 'requests', 'httpx'],
-  },
-  {
-    id: 'translation',
-    name: 'Translation API',
-    relativeRoot: path.join('python_api', 'Translation'),
-    entryModule: 'app.main',
-    apiUrl: 'http://127.0.0.1:6906',
-  },
-  {
     id: 'f5',
     name: 'F5 Voice Clone API',
     relativeRoot: path.join('python_api', 'F5-TTS'),
@@ -71,21 +56,6 @@ const MANAGED_SERVICES = [
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6903',
   },
-  {
-    id: 'whisper',
-    name: 'Whisper STT API',
-    relativeRoot: path.join('python_api', 'whisper-stt'),
-    entryModule: 'app.main',
-    apiUrl: 'http://127.0.0.1:6904',
-  },
-  {
-    id: 'bgremove',
-    name: 'Background Removal API',
-    relativeRoot: path.join('python_api', 'bg-remove-overlay'),
-    entryModule: 'app.main',
-    apiUrl: 'http://127.0.0.1:6905',
-    startupTimeoutMs: 60000,
-  },
 ];
 
 const BOOTSTRAP_PACKAGES = {
@@ -96,18 +66,6 @@ const BOOTSTRAP_PACKAGES = {
     'ddgs',                      // replaces duckduckgo_search
     'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
   ],
-  imagefinder: [
-    'fastapi', 'uvicorn', 'python-multipart',
-    'Pillow', 'requests', 'httpx',
-    'ddgs',                      // replaces duckduckgo_search
-    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
-  ],
-  translation: [
-    'fastapi', 'uvicorn', 'python-multipart',
-    'Pillow', 'requests', 'httpx',
-    'ddgs',                      // replaces duckduckgo_search
-    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
-  ],
   f5: [
     'fastapi', 'uvicorn', 'python-multipart',
     'Pillow', 'requests', 'httpx',
@@ -115,18 +73,6 @@ const BOOTSTRAP_PACKAGES = {
     'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
   ],
   vieneu: [
-    'fastapi', 'uvicorn', 'python-multipart',
-    'Pillow', 'requests', 'httpx',
-    'ddgs',                      // replaces duckduckgo_search
-    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
-  ],
-  whisper: [
-    'fastapi', 'uvicorn', 'python-multipart',
-    'Pillow', 'requests', 'httpx',
-    'ddgs',                      // replaces duckduckgo_search
-    'undetected-chromedriver',   // replaces selenium + webdriver-manager, auto-manages ChromeDriver
-  ],
-  bgremove: [
     'fastapi', 'uvicorn', 'python-multipart',
     'Pillow', 'requests', 'httpx',
     'ddgs',                      // replaces duckduckgo_search

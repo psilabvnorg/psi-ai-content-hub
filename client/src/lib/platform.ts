@@ -4,7 +4,7 @@
  */
 
 export type Platform = 'web' | 'electron' | 'android' | 'ios';
-export type ApiService = 'app' | 'imagefinder' | 'translation' | 'f5' | 'vieneu' | 'whisper' | 'bgremove';
+export type ApiService = 'app' | 'image-search' | 'translation' | 'f5' | 'vieneu' | 'whisper' | 'bg-remove-overlay';
 
 /**
  * Detect the current platform
@@ -45,12 +45,12 @@ export function getServiceApiUrl(service: ApiService): string {
   const env = import.meta.env;
   const specific = {
     app: env.VITE_APP_API_URL,
-    imagefinder: env.VITE_IMAGE_FINDER_API_URL,
+    'image-search': env.VITE_IMAGE_SEARCH_API_URL || env.VITE_IMAGE_FINDER_API_URL,
     translation: env.VITE_TRANSLATION_API_URL,
     f5: env.VITE_F5_API_URL,
     vieneu: env.VITE_VIENEU_API_URL,
     whisper: env.VITE_WHISPER_API_URL,
-    bgremove: env.VITE_BGREMOVE_API_URL,
+    'bg-remove-overlay': env.VITE_BG_REMOVE_OVERLAY_API_URL || env.VITE_BGREMOVE_API_URL,
   } as const;
 
   if (specific[service]) {
@@ -64,18 +64,18 @@ export function getServiceApiUrl(service: ApiService): string {
   switch (service) {
     case 'app':
       return 'http://127.0.0.1:6901';
-    case 'imagefinder':
-      return 'http://127.0.0.1:6907';
+    case 'image-search':
+      return 'http://127.0.0.1:6901/image-search';
     case 'translation':
-      return 'http://127.0.0.1:6906';
+      return 'http://127.0.0.1:6901/translation';
     case 'f5':
       return 'http://127.0.0.1:6902';
     case 'vieneu':
       return 'http://127.0.0.1:6903';
     case 'whisper':
-      return 'http://127.0.0.1:6904';
-    case 'bgremove':
-      return 'http://127.0.0.1:6905';
+      return 'http://127.0.0.1:6901/whisper';
+    case 'bg-remove-overlay':
+      return 'http://127.0.0.1:6901/bg-remove-overlay';
     default:
       return 'http://127.0.0.1:6901';
   }

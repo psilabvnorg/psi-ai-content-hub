@@ -14,7 +14,7 @@ import { useManagedServices } from "@/hooks/useManagedServices";
 
 const MAX_CHARS = 5000;
 const VOICE_CLONE_URL = "http://127.0.0.1:6902";
-const STT_URL = "http://127.0.0.1:6904";
+const STT_URL = "http://127.0.0.1:6901/whisper";
 
 type Voice = { id: string; name: string; description?: string };
 type TranscriptWord = { word?: string; start?: number; end?: number };
@@ -207,9 +207,9 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const vcService = servicesById.f5;
   const vcRunning = vcService?.status === "running";
   const vcBusy = isBusy("f5");
-  const sttService = servicesById.whisper;
+  const sttService = servicesById.app;
   const sttRunning = sttService?.status === "running";
-  const sttBusy = isBusy("whisper");
+  const sttBusy = isBusy("app");
 
   const charCount = text.length;
   const isUploadMode = audioInputMode === "upload";
@@ -342,11 +342,11 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const handleToggleSttServer = async () => {
     if (!sttService) return;
     if (sttRunning) {
-      await stop("whisper");
+      await stop("app");
       setSttServerReachable(false);
       return;
     }
-    await start("whisper");
+    await start("app");
     await fetchStatus();
   };
 

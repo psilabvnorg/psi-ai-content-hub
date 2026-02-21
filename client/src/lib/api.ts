@@ -6,12 +6,14 @@
 import { getApiUrl, getServiceApiUrl, isLocalApiAvailable, getPlatformConfig } from './platform';
 
 export const APP_API_URL = getServiceApiUrl('app');
-export const IMAGE_FINDER_API_URL = getServiceApiUrl('imagefinder');
+export const IMAGE_SEARCH_API_URL = getServiceApiUrl('image-search');
 export const TRANSLATION_API_URL = getServiceApiUrl('translation');
 export const F5_API_URL = getServiceApiUrl('f5');
 export const VIENEU_API_URL = getServiceApiUrl('vieneu');
 export const WHISPER_API_URL = getServiceApiUrl('whisper');
-export const BGREMOVE_API_URL = getServiceApiUrl('bgremove');
+export const BG_REMOVE_OVERLAY_API_URL = getServiceApiUrl('bg-remove-overlay');
+export const IMAGE_FINDER_API_URL = IMAGE_SEARCH_API_URL;
+export const BGREMOVE_API_URL = BG_REMOVE_OVERLAY_API_URL;
 
 export const API_URL = getApiUrl();
 

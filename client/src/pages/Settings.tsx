@@ -86,14 +86,10 @@ type TranslationModelStatus = {
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
 const MANAGED_SERVICE_LABELS: Record<string, string> = {
   app: "App API",
-  imagefinder: "Image Finder API",
-  translation: "Translation API",
   f5: "F5 Voice Clone API",
   vieneu: "VieNeu TTS API",
-  whisper: "Whisper STT API",
-  bgremove: "Background Removal API",
 };
-const MANAGED_SERVICE_IDS = ["app", "imagefinder", "translation", "f5", "vieneu", "whisper", "bgremove"] as const;
+const MANAGED_SERVICE_IDS = ["app", "f5", "vieneu"] as const;
 
 function isManagedServiceId(value: string): value is (typeof MANAGED_SERVICE_IDS)[number] {
   return MANAGED_SERVICE_IDS.includes(value as (typeof MANAGED_SERVICE_IDS)[number]);

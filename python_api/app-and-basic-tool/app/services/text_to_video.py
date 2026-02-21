@@ -22,7 +22,7 @@ from python_api.common.progress import ProgressStore
 
 
 F5_API_URL = "http://127.0.0.1:6902"
-WHISPER_API_URL = "http://127.0.0.1:6904"
+WHISPER_API_URL = "http://127.0.0.1:6901/whisper"
 RETENTION_SECONDS = 60 * 60
 REQUEST_TIMEOUT = 60
 SSE_TIMEOUT = 60 * 60
