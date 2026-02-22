@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Loader2, Download, FileText, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
-import { WHISPER_API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { useManagedServices } from "@/hooks/useManagedServices";
 
 const MODELS = ["tiny", "base", "small", "medium", "large"] as const;
@@ -106,8 +106,8 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const fetchStatus = async () => {
     try {
       const [envRes, statusRes] = await Promise.all([
-        fetch(`${WHISPER_API_URL}/api/v1/env/status`),
-        fetch(`${WHISPER_API_URL}/api/v1/status`),
+        fetch(`${APP_API_URL}/api/v1/whisper/env/status`),
+        fetch(`${APP_API_URL}/api/v1/whisper/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("status");
       const envData = (await envRes.json()) as EnvStatus;
@@ -155,14 +155,14 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     formData.append("word_timestamps", String(wordTimestamps));
 
     try {
-      const res = await fetch(`${WHISPER_API_URL}/api/v1/transcribe`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/whisper/transcribe`, {
         method: "POST",
         body: formData,
       });
       const data = (await res.json()) as { task_id: string };
       const taskId = data.task_id;
 
-      const es = new EventSource(`${WHISPER_API_URL}/api/v1/transcribe/stream/${taskId}`);
+      const es = new EventSource(`${APP_API_URL}/api/v1/whisper/transcribe/stream/${taskId}`);
       es.onmessage = (event) => {
         const payload = JSON.parse(event.data) as ProgressData;
         setProgress(payload);
@@ -170,7 +170,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
         if (payload.status === "complete") {
           es.close();
           setIsTranscribing(false);
-          fetch(`${WHISPER_API_URL}/api/v1/transcribe/result/${taskId}`)
+          fetch(`${APP_API_URL}/api/v1/whisper/transcribe/result/${taskId}`)
             .then((r) => r.json())
             .then((r: ResultData) => setResult(r))
             .catch(() => {
@@ -270,7 +270,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {WHISPER_API_URL}
+                    {`${APP_API_URL}/api/v1/whisper`}
                   </TableCell>
                 </TableRow>
                 <TableRow>

@@ -6,7 +6,7 @@ from ..services.image_pipeline.search import ALL_SOURCE_IDS
 from ..services.image_finder import ImageFinderError, find_images
 
 
-router = APIRouter(prefix="/api/v1/image-finder", tags=["image-finder"])
+router = APIRouter(prefix="/image-finder", tags=["image-finder"])
 
 
 def _parse_int(value: object, field_name: str, default: int) -> int:

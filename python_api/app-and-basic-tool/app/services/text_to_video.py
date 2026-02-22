@@ -22,7 +22,7 @@ from python_api.common.progress import ProgressStore
 
 
 F5_API_URL = "http://127.0.0.1:6902"
-WHISPER_API_URL = "http://127.0.0.1:6901/whisper"
+WHISPER_API_URL = "http://127.0.0.1:6901"
 RETENTION_SECONDS = 60 * 60
 REQUEST_TIMEOUT = 60
 SSE_TIMEOUT = 60 * 60
@@ -412,7 +412,7 @@ def start_audio_pipeline(job_store: JobStore, text: str, voice_id: str) -> str:
 
             audio_progress_store.set_progress(task_id, "processing", 60, "Submitting audio to Whisper STT...")
             whisper_create = _http_post_multipart(
-                _to_service_url(WHISPER_API_URL, "/api/v1/transcribe"),
+                _to_service_url(WHISPER_API_URL, "/api/v1/whisper/transcribe"),
                 {
                     "model": "base",
                     "language": "vi",
@@ -437,14 +437,16 @@ def start_audio_pipeline(job_store: JobStore, text: str, voice_id: str) -> str:
                 _copy_latest_logs(task_id, audio_progress_store, payload.get("logs"), "[Whisper]")
 
             whisper_final = _consume_sse(
-                _to_service_url(WHISPER_API_URL, f"/api/v1/transcribe/stream/{whisper_task_id}"),
+                _to_service_url(WHISPER_API_URL, f"/api/v1/whisper/transcribe/stream/{whisper_task_id}"),
                 on_whisper_payload,
             )
             if whisper_final.get("status") == "error":
                 message = whisper_final.get("message")
                 raise RuntimeError(str(message) if message else "Whisper transcription failed")
 
-            whisper_result = _http_get_json(_to_service_url(WHISPER_API_URL, f"/api/v1/transcribe/result/{whisper_task_id}"))
+            whisper_result = _http_get_json(
+                _to_service_url(WHISPER_API_URL, f"/api/v1/whisper/transcribe/result/{whisper_task_id}")
+            )
             transcript_path = session_audio_dir / "narration.json"
             transcript_path.write_text(json.dumps(whisper_result, ensure_ascii=False, indent=2), encoding="utf-8")
 

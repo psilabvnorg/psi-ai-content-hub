@@ -18,7 +18,7 @@ from ..services.translation import (
 )
 
 
-router = APIRouter(prefix="/api/v1/translation", tags=["translation"])
+router = APIRouter(prefix="", tags=["translation"])
 
 
 def _validate_segments(raw_segments: Any) -> list[dict] | None:

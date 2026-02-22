@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, HTTPException
 from ..services.llm import DEFAULT_MODEL, generate, get_status
 
 
-router = APIRouter(prefix="/api/v1/llm", tags=["llm"])
+router = APIRouter(prefix="/llm", tags=["llm"])
 
 
 @router.get("/status")

@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from ..services.translation import get_model_status
 
 
-router = APIRouter(prefix="/api/v1", tags=["system"])
+router = APIRouter(prefix="", tags=["system"])
 
 
 @router.get("/health")

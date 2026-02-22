@@ -22,7 +22,7 @@ from pathlib import Path
 from fastapi import APIRouter, Body, HTTPException
 
 
-router = APIRouter(prefix="/api/v1/config", tags=["config"])
+router = APIRouter(prefix="/config", tags=["config"])
 
 _ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 

@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Copy, Languages, Loader2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
-import { TRANSLATION_API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
@@ -98,7 +98,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${TRANSLATION_API_URL}/api/v1/env/status`);
+      const envRes = await fetch(`${APP_API_URL}/api/v1/translation/env/status`);
       if (!envRes.ok) throw new Error("env");
       const envData = (await envRes.json()) as EnvStatusResponse;
       setServerUnreachable(false);
@@ -115,7 +115,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
     }
 
     try {
-      const modelRes = await fetch(`${TRANSLATION_API_URL}/api/v1/translation/status`);
+      const modelRes = await fetch(`${APP_API_URL}/api/v1/translation/status`);
       if (!modelRes.ok) {
         setModelStatus(null);
         return;
@@ -158,7 +158,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
     if (serverUnreachable || isUnloading || modelStatus?.loaded !== true) return;
     setIsUnloading(true);
     try {
-      await fetch(`${TRANSLATION_API_URL}/api/v1/translation/unload`, { method: "POST" });
+      await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
       await fetchStatus();
     } finally {
       setIsUnloading(false);
@@ -177,7 +177,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
       id: "server",
       label: t("tool.translator.server_status"),
       isReady: !serverUnreachable,
-      path: TRANSLATION_API_URL,
+      path: `${APP_API_URL}/api/v1/translation`,
       showActionButton: Boolean(translationService),
       actionDisabled: translationBusy,
       actionLoading: translationBusy,
@@ -213,7 +213,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
 
   const finishWithResult = async (jobId: string) => {
     try {
-      const resultRes = await fetch(`${TRANSLATION_API_URL}/api/v1/translation/translate/result/${jobId}`);
+      const resultRes = await fetch(`${APP_API_URL}/api/v1/translation/translate/result/${jobId}`);
       if (!resultRes.ok) {
         throw new Error(t("tool.translator.failed_result"));
       }
@@ -255,7 +255,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
     setProgress({ status: "starting", percent: 0, message: t("tool.translator.starting") });
 
     try {
-      const response = await fetch(`${TRANSLATION_API_URL}/api/v1/translation/translate`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/translation/translate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -277,7 +277,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
       }
 
       const eventSource = new EventSource(
-        `${TRANSLATION_API_URL}/api/v1/translation/translate/stream/${createPayload.job_id}`
+        `${APP_API_URL}/api/v1/translation/translate/stream/${createPayload.job_id}`
       );
       streamRef.current = eventSource;
 

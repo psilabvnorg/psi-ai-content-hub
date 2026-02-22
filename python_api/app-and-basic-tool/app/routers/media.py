@@ -12,13 +12,13 @@ from pydantic import BaseModel
 from python_api.common.paths import TEMP_DIR
 from ..deps import get_job_store
 from ..services.video import get_download_status, progress_store as video_progress, start_download
-from ..services.tools_manager import _ffmpeg_bin_path
+from ..services.tools_manager import aget_ffmpeg_bin_path_data
 from python_api.common.jobs import JobStore
 
 
 def _get_ffmpeg_cmd() -> str:
     """Return full path to ffmpeg, falling back to bare name."""
-    ffmpeg_bin = _ffmpeg_bin_path()
+    ffmpeg_bin = aget_ffmpeg_bin_path_data()
     return str(ffmpeg_bin) if ffmpeg_bin else "ffmpeg"
 
 

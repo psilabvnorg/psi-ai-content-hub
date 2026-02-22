@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Image as ImageIcon, Video as VideoIcon, Upload, Download, Loader2, Music } from "lucide-react";
-import { BGREMOVE_API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { downloadFile } from "@/lib/download";
 import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/common/tool-page-ui";
 import type { ProgressData, EnvStatus, StatusRowConfig } from "@/components/common/tool-page-ui";
@@ -30,6 +30,7 @@ const iconContainer = (icon: React.ReactNode) => (
 );
 
 export default function MergeOverlay() {
+  const abg_remove_overlay_base_url = `${APP_API_URL}/api/v1/bg-remove-overlay`;
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"image" | "video">("image");
 
@@ -64,7 +65,7 @@ export default function MergeOverlay() {
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${BGREMOVE_API_URL}/api/v1/env/status`);
+      const envRes = await fetch(`${abg_remove_overlay_base_url}/env/status`);
       if (!envRes.ok) throw new Error("status");
       const envData = (await envRes.json()) as EnvStatus;
       setEnvStatus(envData);
@@ -100,10 +101,10 @@ export default function MergeOverlay() {
     setLogs([]);
     setProgress({ status: "starting", percent: 0, message: "Starting installation..." });
     try {
-      const res = await fetch(`${BGREMOVE_API_URL}/api/v1/env/install`, { method: "POST" });
+      const res = await fetch(`${abg_remove_overlay_base_url}/env/install`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to start install");
       const { task_id } = (await res.json()) as { task_id: string };
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/env/install/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/env/install/stream/${task_id}`);
       source.onmessage = (event) => {
         const data = JSON.parse(event.data as string) as { status: string; percent: number; logs?: string[] };
         setProgress({ status: data.status as ProgressData["status"], percent: data.percent, message: "Installing dependencies..." });
@@ -136,7 +137,7 @@ export default function MergeOverlay() {
         id: "server",
         label: t("tool.bg_remove.server_status"),
         isReady: !serverUnreachable,
-        path: BGREMOVE_API_URL,
+        path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
         showActionButton: Boolean(serviceStatus),
         actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
         actionDisabled: serviceBusy,
@@ -167,7 +168,7 @@ export default function MergeOverlay() {
   };
 
   const getAbsoluteUrl = (path: string) =>
-    path.startsWith("http") ? path : `${BGREMOVE_API_URL}${path}`;
+    path.startsWith("http") ? path : `${APP_API_URL}${path}`;
 
   const handleImageMerge = async () => {
     if (!fgImageFile || !bgImageFile) return;
@@ -179,20 +180,20 @@ export default function MergeOverlay() {
       const body = new FormData();
       body.append("fg_file", fgImageFile);
       body.append("bg_file", bgImageFile);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/remove/overlay/upload`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/remove/overlay/upload`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error((error as { detail?: string }).detail || "Merge failed");
       }
       const { task_id } = (await response.json()) as { task_id: string };
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/remove/overlay/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/remove/overlay/stream/${task_id}`);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as ProgressData;
         setProgress(payload);
         if (payload.logs) setLogs(payload.logs);
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/remove/overlay/result/${task_id}`)
+          fetch(`${abg_remove_overlay_base_url}/remove/overlay/result/${task_id}`)
             .then((res) => res.json())
             .then((result: OverlayResult) => { setImageResult(result); setIsProcessing(false); })
             .catch(() => { setProgress({ status: "error", percent: 0, message: "Failed to fetch result." }); setIsProcessing(false); });
@@ -218,20 +219,20 @@ export default function MergeOverlay() {
       if (maskVideoFile) body.append("mask_file", maskVideoFile);
       body.append("bg_file", bgVideoFile);
       if (audioFile) body.append("audio_file", audioFile);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/video/overlay/upload`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/video/overlay/upload`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error((error as { detail?: string }).detail || "Video merge failed");
       }
       const { task_id } = (await response.json()) as { task_id: string };
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/video/overlay/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/video/overlay/stream/${task_id}`);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as ProgressData;
         setProgress(payload);
         if (payload.logs) setLogs(payload.logs);
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/video/overlay/result/${task_id}`)
+          fetch(`${abg_remove_overlay_base_url}/video/overlay/result/${task_id}`)
             .then((res) => res.json())
             .then((result: VideoOverlayResult) => { setVideoResult(result); setIsProcessing(false); })
             .catch(() => { setProgress({ status: "error", percent: 0, message: "Failed to fetch result." }); setIsProcessing(false); });
@@ -321,7 +322,7 @@ export default function MergeOverlay() {
                 <Button
                   variant="download"
                   className="w-full"
-                  onClick={() => downloadFile(imageResult.download_url, imageResult.filename, BGREMOVE_API_URL)}
+                  onClick={() => downloadFile(imageResult.download_url, imageResult.filename, APP_API_URL)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Merged Image
@@ -405,7 +406,7 @@ export default function MergeOverlay() {
                 <Button
                   variant="download"
                   className="w-full"
-                  onClick={() => downloadFile(videoResult.download_url, videoResult.filename, BGREMOVE_API_URL)}
+                  onClick={() => downloadFile(videoResult.download_url, videoResult.filename, APP_API_URL)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Merged Video

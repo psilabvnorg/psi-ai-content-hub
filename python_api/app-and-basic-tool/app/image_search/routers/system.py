@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter
 
 
-router = APIRouter(prefix="/api/v1", tags=["system"])
+router = APIRouter(prefix="", tags=["system"])
 
 IMAGE_FINDER_TEMP_ROOT = Path(tempfile.gettempdir()) / "psi_ai_content_hub" / "image_finder"
 

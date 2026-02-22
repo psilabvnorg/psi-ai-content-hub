@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check } from "lucide-react";
-import { APP_API_URL, BGREMOVE_API_URL, F5_API_URL, IMAGE_FINDER_API_URL, TRANSLATION_API_URL, VIENEU_API_URL, WHISPER_API_URL } from "@/lib/api";
+import { APP_API_URL, F5_API_URL, VIENEU_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
 import { useManagedServices } from "@/hooks/useManagedServices";
@@ -82,6 +82,26 @@ type TranslationModelStatus = {
   device?: string | null;
   supported_languages?: Record<string, string>;
 };
+
+type aprofile_status_envelope_data = {
+  profile_status?: {
+    installed?: boolean;
+    missing_modules?: string[];
+    installed_modules?: string[];
+  };
+};
+
+function aextract_env_status_data(payload: EnvStatus | aprofile_status_envelope_data): EnvStatus {
+  if ("profile_status" in payload) {
+    const profileStatus = payload.profile_status ?? {};
+    return {
+      installed: profileStatus.installed === true,
+      missing: profileStatus.missing_modules ?? [],
+      installed_modules: profileStatus.installed_modules ?? [],
+    };
+  }
+  return payload as EnvStatus;
+}
 
 const WHISPER_MODELS = ["tiny", "base", "small", "medium", "large", "large-v3"] as const;
 const MANAGED_SERVICE_LABELS: Record<string, string> = {
@@ -332,7 +352,9 @@ export default function Settings() {
         fetch(`${F5_API_URL}/api/v1/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("F5 status failed");
-      const envData = (await envRes.json()) as EnvStatus;
+      const envData = aextract_env_status_data(
+        (await envRes.json()) as EnvStatus | aprofile_status_envelope_data
+      );
       const statusData = (await statusRes.json()) as { models?: { f5_tts?: F5ModelStatus } };
       setF5Env(envData);
       setF5Model(statusData.models?.f5_tts ?? null);
@@ -379,7 +401,9 @@ export default function Settings() {
         fetch(`${VIENEU_API_URL}/api/v1/models/configs`),
       ]);
       if (!envRes.ok || !statusRes.ok || !configRes.ok) throw new Error("VieNeu status failed");
-      const envData = (await envRes.json()) as EnvStatus;
+      const envData = aextract_env_status_data(
+        (await envRes.json()) as EnvStatus | aprofile_status_envelope_data
+      );
       const statusData = (await statusRes.json()) as { models?: { vieneu_tts?: VieNeuModelStatus } };
       const configData = (await configRes.json()) as { backbones?: Record<string, unknown>; codecs?: Record<string, unknown> };
       setVieneuEnv(envData);
@@ -454,8 +478,8 @@ export default function Settings() {
   const fetchWhisperStatus = async () => {
     try {
       const [envRes, statusRes] = await Promise.all([
-        fetch(`${WHISPER_API_URL}/api/v1/env/status`),
-        fetch(`${WHISPER_API_URL}/api/v1/status`),
+        fetch(`${APP_API_URL}/api/v1/env/profiles/whisper/status`),
+        fetch(`${APP_API_URL}/api/v1/whisper/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("Whisper status failed");
       const envData = (await envRes.json()) as EnvStatus;
@@ -471,7 +495,7 @@ export default function Settings() {
   const handleWhisperEnvInstall = async () => {
     setWhisperProgress({ status: "starting", percent: 0, message: t("settings.whisper.env_installing") });
     try {
-      const res = await fetch(`${WHISPER_API_URL}/api/v1/env/install`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/whisper/install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -488,7 +512,7 @@ export default function Settings() {
   const handleWhisperDownloadModel = async () => {
     setWhisperProgress({ status: "starting", percent: 0, message: t("settings.whisper.model_downloading") });
     try {
-      const res = await fetch(`${WHISPER_API_URL}/api/v1/models/download`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/whisper/models/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: whisperModel }),
@@ -504,8 +528,8 @@ export default function Settings() {
   const fetchBgRemoveStatus = async () => {
     try {
       const [envRes, statusRes] = await Promise.all([
-        fetch(`${BGREMOVE_API_URL}/api/v1/env/status`),
-        fetch(`${BGREMOVE_API_URL}/api/v1/status`),
+        fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/status`),
+        fetch(`${APP_API_URL}/api/v1/bg-remove-overlay/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("Background removal status failed");
       const envData = (await envRes.json()) as EnvStatus;
@@ -520,9 +544,11 @@ export default function Settings() {
 
   const fetchImageFinderStatus = async () => {
     try {
-      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/status`);
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/image-search/status`);
       if (!res.ok) throw new Error("ImageFinder status failed");
-      setImageFinderEnv((await res.json()) as EnvStatus);
+      setImageFinderEnv(
+        aextract_env_status_data((await res.json()) as EnvStatus | aprofile_status_envelope_data)
+      );
     } catch {
       setImageFinderEnv(null);
     }
@@ -531,7 +557,7 @@ export default function Settings() {
   const handleImageFinderEnvInstall = async () => {
     setImageFinderProgress({ status: "starting", percent: 0, message: "Installing ImageFinder environment..." });
     try {
-      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/install`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/image-search/install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -549,11 +575,13 @@ export default function Settings() {
   const fetchTranslationStatus = async () => {
     try {
       const [envRes, modelRes] = await Promise.all([
-        fetch(`${TRANSLATION_API_URL}/api/v1/env/status`),
-        fetch(`${TRANSLATION_API_URL}/api/v1/translation/status`),
+        fetch(`${APP_API_URL}/api/v1/env/profiles/translation/status`),
+        fetch(`${APP_API_URL}/api/v1/translation/status`),
       ]);
       if (!envRes.ok || !modelRes.ok) throw new Error("Translation status failed");
-      setTranslationEnv((await envRes.json()) as EnvStatus);
+      setTranslationEnv(
+        aextract_env_status_data((await envRes.json()) as EnvStatus | aprofile_status_envelope_data)
+      );
       setTranslationModelStatus((await modelRes.json()) as TranslationModelStatus);
     } catch {
       setTranslationEnv(null);
@@ -564,7 +592,7 @@ export default function Settings() {
   const handleTranslationEnvInstall = async () => {
     setTranslationProgress({ status: "starting", percent: 0, message: "Installing translation environment..." });
     try {
-      const res = await fetch(`${TRANSLATION_API_URL}/api/v1/env/install`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/translation/install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -582,7 +610,7 @@ export default function Settings() {
   const handleTranslationDownloadModel = async () => {
     setTranslationProgress({ status: "starting", percent: 0, message: "Downloading Tencent HY-MT model..." });
     try {
-      const res = await fetch(`${TRANSLATION_API_URL}/api/v1/translation/download`, { method: "POST" });
+      const res = await fetch(`${APP_API_URL}/api/v1/translation/download`, { method: "POST" });
       if (!res.ok) throw new Error("Download request failed");
       await consumeSseStream(res, (data) => setTranslationProgress(data));
     } catch (err) {
@@ -595,7 +623,7 @@ export default function Settings() {
 
   const handleTranslationUnloadModel = async () => {
     try {
-      await fetch(`${TRANSLATION_API_URL}/api/v1/translation/unload`, { method: "POST" });
+      await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
     } finally {
       void fetchTranslationStatus();
     }
@@ -604,7 +632,7 @@ export default function Settings() {
   const handleBgRemoveEnvInstall = async () => {
     setBgRemoveProgress({ status: "starting", percent: 0, message: t("settings.bgremove.env_installing") });
     try {
-      const res = await fetch(`${BGREMOVE_API_URL}/api/v1/env/install`, {
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),

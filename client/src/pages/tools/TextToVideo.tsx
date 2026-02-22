@@ -14,7 +14,7 @@ import { useManagedServices } from "@/hooks/useManagedServices";
 
 const MAX_CHARS = 5000;
 const VOICE_CLONE_URL = "http://127.0.0.1:6902";
-const STT_URL = "http://127.0.0.1:6901/whisper";
+const astt_service_base_url = `${APP_API_URL}/api/v1/whisper`;
 
 type Voice = { id: string; name: string; description?: string };
 type TranscriptWord = { word?: string; start?: number; end?: number };
@@ -240,7 +240,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       setVcServerReachable(false);
     }
     try {
-      await fetch(`${STT_URL}/api/v1/status`);
+      await fetch(`${astt_service_base_url}/status`);
       setSttServerReachable(true);
     } catch {
       setSttServerReachable(false);
@@ -585,7 +585,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       id: "stt",
       label: t("tool.t2v.stt_server"),
       isReady: sttServerReachable,
-      path: STT_URL,
+      path: astt_service_base_url,
       showActionButton: Boolean(sttService),
       actionButtonLabel: sttRunning || sttServerReachable ? t("tool.common.stop_server") : t("tool.common.start_server"),
       actionDisabled: sttBusy || sttService?.status === "not_configured",

@@ -14,7 +14,7 @@ from python_api.common.jobs import JobStore
 from fastapi import HTTPException
 
 
-router = APIRouter(prefix="/api/v1", tags=["stt"])
+router = APIRouter(prefix="", tags=["stt"])
 
 
 @router.post("/models/download")

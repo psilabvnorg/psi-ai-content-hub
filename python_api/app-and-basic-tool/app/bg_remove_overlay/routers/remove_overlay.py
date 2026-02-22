@@ -31,7 +31,7 @@ from ..services.remove_overlay import (
 )
 
 
-router = APIRouter(prefix="/api/v1", tags=["bg-remove-overlay"])
+router = APIRouter(prefix="", tags=["bg-remove-overlay"])
 
 
 @router.post("/remove/upload")

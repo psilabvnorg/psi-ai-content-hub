@@ -10,7 +10,7 @@ from python_api.common.jobs import JobStore
 from ..deps import get_job_store
 
 
-router = APIRouter(prefix="/api/v1", tags=["files"])
+router = APIRouter(prefix="", tags=["files"])
 
 
 def _guess_media_type(path: Path) -> str:

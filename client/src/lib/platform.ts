@@ -65,17 +65,17 @@ export function getServiceApiUrl(service: ApiService): string {
     case 'app':
       return 'http://127.0.0.1:6901';
     case 'image-search':
-      return 'http://127.0.0.1:6901/image-search';
+      return 'http://127.0.0.1:6901';
     case 'translation':
-      return 'http://127.0.0.1:6901/translation';
+      return 'http://127.0.0.1:6901';
     case 'f5':
       return 'http://127.0.0.1:6902';
     case 'vieneu':
       return 'http://127.0.0.1:6903';
     case 'whisper':
-      return 'http://127.0.0.1:6901/whisper';
+      return 'http://127.0.0.1:6901';
     case 'bg-remove-overlay':
-      return 'http://127.0.0.1:6901/bg-remove-overlay';
+      return 'http://127.0.0.1:6901';
     default:
       return 'http://127.0.0.1:6901';
   }

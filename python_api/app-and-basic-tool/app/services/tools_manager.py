@@ -50,6 +50,16 @@ def _yt_dlp_path() -> Optional[Path]:
     return None
 
 
+def aget_ffmpeg_bin_path_data() -> Optional[Path]:
+    """Return resolved FFmpeg binary path if available."""
+    return _ffmpeg_bin_path()
+
+
+def aget_yt_dlp_bin_path_data() -> Optional[Path]:
+    """Return resolved yt-dlp binary path if available."""
+    return _yt_dlp_path()
+
+
 def _torch_status() -> Dict[str, Optional[str] | bool]:
     try:
         import torch

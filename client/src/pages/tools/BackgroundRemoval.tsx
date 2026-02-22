@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Image as ImageIcon, Loader2, Download, Video as VideoIcon, Upload } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { BGREMOVE_API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { downloadFile } from "@/lib/download";
 import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
@@ -109,6 +109,7 @@ function BeforeAfterSlider({ beforeUrl, afterUrl }: { beforeUrl: string; afterUr
 }
 
 export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?: () => void }) {
+  const abg_remove_overlay_base_url = `${APP_API_URL}/api/v1/bg-remove-overlay`;
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"upload" | "video">("upload");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -152,8 +153,8 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const fetchStatus = async () => {
     try {
       const [envRes, statusRes] = await Promise.all([
-        fetch(`${BGREMOVE_API_URL}/api/v1/env/status`),
-        fetch(`${BGREMOVE_API_URL}/api/v1/status`),
+        fetch(`${abg_remove_overlay_base_url}/env/status`),
+        fetch(`${abg_remove_overlay_base_url}/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) {
         throw new Error("status");
@@ -197,11 +198,11 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     setLogs([]);
     setProgress({ status: "starting", percent: 0, message: "Starting installation..." });
     try {
-      const res = await fetch(`${BGREMOVE_API_URL}/api/v1/env/install`, { method: "POST" });
+      const res = await fetch(`${abg_remove_overlay_base_url}/env/install`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to start install");
       const { task_id } = (await res.json()) as { task_id: string };
 
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/env/install/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/env/install/stream/${task_id}`);
       source.onmessage = (event) => {
         const data = JSON.parse(event.data as string) as { status: string; percent: number; logs?: string[] };
         setProgress({ status: data.status as ProgressData["status"], percent: data.percent, message: "Installing dependencies..." });
@@ -241,14 +242,14 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     setLogs([]);
     setProgress({ status: "starting", percent: 0, message: startMsg });
     try {
-      const res = await fetch(`${BGREMOVE_API_URL}${endpoint}`, { method: "POST" });
+      const res = await fetch(`${abg_remove_overlay_base_url}${endpoint}`, { method: "POST" });
       const { task_id } = (await res.json()) as { task_id: string | null };
       if (!task_id) {
         setSending(false);
         void fetchStatus();
         return;
       }
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/remove/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/remove/stream/${task_id}`);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as ProgressData & { logs?: string[] };
         setProgress({ status: payload.status as ProgressData["status"], percent: payload.percent, message: payload.message });
@@ -279,7 +280,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       return;
     }
     await _startModelTask(
-      "/api/v1/remove/download",
+      "/remove/download",
       setIsDownloadingModel,
       "Downloading model files...",
       "Failed to start model download.",
@@ -289,7 +290,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
 
   const handleLoadModel = async () => {
     await _startModelTask(
-      "/api/v1/remove/load",
+      "/remove/load",
       setIsLoadingModel,
       "Loading model into memory...",
       "Failed to start model load.",
@@ -327,13 +328,13 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   }, []);
 
   const handleUnloadModel = async () => {
-    await fetch(`${BGREMOVE_API_URL}/api/v1/remove/unload`, { method: "POST" });
+    await fetch(`${abg_remove_overlay_base_url}/remove/unload`, { method: "POST" });
     await fetchStatus();
   };
 
   const handleSetDevice = async (device: "cuda" | "cpu") => {
     if (device === modelStatus?.device) return;
-    await fetch(`${BGREMOVE_API_URL}/api/v1/remove/set-device`, {
+    await fetch(`${abg_remove_overlay_base_url}/remove/set-device`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ device }),
@@ -350,7 +351,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     setLogs([]);
     try {
       const taskId = await startTask();
-      const streamUrl = `${BGREMOVE_API_URL}/api/v1/remove/stream/${taskId}`;
+      const streamUrl = `${abg_remove_overlay_base_url}/remove/stream/${taskId}`;
       const source = new EventSource(streamUrl);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data) as ProgressData;
@@ -360,7 +361,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         }
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/remove/result/${taskId}`)
+          fetch(`${abg_remove_overlay_base_url}/remove/result/${taskId}`)
             .then((res) => res.json())
             .then((result: BgResult) => {
               applyResult(result);
@@ -393,7 +394,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     await runTask(async () => {
       const body = new FormData();
       body.append("file", uploadFile);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/remove/upload`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/remove/upload`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.detail || "Upload failed");
@@ -413,7 +414,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     setLogs([]);
     try {
       const taskId = await startTask();
-      const streamUrl = `${BGREMOVE_API_URL}/api/v1/video/stream/${taskId}`;
+      const streamUrl = `${abg_remove_overlay_base_url}/video/stream/${taskId}`;
       const source = new EventSource(streamUrl);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data) as ProgressData;
@@ -421,7 +422,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         if (payload.logs) setLogs(payload.logs);
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/video/result/${taskId}`)
+          fetch(`${abg_remove_overlay_base_url}/video/result/${taskId}`)
             .then((res) => res.json())
             .then((result: BgVideoResult) => {
               applyResult(result);
@@ -455,7 +456,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     await runVideoTask(async () => {
       const body = new FormData();
       body.append("file", videoFile);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/video/upload`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/video/upload`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error((error as { detail?: string }).detail || "Video upload failed");
@@ -476,20 +477,20 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       const body = new FormData();
       body.append("bg_file", overlayBgFile);
       body.append("processed_file_id", uploadResult.processed_file_id);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/remove/overlay`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/remove/overlay`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error((error as { detail?: string }).detail || "Overlay failed");
       }
       const { task_id } = (await response.json()) as { task_id: string };
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/remove/overlay/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/remove/overlay/stream/${task_id}`);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as ProgressData;
         setProgress(payload);
         if (payload.logs) setLogs(payload.logs);
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/remove/overlay/result/${task_id}`)
+          fetch(`${abg_remove_overlay_base_url}/remove/overlay/result/${task_id}`)
             .then((res) => res.json())
             .then((result: OverlayResult) => { setOverlayResult(result); setIsProcessing(false); setIsOverlaying(false); })
             .catch(() => { setProgress({ status: "error", percent: 0, message: "Failed to fetch overlay result." }); setIsProcessing(false); setIsOverlaying(false); });
@@ -516,20 +517,20 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       body.append("bg_file", videoOverlayBgFile);
       body.append("subject_file_id", videoResult.subject_file_id);
       body.append("mask_file_id", videoResult.mask_file_id);
-      const response = await fetch(`${BGREMOVE_API_URL}/api/v1/video/overlay`, { method: "POST", body });
+      const response = await fetch(`${abg_remove_overlay_base_url}/video/overlay`, { method: "POST", body });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error((error as { detail?: string }).detail || "Video overlay failed");
       }
       const { task_id } = (await response.json()) as { task_id: string };
-      const source = new EventSource(`${BGREMOVE_API_URL}/api/v1/video/overlay/stream/${task_id}`);
+      const source = new EventSource(`${abg_remove_overlay_base_url}/video/overlay/stream/${task_id}`);
       source.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as ProgressData;
         setProgress(payload);
         if (payload.logs) setLogs(payload.logs);
         if (payload.status === "complete") {
           source.close();
-          fetch(`${BGREMOVE_API_URL}/api/v1/video/overlay/result/${task_id}`)
+          fetch(`${abg_remove_overlay_base_url}/video/overlay/result/${task_id}`)
             .then((res) => res.json())
             .then((result: VideoOverlayResult) => { setVideoOverlayResult(result); setIsProcessing(false); setIsVideoOverlaying(false); })
             .catch(() => { setProgress({ status: "error", percent: 0, message: "Failed to fetch video overlay result." }); setIsProcessing(false); setIsVideoOverlaying(false); });
@@ -550,7 +551,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         id: "server",
         label: t("tool.bg_remove.server_status"),
         isReady: !serverUnreachable,
-        path: BGREMOVE_API_URL,
+        path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
         showActionButton: Boolean(serviceStatus),
         actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
         actionDisabled: serviceBusy,
@@ -598,9 +599,9 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     [t, serverUnreachable, serviceStatus, serviceRunning, serviceBusy, envReady, envStatus, modelLoaded, modelLoading, modelDownloaded, modelDownloading, modelStatus, isInstallingEnv, isDownloadingModel, isLoadingModel, handleInstallLibs, handleDownloadModel, handleLoadModel, handleUnloadModel],
   );
 
-  const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${BGREMOVE_API_URL}${path}`);
+  const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${APP_API_URL}${path}`);
   const handleDownload = (downloadUrl: string, filename: string) => {
-    downloadFile(downloadUrl, filename, BGREMOVE_API_URL);
+    downloadFile(downloadUrl, filename, APP_API_URL);
   };
 
   return (
@@ -692,7 +693,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
                 <Button
                   variant="download"
                   className="w-full"
-                  onClick={() => downloadFile(uploadResult.download_url, uploadResult.filename, BGREMOVE_API_URL)}
+                  onClick={() => downloadFile(uploadResult.download_url, uploadResult.filename, APP_API_URL)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {t("tool.bg_remove.download_png")}
@@ -716,7 +717,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
                   {overlayResult ? (
                     <div className="space-y-2">
                       <img src={getAbsoluteImageUrl(overlayResult.merged_url)} alt="Merged result" className="w-full rounded-lg border border-border" />
-                      <Button variant="download" className="w-full" onClick={() => downloadFile(overlayResult.download_url, overlayResult.filename, BGREMOVE_API_URL)}>
+                      <Button variant="download" className="w-full" onClick={() => downloadFile(overlayResult.download_url, overlayResult.filename, APP_API_URL)}>
                         <Download className="w-4 h-4 mr-2" />
                         Download Merged Image
                       </Button>
@@ -752,7 +753,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
                 <Button
                   variant="download"
                   className="w-full"
-                  onClick={() => downloadFile(videoResult.subject_download_url, videoResult.subject_filename, BGREMOVE_API_URL)}
+                  onClick={() => downloadFile(videoResult.subject_download_url, videoResult.subject_filename, APP_API_URL)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Subject Video

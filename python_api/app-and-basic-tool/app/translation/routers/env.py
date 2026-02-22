@@ -10,7 +10,7 @@ from typing import Dict, List
 from fastapi import APIRouter, Body
 
 
-router = APIRouter(prefix="/api/v1/env", tags=["env"])
+router = APIRouter(prefix="/env", tags=["env"])
 
 VENV_DIR = Path(__file__).resolve().parents[3] / "venv"
 

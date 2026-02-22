@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Check, Download, Eye, EyeOff, Image as ImageIcon, Key, Loader2, Search } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { IMAGE_FINDER_API_URL } from "@/lib/api";
+import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
@@ -93,6 +93,7 @@ const SOURCE_LABELS: Record<(typeof ALL_SOURCE_IDS)[number], string> = {
 };
 
 export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () => void }) {
+  const aimage_search_base_url = `${APP_API_URL}/api/v1/image-search`;
   const { t } = useI18n();
   const { servicesById, start, stop, isBusy } = useManagedServices();
 
@@ -169,7 +170,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
 
   const fetchApiKeyStatus = async () => {
     try {
-      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys`);
+      const res = await fetch(`${aimage_search_base_url}/config/api-keys`);
       if (!res.ok) return;
       const data = (await res.json()) as ApiKeysStatusResponse;
       setUnsplashConfigured(data.unsplash?.configured === true);
@@ -201,7 +202,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     setSaving(true);
     setSaveStatus("idle");
     try {
-      const res = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/config/api-keys/${sourceId}`, {
+      const res = await fetch(`${aimage_search_base_url}/config/api-keys/${sourceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: keyValue.trim() }),
@@ -239,7 +240,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/env/status`);
+      const envRes = await fetch(`${aimage_search_base_url}/env/status`);
       if (!envRes.ok) throw new Error("env");
       const envData = (await envRes.json()) as EnvStatusResponse;
       setServerUnreachable(false);
@@ -256,7 +257,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     }
 
     try {
-      const response = await withTimeout(`${IMAGE_FINDER_API_URL}/api/v1/llm/status`, {}, 10000);
+      const response = await withTimeout(`${aimage_search_base_url}/llm/status`, {}, 10000);
       if (!response.ok) {
         const payload = (await response.json().catch(() => ({}))) as { detail?: string };
         setLlmStatus({
@@ -326,7 +327,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
     setProgress({ status: "starting", percent: 5, message: t("tool.image_finder.searching") });
 
     try {
-      const response = await fetch(`${IMAGE_FINDER_API_URL}/api/v1/image-finder/search`, {
+      const response = await fetch(`${aimage_search_base_url}/image-finder/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -385,7 +386,7 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
       id: "server",
       label: t("tool.image_finder.server_status"),
       isReady: !serverUnreachable,
-      path: IMAGE_FINDER_API_URL,
+      path: `${APP_API_URL}/api/v1/image-search`,
       showActionButton: Boolean(imageFinderService),
       actionDisabled: imageFinderBusy,
       actionLoading: imageFinderBusy,

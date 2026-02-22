@@ -11,7 +11,7 @@ from python_api.common.logging import log
 from python_api.common.paths import TEMP_DIR
 from python_api.common.progress import ProgressStore
 from python_api.common.jobs import JobStore
-from app.services.tools_manager import _yt_dlp_path, _ffmpeg_bin_path
+from .tools_manager import aget_ffmpeg_bin_path_data, aget_yt_dlp_bin_path_data
 
 
 _PROGRESS_RE = re.compile(r"(\d+\.?\d*)%")
@@ -34,7 +34,7 @@ def start_download(
 
             # Resolve full paths to external tools
             # (when launched from Electron, venv isn't activated so bare names won't resolve)
-            yt_dlp_bin = _yt_dlp_path()
+            yt_dlp_bin = aget_yt_dlp_bin_path_data()
             if not yt_dlp_bin:
                 # Fallback: check venv Scripts dir
                 venv_scripts = Path(sys.executable).parent
@@ -72,7 +72,7 @@ def start_download(
             progress_store.set_progress(job.job_id, "processing", 90, "Checking codec...")
 
             # Resolve ffmpeg/ffprobe paths from tools_manager
-            ffmpeg_bin = _ffmpeg_bin_path()
+            ffmpeg_bin = aget_ffmpeg_bin_path_data()
             ffprobe_bin = None
             if ffmpeg_bin:
                 ffprobe_name = "ffprobe.exe" if sys.platform == "win32" else "ffprobe"

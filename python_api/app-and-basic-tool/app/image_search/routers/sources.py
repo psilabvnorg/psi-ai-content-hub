@@ -6,7 +6,7 @@ from ..services.image_pipeline.orchestrator import run_pipeline
 from ..services.image_pipeline.search import ALL_SOURCE_IDS
 
 
-router = APIRouter(prefix="/api/v1/sources", tags=["sources"])
+router = APIRouter(prefix="/sources", tags=["sources"])
 
 VALID_SOURCES = set(ALL_SOURCE_IDS)
 SOURCE_CATALOG: list[dict[str, str | bool]] = [
