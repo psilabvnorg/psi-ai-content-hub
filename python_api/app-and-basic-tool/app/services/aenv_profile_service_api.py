@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import os
 import subprocess
@@ -8,7 +9,8 @@ from pathlib import Path
 from typing import Dict
 
 
-aenv_venv_dir_path = Path(__file__).resolve().parents[3] / "venv"
+# parents: [0]=services, [1]=app, [2]=app-and-basic-tool → venv lives here
+aenv_venv_dir_path = Path(__file__).resolve().parents[2] / "venv"
 
 aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
     "app": {
@@ -132,6 +134,11 @@ def aenv_install_profile_data(profile_id: str, packages: list[str] | None = None
     aenv_ensure_venv_ready_data()
     venv_python = aenv_get_venv_python_path_data()
     subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *packages_to_install])
+
+    # Invalidate importlib caches so find_spec() picks up newly installed
+    # packages without requiring a server restart.
+    importlib.invalidate_caches()
+
     return {
         "profile_id": profile_id,
         "status": "ok",

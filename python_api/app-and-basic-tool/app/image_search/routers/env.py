@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import os
 import subprocess
@@ -80,8 +81,14 @@ def env_install(payload: dict = Body(None)) -> dict:
     if not packages:
         return {"status": "success", "installed": []}
 
-    _create_venv_if_needed()
-    venv_python = _get_venv_python()
-    subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *packages])
-    return {"status": "success", "installed": packages, "venv_path": str(VENV_DIR)}
+    # Use sys.executable — the running process IS the venv python
+    # (Electron starts the server via venv/Scripts/python.exe -m app.main).
+    # This avoids any mismatch between the running env and the install target.
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-U", *packages])
+
+    # Invalidate importlib caches so find_spec() picks up newly installed
+    # packages without requiring a server restart.
+    importlib.invalidate_caches()
+
+    return {"status": "success", "installed": packages, "python_path": sys.executable}
 

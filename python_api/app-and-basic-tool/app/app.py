@@ -16,6 +16,7 @@ from .routers import system as system_router
 from .routers import text_to_video as text_to_video_router
 from .routers import tools as tools_router
 from .routers import aenv_profile_router_api as aenv_profile_router
+from .routers import reup_youtube as reup_youtube_router
 from .bg_remove_overlay.routers import env as bg_remove_overlay_env_router
 from .bg_remove_overlay.routers import files as bg_remove_overlay_files_router
 from .bg_remove_overlay.routers import remove_overlay as bg_remove_overlay_router
@@ -71,6 +72,7 @@ def create_app() -> FastAPI:
     app.include_router(env_router.router)
     app.include_router(aenv_profile_router.router)
     app.include_router(edge_tts_router.router)
+    app.include_router(reup_youtube_router.router)
 
     # Canonical feature routes
     app.include_router(whisper_system_router.router, prefix="/api/v1/whisper")

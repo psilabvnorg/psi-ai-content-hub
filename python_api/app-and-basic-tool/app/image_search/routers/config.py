@@ -1,67 +1,46 @@
 """API-key management router.
 
-Keys are persisted in a `.env` file next to the ImageFinder package so that
-other modules (e.g. the Unsplash search adapter) can pick them up via
-``dotenv.load_dotenv()`` without any code changes.
+Keys are stored in the OS credential manager (Windows Credential Manager,
+macOS Keychain, Linux Secret Service) via the ``keyring`` library.  This
+keeps secrets encrypted at rest and scoped to the current OS user.
 
 Security considerations
 -----------------------
 * The full key is **never** returned by any GET endpoint — only a masked
   representation (first 4 + last 4 characters) is sent to the client.
-* Keys are stored in a server-side `.env` file that is read by the Python
-  process; they are **not** embedded in the frontend bundle.
-* An empty / whitespace-only value deletes the key from the file.
+* Keys are stored in the OS-level encrypted credential store; they are
+  **not** embedded in the frontend bundle or written to plaintext files.
+* An empty / whitespace-only value deletes the key.
+* Falls back to ``os.environ`` when ``keyring`` is unavailable.
 """
 
 from __future__ import annotations
 
-import os
 import re
-from pathlib import Path
 
 from fastapi import APIRouter, Body, HTTPException
+
+from ..services.credentials import (
+    delete_credential,
+    get_all_status,
+    get_credential,
+    set_credential,
+    _mask,
+)
 
 
 router = APIRouter(prefix="/config", tags=["config"])
 
-_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
 _KEY_RE = re.compile(r"^[A-Za-z0-9_\-]{10,128}$")
 
 
-def _mask(key: str) -> str:
-    """Return a masked version of a key suitable for display."""
-    if len(key) <= 8:
-        return "*" * len(key)
-    return f"{key[:4]}{'*' * (len(key) - 8)}{key[-4:]}"
-
-
-def _read_env() -> dict[str, str]:
-    """Read key=value pairs from the .env file (ignores comments / blanks)."""
-    pairs: dict[str, str] = {}
-    if not _ENV_FILE.is_file():
-        return pairs
-    for line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if "=" not in stripped:
-            continue
-        name, _, value = stripped.partition("=")
-        # Strip optional surrounding quotes
-        value = value.strip().strip("\"'")
-        pairs[name.strip()] = value
-    return pairs
-
-
-def _write_env(pairs: dict[str, str]) -> None:
-    """Atomically rewrite the .env file with the given key=value pairs."""
-    lines = [f'{name}="{value}"' for name, value in sorted(pairs.items()) if value]
-    _ENV_FILE.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+def _validate_key(raw: str) -> None:
+    """Raise 400 if *raw* doesn't match the allowed key format."""
+    if raw and not _KEY_RE.match(raw):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid key format. The key should be 10-128 alphanumeric characters.",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -72,13 +51,11 @@ def _write_env(pairs: dict[str, str]) -> None:
 @router.get("/api-keys")
 def get_api_keys() -> dict:
     """Return the configuration status of all known API keys (masked)."""
-    env = _read_env()
-    unsplash_key = env.get("UNSPLASH_ACCESS_KEY", "")
+    status = get_all_status()
     return {
-        "unsplash": {
-            "configured": bool(unsplash_key),
-            "masked": _mask(unsplash_key) if unsplash_key else "",
-        },
+        "unsplash": status.get("UNSPLASH_ACCESS_KEY", {"configured": False, "masked": ""}),
+        "pexels": status.get("PEXELS_API_KEY", {"configured": False, "masked": ""}),
+        "lexica": status.get("LEXICA_API_KEY", {"configured": False, "masked": ""}),
     }
 
 
@@ -89,24 +66,40 @@ def set_unsplash_key(payload: dict = Body(...)) -> dict:
     Send ``{"key": "<your-key>"}`` to set, or ``{"key": ""}`` to remove.
     """
     raw = str(payload.get("key") or "").strip()
+    _validate_key(raw)
+    set_credential("UNSPLASH_ACCESS_KEY", raw)
+    return {
+        "status": "ok",
+        "configured": bool(raw),
+        "masked": _mask(raw) if raw else "",
+    }
 
-    if raw and not _KEY_RE.match(raw):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid key format. The key should be 10-128 alphanumeric characters.",
-        )
 
-    env = _read_env()
-    if raw:
-        env["UNSPLASH_ACCESS_KEY"] = raw
-        # Also set in the current process so the next search picks it up
-        os.environ["UNSPLASH_ACCESS_KEY"] = raw
-    else:
-        env.pop("UNSPLASH_ACCESS_KEY", None)
-        os.environ.pop("UNSPLASH_ACCESS_KEY", None)
+@router.put("/api-keys/pexels")
+def set_pexels_key(payload: dict = Body(...)) -> dict:
+    """Save or remove the Pexels API key.
 
-    _write_env(env)
+    Send ``{"key": "<your-key>"}`` to set, or ``{"key": ""}`` to remove.
+    """
+    raw = str(payload.get("key") or "").strip()
+    _validate_key(raw)
+    set_credential("PEXELS_API_KEY", raw)
+    return {
+        "status": "ok",
+        "configured": bool(raw),
+        "masked": _mask(raw) if raw else "",
+    }
 
+
+@router.put("/api-keys/lexica")
+def set_lexica_key(payload: dict = Body(...)) -> dict:
+    """Save or remove the Lexica API key.
+
+    Send ``{"key": "<your-key>"}`` to set, or ``{"key": ""}`` to remove.
+    """
+    raw = str(payload.get("key") or "").strip()
+    _validate_key(raw)
+    set_credential("LEXICA_API_KEY", raw)
     return {
         "status": "ok",
         "configured": bool(raw),

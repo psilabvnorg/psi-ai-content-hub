@@ -13,8 +13,17 @@ SOURCE_CATALOG: list[dict[str, str | bool]] = [
     {"id": "google", "name": "Google Images", "category": "general", "requires_key": False},
     {"id": "bing", "name": "Bing Images", "category": "general", "requires_key": False},
     {"id": "unsplash", "name": "Unsplash", "category": "api_key", "requires_key": True},
+    {"id": "pexels", "name": "Pexels", "category": "stock", "requires_key": True},
+    {"id": "lexica", "name": "Lexica", "category": "ai", "requires_key": True},
     {"id": "civitai", "name": "Civitai", "category": "ai", "requires_key": False},
     {"id": "kling_ai", "name": "KlingAI", "category": "ai", "requires_key": False},
+    {
+        "id": "public_domain_archive",
+        "name": "Public Domain Archive",
+        "category": "art",
+        "requires_key": False,
+    },
+    {"id": "stocksnap", "name": "StockSnap", "category": "stock", "requires_key": False},
     {"id": "artvee", "name": "Artvee", "category": "art", "requires_key": False},
     {"id": "wga", "name": "Web Gallery of Art", "category": "art", "requires_key": False},
 ]

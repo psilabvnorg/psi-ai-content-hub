@@ -22,6 +22,7 @@ sentencepiece>=0.2.0
 selenium>=4.15.0
 ddgs
 python-dotenv
+keyring>=25.0.0
 beautifulsoup4
 lxml
 webdriver_manager

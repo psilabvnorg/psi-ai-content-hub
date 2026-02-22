@@ -57,8 +57,3 @@ __pycache__/
 # Database
 *.db
 *.sqlite
-
-# REUP-YOUTUBE
-python_api/REUP-YOUTUBE/cache/
-python_api/REUP-YOUTUBE/data/
-python_api/REUP-YOUTUBE/output/
