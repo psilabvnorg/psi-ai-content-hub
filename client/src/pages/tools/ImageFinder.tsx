@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,23 +10,6 @@ import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
-
-type EnvStatusResponse = {
-  installed?: boolean;
-  missing?: string[];
-  installed_modules?: string[];
-};
-
-type LlmStatusResponse = {
-  status?: string;
-  url?: string;
-  models?: string[];
-  detail?: string;
-  connected?: boolean;
-  engine?: string;
-  default_model?: string;
-  version?: string | null;
-};
 
 type ImageFinderImage = {
   url?: string;
@@ -95,7 +78,7 @@ const SOURCE_LABELS: Record<(typeof ALL_SOURCE_IDS)[number], string> = {
 export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const aimage_search_base_url = `${APP_API_URL}/api/v1/image-search`;
   const { t } = useI18n();
-  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { servicesById } = useManagedServices();
 
   const [text, setText] = useState("");
   const [numberOfImages, setNumberOfImages] = useState("5");
@@ -118,55 +101,9 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
   const [images, setImages] = useState<ImageFinderImage[]>([]);
 
   const [serverUnreachable, setServerUnreachable] = useState(true);
-  const [envInstalled, setEnvInstalled] = useState(false);
-  const [envModules, setEnvModules] = useState<string[]>([]);
-  const [envMissing, setEnvMissing] = useState<string[]>([]);
-  const [llmStatus, setLlmStatus] = useState<LlmStatusResponse | null>(null);
 
   const imageFinderService = servicesById.app;
-  const imageFinderRunning = imageFinderService?.status === "running";
-  const imageFinderBusy = isBusy("app");
-  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
-
-  const availableModels = useMemo(() => {
-    return Array.isArray(llmStatus?.models) ? llmStatus.models : [];
-  }, [llmStatus]);
-
-  const modelReady = useMemo(() => {
-    // Treat llmStatus null (not yet fetched) or any non-error state as ready.
-    // A failed Ollama connectivity check is shown as a warning but does not block search.
-    if (llmStatus === null) return false; // still loading
-    return llmStatus.status !== "error" || llmStatus.connected === true;
-  }, [llmStatus]);
-
-  const modelStatusPath = useMemo(() => {
-    if (!llmStatus) return "--";
-    if (llmStatus.status === "error" && !llmStatus.connected) {
-      return `Ollama unreachable: ${llmStatus.detail || llmStatus.status}${llmStatus.url ? ` (${llmStatus.url})` : ""}`;
-    }
-    const modelInList = availableModels.some(
-      (available) => available === model || available.startsWith(`${model}:`)
-    );
-    const versionSuffix = llmStatus.version ? ` v${llmStatus.version}` : "";
-    if (!llmStatus.connected) {
-      return `Ollama ${llmStatus.status || "unreachable"}${llmStatus.detail ? `: ${llmStatus.detail}` : ""}`;
-    }
-    return modelInList
-      ? `${model} (${t("settings.tools.status.ready")})${versionSuffix}`
-      : `Ollama${versionSuffix} — ${t("settings.tools.status.ready")} · model "${model}" not found in [${availableModels.join(", ") || "--"}]`;
-  }, [availableModels, llmStatus, model, t]);
-
-  const statusReady = !serverUnreachable && envInstalled && modelReady;
-
-  const withTimeout = async (input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 12000) => {
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      return await fetch(input, { ...init, signal: controller.signal });
-    } finally {
-      window.clearTimeout(timer);
-    }
-  };
+  const statusReady = !serverUnreachable;
 
   const fetchApiKeyStatus = async () => {
     try {
@@ -240,40 +177,11 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${aimage_search_base_url}/env/status`);
-      if (!envRes.ok) throw new Error("env");
-      const envData = (await envRes.json()) as EnvStatusResponse;
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
       setServerUnreachable(false);
-      setEnvInstalled(envData.installed === true);
-      setEnvModules(Array.isArray(envData.installed_modules) ? envData.installed_modules : []);
-      setEnvMissing(Array.isArray(envData.missing) ? envData.missing : []);
     } catch {
       setServerUnreachable(true);
-      setEnvInstalled(false);
-      setEnvModules([]);
-      setEnvMissing([]);
-      setLlmStatus(null);
-      return;
-    }
-
-    try {
-      const response = await withTimeout(`${aimage_search_base_url}/llm/status`, {}, 10000);
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
-        setLlmStatus({
-          status: "error",
-          detail: payload.detail || t("tool.image_finder.model_not_ready"),
-        });
-        return;
-      }
-      const payload = (await response.json()) as LlmStatusResponse;
-      setLlmStatus(payload);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t("tool.image_finder.model_not_ready");
-      setLlmStatus({
-        status: "error",
-        detail: message,
-      });
     }
   };
 
@@ -289,22 +197,6 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
       void fetchApiKeyStatus();
     }
   }, [imageFinderService?.status]);
-
-  const handleToggleServer = async () => {
-    try {
-      if (isElectron && imageFinderService) {
-        if (imageFinderRunning) {
-          await stop("app");
-          setServerUnreachable(true);
-        } else {
-          await start("app");
-          await fetchStatus();
-        }
-      }
-    } catch {
-      // Ignore transient service toggle errors; status refresh will reflect truth.
-    }
-  };
 
   const handleToggleSource = (sourceId: string, checked: boolean) => {
     setSelectedSources((previous) => {
@@ -387,29 +279,8 @@ export default function ImageFinder({ onOpenSettings }: { onOpenSettings?: () =>
       label: t("tool.image_finder.server_status"),
       isReady: !serverUnreachable,
       path: `${APP_API_URL}/api/v1/image-search`,
-      showActionButton: Boolean(imageFinderService),
-      actionDisabled: imageFinderBusy,
-      actionLoading: imageFinderBusy,
-      onAction: handleToggleServer,
-    },
-    {
-      id: "dependencies",
-      label: t("tool.image_finder.dependencies_status"),
-      isReady: envInstalled,
-      path: envInstalled
-        ? envModules.join(", ") || t("settings.tools.status.ready")
-        : envMissing.join(", ") || "--",
-      showActionButton: !envInstalled && Boolean(onOpenSettings),
-      actionButtonLabel: t("tool.common.install_library"),
-      onAction: onOpenSettings,
-    },
-    {
-      id: "model",
-      label: t("tool.image_finder.model_status"),
-      isReady: modelReady,
-      path: modelStatusPath,
-      showSecondaryAction: !modelReady && Boolean(onOpenSettings),
-      secondaryActionLabel: t("tool.common.download_model"),
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
     },
   ];

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,17 +133,15 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const modelPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { servicesById } = useManagedServices();
   const serviceStatus = servicesById.app;
-  const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("app");
 
   const envReady = envStatus?.installed === true;
   const modelLoaded = modelStatus?.model_loaded === true;
   const modelLoading = modelStatus?.model_loading === true;
   const modelDownloaded = modelStatus?.model_downloaded === true;
   const modelDownloading = modelStatus?.model_downloading === true;
-  const statusReady = !serverUnreachable && envReady && modelLoaded && !modelLoading;
+  const statusReady = !serverUnreachable;
 
   const resetProgressState = () => {
     setProgress(null);
@@ -181,17 +179,6 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       fetchStatus();
     }
   }, [serviceStatus?.status]);
-
-  const handleToggleServer = async () => {
-    if (!serviceStatus) return;
-    if (serviceRunning) {
-      await stop("app");
-      setServerUnreachable(true);
-      return;
-    }
-    await start("app");
-    await fetchStatus();
-  };
 
   const handleInstallLibs = async () => {
     setIsInstallingEnv(true);
@@ -545,59 +532,17 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     }
   };
 
-  const statusRows: StatusRowConfig[] = useMemo(
-    () => [
-      {
-        id: "server",
-        label: t("tool.bg_remove.server_status"),
-        isReady: !serverUnreachable,
-        path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
-        showActionButton: Boolean(serviceStatus),
-        actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
-        actionDisabled: serviceBusy,
-        actionLoading: serviceBusy,
-        onAction: handleToggleServer,
-      },
-      {
-        id: "env",
-        label: t("tool.bg_remove.env_status"),
-        isReady: envReady,
-        path:
-          envStatus?.missing?.length
-            ? envStatus.missing.join(", ")
-            : envStatus?.installed_modules?.length
-              ? envStatus.installed_modules.join(", ")
-              : "--",
-        showActionButton: !envReady,
-        actionButtonLabel: isInstallingEnv ? t("tool.common.starting") : t("tool.common.install_library"),
-        actionDisabled: isInstallingEnv || serverUnreachable,
-        actionLoading: isInstallingEnv,
-        onAction: handleInstallLibs,
-      },
-      {
-        id: "model",
-        label: t("tool.bg_remove.model_status"),
-        isReady: modelLoaded,
-        path: modelStatus
-          ? `${modelStatus.model_id || "BiRefNet"} • ${modelStatus.device || "cpu"}${
-              modelStatus.model_error ? ` • ${modelStatus.model_error}` : ""
-            }`
-          : "--",
-        // "Download Model" when not yet on disk; "Load Model" when downloaded but not in memory
-        showActionButton: !serverUnreachable && !modelLoaded,
-        actionButtonLabel: !modelDownloaded
-          ? (isDownloadingModel || modelDownloading ? t("tool.common.starting") : t("tool.common.download_model"))
-          : (isLoadingModel || modelLoading ? t("tool.common.starting") : "Load Model"),
-        actionDisabled: isDownloadingModel || modelDownloading || isLoadingModel || modelLoading,
-        actionLoading: isLoadingModel || modelLoading || isDownloadingModel || modelDownloading,
-        onAction: !modelDownloaded ? handleDownloadModel : handleLoadModel,
-        showSecondaryAction: !serverUnreachable && modelLoaded,
-        secondaryActionLabel: "Unload Model",
-        onSecondaryAction: handleUnloadModel,
-      },
-    ],
-    [t, serverUnreachable, serviceStatus, serviceRunning, serviceBusy, envReady, envStatus, modelLoaded, modelLoading, modelDownloaded, modelDownloading, modelStatus, isInstallingEnv, isDownloadingModel, isLoadingModel, handleInstallLibs, handleDownloadModel, handleLoadModel, handleUnloadModel],
-  );
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.bg_remove.server_status"),
+      isReady: !serverUnreachable,
+      path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
 
   const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${APP_API_URL}${path}`);
   const handleDownload = (downloadUrl: string, filename: string) => {
@@ -613,38 +558,6 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
         </div>
 
         <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
-
-        {!serverUnreachable && envReady && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-muted-foreground uppercase">Compute</span>
-            <div className="flex border border-border rounded-md overflow-hidden">
-              <Button
-                variant={modelStatus?.device === "cpu" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-7 px-3 text-xs"
-                onClick={() => handleSetDevice("cpu")}
-                disabled={isProcessing || modelLoading || isLoadingModel || modelStatus?.device === "cpu"}
-              >
-                CPU
-              </Button>
-              <Button
-                variant={modelStatus?.device === "cuda" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-7 px-3 text-xs border-l border-border"
-                onClick={() => handleSetDevice("cuda")}
-                disabled={isProcessing || modelLoading || isLoadingModel || !modelStatus?.cuda_available || modelStatus?.device === "cuda"}
-              >
-                GPU
-              </Button>
-            </div>
-            {modelStatus && !modelStatus.cuda_available && (
-              <span className="text-xs text-muted-foreground">No GPU detected by PyTorch</span>
-            )}
-            {modelStatus?.cuda_available && modelLoaded && (
-              <span className="text-xs text-muted-foreground">Switching device will unload the model</span>
-            )}
-          </div>
-        )}
 
         <Tabs
           value={activeTab}

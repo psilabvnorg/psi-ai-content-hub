@@ -186,13 +186,7 @@ type EdgeTtsGenerateResponse = {
   download_url: string;
 };
 
-type AppEnvStatus = {
-  installed: boolean;
-  missing?: string[];
-  installed_modules?: string[];
-};
-
-export default function TTSFast({ onOpenSettings: _onOpenSettings }: { onOpenSettings?: () => void }) {
+export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
 
   const [text, setText] = useState("");
@@ -208,32 +202,21 @@ export default function TTSFast({ onOpenSettings: _onOpenSettings }: { onOpenSet
   const [downloadName, setDownloadName] = useState<string | null>(null);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [envStatus, setEnvStatus] = useState<AppEnvStatus | null>(null);
-  const [isInstallingEnv, setIsInstallingEnv] = useState(false);
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const charCount = text.length;
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
-  const envReady = envStatus?.installed === true;
-  const statusReady = !serverUnreachable && envReady;
+  const statusReady = !serverUnreachable;
 
-  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { servicesById } = useManagedServices();
   const serviceStatus = servicesById.app;
-  const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("app");
 
   const fetchStatus = async () => {
     try {
-      const [statusRes, envRes] = await Promise.all([
-        fetch(`${APP_API_URL}/api/v1/status`),
-        fetch(`${APP_API_URL}/api/v1/env/status`),
-      ]);
-      if (!statusRes.ok || !envRes.ok) throw new Error("status");
-      const envData = (await envRes.json()) as AppEnvStatus;
-      setEnvStatus(envData);
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
       setServerUnreachable(false);
     } catch {
       setServerUnreachable(true);
-      setEnvStatus(null);
       setLanguages([]);
       setVoices([]);
       setSelectedVoice("");
@@ -296,38 +279,6 @@ export default function TTSFast({ onOpenSettings: _onOpenSettings }: { onOpenSet
     fetchVoices(selectedLanguage);
   }, [selectedLanguage]);
 
-  const handleToggleServer = async () => {
-    const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
-    if (!isElectron || !serviceStatus) return;
-
-    try {
-      if (serviceRunning) {
-        await stop("app");
-        setServerUnreachable(true);
-      } else {
-        await start("app");
-        await fetchStatus();
-        await fetchLanguages();
-      }
-    } catch (error) {
-      console.error("Error toggling app server:", error);
-    }
-  };
-
-  const handleInstallLibs = async () => {
-    setIsInstallingEnv(true);
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/env/install`, { method: "POST" });
-      if (!res.ok) throw new Error("install");
-      await fetchStatus();
-      await fetchLanguages();
-    } catch (error) {
-      console.error("Error installing app dependencies:", error);
-    } finally {
-      setIsInstallingEnv(false);
-    }
-  };
-
   const handleGenerate = async () => {
     if (!text.trim() || overLimit || !selectedVoice || !selectedLanguage || !statusReady) return;
 
@@ -384,27 +335,9 @@ export default function TTSFast({ onOpenSettings: _onOpenSettings }: { onOpenSet
       label: t("tool.tts_fast.server_status"),
       isReady: !serverUnreachable,
       path: APP_API_URL,
-      showActionButton: Boolean(serviceStatus),
-      actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
-      actionDisabled: serviceBusy || serviceStatus?.status === "not_configured",
-      actionLoading: serviceBusy,
-      onAction: handleToggleServer,
-    },
-    {
-      id: "env",
-      label: t("tool.tts_fast.env_status"),
-      isReady: envReady,
-      path:
-        envStatus?.missing?.length
-          ? envStatus.missing.join(", ")
-          : envStatus?.installed_modules?.length
-            ? envStatus.installed_modules.join(", ")
-            : "--",
-      showActionButton: !envReady,
-      actionButtonLabel: isInstallingEnv ? t("tool.common.starting") : t("tool.common.install_library"),
-      actionDisabled: isInstallingEnv || serverUnreachable,
-      actionLoading: isInstallingEnv,
-      onAction: handleInstallLibs,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
     },
   ];
 

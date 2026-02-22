@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +6,7 @@ import { Image as ImageIcon, Video as VideoIcon, Upload, Download, Loader2, Musi
 import { APP_API_URL } from "@/lib/api";
 import { downloadFile } from "@/lib/download";
 import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/common/tool-page-ui";
-import type { ProgressData, EnvStatus, StatusRowConfig } from "@/components/common/tool-page-ui";
+import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useI18n } from "@/i18n/i18n";
 import { useManagedServices } from "@/hooks/useManagedServices";
 
@@ -29,7 +29,7 @@ const iconContainer = (icon: React.ReactNode) => (
   <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10">{icon}</div>
 );
 
-export default function MergeOverlay() {
+export default function MergeOverlay({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const abg_remove_overlay_base_url = `${APP_API_URL}/api/v1/bg-remove-overlay`;
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"image" | "video">("image");
@@ -53,25 +53,17 @@ export default function MergeOverlay() {
 
   // Service status
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [envStatus, setEnvStatus] = useState<EnvStatus | null>(null);
-  const [isInstallingEnv, setIsInstallingEnv] = useState(false);
 
-  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { servicesById } = useManagedServices();
   const serviceStatus = servicesById.app;
-  const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("app");
-  const envReady = envStatus?.installed === true;
-  const statusReady = !serverUnreachable && envReady;
+  const statusReady = !serverUnreachable;
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${abg_remove_overlay_base_url}/env/status`);
-      if (!envRes.ok) throw new Error("status");
-      const envData = (await envRes.json()) as EnvStatus;
-      setEnvStatus(envData);
+      const response = await fetch(`${abg_remove_overlay_base_url}/status`);
+      if (!response.ok) throw new Error("status");
       setServerUnreachable(false);
     } catch {
-      setEnvStatus(null);
       setServerUnreachable(true);
     }
   };
@@ -85,82 +77,17 @@ export default function MergeOverlay() {
     }
   }, [serviceStatus?.status]);
 
-  const handleToggleServer = async () => {
-    if (!serviceStatus) return;
-    if (serviceRunning) {
-      await stop("app");
-      setServerUnreachable(true);
-      return;
-    }
-    await start("app");
-    await fetchStatus();
-  };
-
-  const handleInstallLibs = async () => {
-    setIsInstallingEnv(true);
-    setLogs([]);
-    setProgress({ status: "starting", percent: 0, message: "Starting installation..." });
-    try {
-      const res = await fetch(`${abg_remove_overlay_base_url}/env/install`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to start install");
-      const { task_id } = (await res.json()) as { task_id: string };
-      const source = new EventSource(`${abg_remove_overlay_base_url}/env/install/stream/${task_id}`);
-      source.onmessage = (event) => {
-        const data = JSON.parse(event.data as string) as { status: string; percent: number; logs?: string[] };
-        setProgress({ status: data.status as ProgressData["status"], percent: data.percent, message: "Installing dependencies..." });
-        if (data.logs?.length) setLogs((prev) => [...prev, ...data.logs!].slice(-200));
-        if (data.status === "complete") {
-          source.close();
-          setProgress({ status: "complete", percent: 100, message: "Dependencies installed." });
-          setIsInstallingEnv(false);
-          void fetchStatus();
-        } else if (data.status === "error") {
-          source.close();
-          setProgress({ status: "error", percent: 0, message: "Failed to install dependencies." });
-          setIsInstallingEnv(false);
-        }
-      };
-      source.onerror = () => {
-        source.close();
-        setProgress({ status: "error", percent: 0, message: "Lost connection during install." });
-        setIsInstallingEnv(false);
-      };
-    } catch {
-      setProgress({ status: "error", percent: 0, message: "Failed to start installation." });
-      setIsInstallingEnv(false);
-    }
-  };
-
-  const statusRows: StatusRowConfig[] = useMemo(
-    () => [
-      {
-        id: "server",
-        label: t("tool.bg_remove.server_status"),
-        isReady: !serverUnreachable,
-        path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
-        showActionButton: Boolean(serviceStatus),
-        actionButtonLabel: serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server"),
-        actionDisabled: serviceBusy,
-        actionLoading: serviceBusy,
-        onAction: handleToggleServer,
-      },
-      {
-        id: "env",
-        label: t("tool.bg_remove.env_status"),
-        isReady: envReady,
-        path: envStatus?.missing?.length
-          ? envStatus.missing.join(", ")
-          : envStatus?.installed_modules?.length
-            ? envStatus.installed_modules.join(", ")
-            : "--",
-        showActionButton: !envReady && !serverUnreachable,
-        actionButtonLabel: isInstallingEnv ? t("tool.common.starting") : t("tool.common.install_library"),
-        actionDisabled: isInstallingEnv,
-        onAction: handleInstallLibs,
-      },
-    ],
-    [t, serverUnreachable, serviceStatus, serviceRunning, serviceBusy, envReady, envStatus, isInstallingEnv],
-  );
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.bg_remove.server_status"),
+      isReady: !serverUnreachable,
+      path: `${APP_API_URL}/api/v1/bg-remove-overlay`,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
 
   const resetProgress = () => {
     setProgress(null);

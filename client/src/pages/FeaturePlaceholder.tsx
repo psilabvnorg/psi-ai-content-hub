@@ -110,7 +110,7 @@ export default function FeaturePlaceholder({
       case "background-removal":
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
       case "merge-overlay":
-        return <MergeOverlay />;
+        return <MergeOverlay onOpenSettings={() => onSelectFeature("settings")} />;
       case "text-to-video":
         return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":

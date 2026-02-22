@@ -10,3 +10,5 @@ python -m app.main
 -----
 port 6901
 ---
+http://127.0.0.1:6901
+http://127.0.0.1:6901/docs

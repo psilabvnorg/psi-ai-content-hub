@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,21 +11,6 @@ import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
-
-type EnvStatusResponse = {
-  installed?: boolean;
-  missing?: string[];
-  installed_modules?: string[];
-};
-
-type TranslationModelStatus = {
-  loaded?: boolean;
-  downloaded?: boolean;
-  model_id?: string;
-  model_dir?: string;
-  device?: string | null;
-  supported_languages?: Record<string, string>;
-};
 
 type StreamPayload = {
   status?: string;
@@ -62,7 +47,7 @@ const LANGUAGE_OPTIONS: Array<{ code: string; key: I18nKey }> = [
 
 export default function Translator({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
-  const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { servicesById } = useManagedServices();
   const streamRef = useRef<EventSource | null>(null);
 
   const [sourceLang, setSourceLang] = useState("vi");
@@ -71,23 +56,13 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
   const [inputText, setInputText] = useState("");
   const [outputText, setOutputText] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
-  const [isUnloading, setIsUnloading] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [envInstalled, setEnvInstalled] = useState(false);
-  const [envModules, setEnvModules] = useState<string[]>([]);
-  const [envMissing, setEnvMissing] = useState<string[]>([]);
-  const [modelStatus, setModelStatus] = useState<TranslationModelStatus | null>(null);
 
   const translationService = servicesById.app;
-  const translationRunning = translationService?.status === "running";
-  const translationBusy = isBusy("app");
-  const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
-
-  const modelReady = modelStatus?.loaded === true || modelStatus?.downloaded === true;
-  const statusReady = !serverUnreachable && envInstalled && modelReady;
+  const statusReady = !serverUnreachable;
 
   useEffect(() => {
     return () => {
@@ -98,32 +73,11 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
 
   const fetchStatus = async () => {
     try {
-      const envRes = await fetch(`${APP_API_URL}/api/v1/translation/env/status`);
-      if (!envRes.ok) throw new Error("env");
-      const envData = (await envRes.json()) as EnvStatusResponse;
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
       setServerUnreachable(false);
-      setEnvInstalled(envData.installed === true);
-      setEnvModules(Array.isArray(envData.installed_modules) ? envData.installed_modules : []);
-      setEnvMissing(Array.isArray(envData.missing) ? envData.missing : []);
     } catch {
       setServerUnreachable(true);
-      setEnvInstalled(false);
-      setEnvModules([]);
-      setEnvMissing([]);
-      setModelStatus(null);
-      return;
-    }
-
-    try {
-      const modelRes = await fetch(`${APP_API_URL}/api/v1/translation/status`);
-      if (!modelRes.ok) {
-        setModelStatus(null);
-        return;
-      }
-      const modelData = (await modelRes.json()) as TranslationModelStatus;
-      setModelStatus(modelData);
-    } catch {
-      setModelStatus(null);
     }
   };
 
@@ -138,69 +92,14 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
     }
   }, [translationService?.status]);
 
-  const handleToggleServer = async () => {
-    try {
-      if (isElectron && translationService) {
-        if (translationRunning) {
-          await stop("app");
-          setServerUnreachable(true);
-        } else {
-          await start("app");
-          await fetchStatus();
-        }
-      }
-    } catch {
-      // Ignore transient service toggle errors; status refresh will reflect truth.
-    }
-  };
-
-  const handleUnloadModel = async () => {
-    if (serverUnreachable || isUnloading || modelStatus?.loaded !== true) return;
-    setIsUnloading(true);
-    try {
-      await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
-      await fetchStatus();
-    } finally {
-      setIsUnloading(false);
-    }
-  };
-
-  const modelLabel = useMemo(() => {
-    if (!modelStatus) return "--";
-    const modelId = modelStatus.model_id || "--";
-    const device = modelStatus.device || "cpu";
-    return `${modelId} (${device})`;
-  }, [modelStatus]);
-
   const statusRows: StatusRowConfig[] = [
     {
       id: "server",
       label: t("tool.translator.server_status"),
       isReady: !serverUnreachable,
       path: `${APP_API_URL}/api/v1/translation`,
-      showActionButton: Boolean(translationService),
-      actionDisabled: translationBusy,
-      actionLoading: translationBusy,
-      onAction: handleToggleServer,
-    },
-    {
-      id: "dependencies",
-      label: t("tool.translator.dependencies_status"),
-      isReady: envInstalled,
-      path: envInstalled
-        ? envModules.join(", ") || t("settings.tools.status.ready")
-        : envMissing.join(", ") || "--",
-      showActionButton: !envInstalled && Boolean(onOpenSettings),
-      actionButtonLabel: t("tool.common.install_library"),
-      onAction: onOpenSettings,
-    },
-    {
-      id: "model",
-      label: t("tool.translator.model_status"),
-      isReady: modelReady,
-      path: modelLabel,
-      showSecondaryAction: !modelReady && Boolean(onOpenSettings),
-      secondaryActionLabel: t("tool.common.download_model"),
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
     },
   ];
@@ -343,13 +242,6 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
         </div>
 
         <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
-
-        {!serverUnreachable && modelStatus?.loaded === true && (
-          <Button variant="destructive" onClick={handleUnloadModel} disabled={isUnloading} className="w-full">
-            {isUnloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {t("tool.translator.unload_model")}
-          </Button>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
