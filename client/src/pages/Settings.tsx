@@ -45,6 +45,7 @@ type BgRemoveModelStatus = {
   model_id?: string;
   model_loaded?: boolean;
   model_loading?: boolean;
+  model_downloaded?: boolean;
   model_error?: string | null;
   device?: "cuda" | "cpu";
 };
@@ -63,6 +64,7 @@ type aprofile_status_envelope_data = {
     installed?: boolean;
     missing_modules?: string[];
     installed_modules?: string[];
+    python_path?: string;
   };
 };
 
@@ -73,6 +75,7 @@ function aextract_env_status_data(payload: EnvStatus | aprofile_status_envelope_
       installed: profileStatus.installed === true,
       missing: profileStatus.missing_modules ?? [],
       installed_modules: profileStatus.installed_modules ?? [],
+      python_path: profileStatus.python_path,
     };
   }
   return payload as EnvStatus;
@@ -251,11 +254,17 @@ export default function Settings() {
         fetch(`${APP_API_URL}/api/v1/env/profiles/whisper/status`),
         fetch(`${APP_API_URL}/api/v1/whisper/status`),
       ]);
-      if (!envRes.ok || !statusRes.ok) throw new Error("Whisper status failed");
-      const envData = (await envRes.json()) as EnvStatus;
-      const statusData = (await statusRes.json()) as { models?: { whisper?: WhisperModelStatus } };
-      setWhisperEnv(envData);
-      setWhisperStatus(statusData.models?.whisper ?? null);
+      if (envRes.ok) {
+        setWhisperEnv(aextract_env_status_data((await envRes.json()) as EnvStatus | aprofile_status_envelope_data));
+      } else {
+        setWhisperEnv(null);
+      }
+      if (statusRes.ok) {
+        const statusData = (await statusRes.json()) as { models?: { whisper?: WhisperModelStatus } };
+        setWhisperStatus(statusData.models?.whisper ?? null);
+      } else {
+        setWhisperStatus(null);
+      }
     } catch {
       setWhisperEnv(null);
       setWhisperStatus(null);
@@ -301,11 +310,17 @@ export default function Settings() {
         fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/status`),
         fetch(`${APP_API_URL}/api/v1/bg-remove-overlay/status`),
       ]);
-      if (!envRes.ok || !statusRes.ok) throw new Error("Background removal status failed");
-      const envData = (await envRes.json()) as EnvStatus;
-      const statusData = (await statusRes.json()) as { models?: { background_removal?: BgRemoveModelStatus } };
-      setBgRemoveEnv(envData);
-      setBgRemoveStatus(statusData.models?.background_removal ?? null);
+      if (envRes.ok) {
+        setBgRemoveEnv(aextract_env_status_data((await envRes.json()) as EnvStatus | aprofile_status_envelope_data));
+      } else {
+        setBgRemoveEnv(null);
+      }
+      if (statusRes.ok) {
+        const statusData = (await statusRes.json()) as { models?: { background_removal?: BgRemoveModelStatus } };
+        setBgRemoveStatus(statusData.models?.background_removal ?? null);
+      } else {
+        setBgRemoveStatus(null);
+      }
     } catch {
       setBgRemoveEnv(null);
       setBgRemoveStatus(null);
@@ -348,11 +363,18 @@ export default function Settings() {
         fetch(`${APP_API_URL}/api/v1/env/profiles/translation/status`),
         fetch(`${APP_API_URL}/api/v1/translation/status`),
       ]);
-      if (!envRes.ok || !modelRes.ok) throw new Error("Translation status failed");
-      setTranslationEnv(
-        aextract_env_status_data((await envRes.json()) as EnvStatus | aprofile_status_envelope_data)
-      );
-      setTranslationModelStatus((await modelRes.json()) as TranslationModelStatus);
+      if (envRes.ok) {
+        setTranslationEnv(
+          aextract_env_status_data((await envRes.json()) as EnvStatus | aprofile_status_envelope_data)
+        );
+      } else {
+        setTranslationEnv(null);
+      }
+      if (modelRes.ok) {
+        setTranslationModelStatus((await modelRes.json()) as TranslationModelStatus);
+      } else {
+        setTranslationModelStatus(null);
+      }
     } catch {
       setTranslationEnv(null);
       setTranslationModelStatus(null);
@@ -536,7 +558,15 @@ export default function Settings() {
   const appServiceBusy = appService ? isServiceBusy("app") : false;
   const whisperModelReady = Boolean(whisperStatus?.cached_models?.length);
   const translationModelReady = Boolean(translationModelStatus?.loaded || translationModelStatus?.downloaded);
-  const bgRemoveModelReady = Boolean(bgRemoveStatus?.model_loaded);
+  const bgRemoveModelReady = Boolean(bgRemoveStatus?.model_loaded || bgRemoveStatus?.model_downloaded);
+
+  const prevAppServiceRunning = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevAppServiceRunning.current === false && appServiceRunning === true) {
+      refreshAppApiSetup();
+    }
+    prevAppServiceRunning.current = appServiceRunning;
+  }, [appServiceRunning]);
 
   return (
     <div className="space-y-6">
@@ -737,7 +767,7 @@ export default function Settings() {
                     })()}
                   </TableCell>
                   <TableCell>
-                    {(() => {
+                    {appServiceRunning && !(whisperEnv?.installed && translationEnv?.installed && imageFinderEnv?.installed && bgRemoveEnv?.installed) && (() => {
                       const isInstalling = [whisperProgress, translationProgress, imageFinderProgress, bgRemoveProgress].some((p) => p?.status === "starting");
                       return (
                         <Button size="sm" variant="outline" onClick={() => { void handleInstallAllEnvs(); }} disabled={isInstalling}>
@@ -761,10 +791,12 @@ export default function Settings() {
                     {whisperStatus?.cached_models?.length ? whisperStatus.cached_models.join(", ") : whisperStatus?.model_dir || "--"}
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="outline" onClick={handleWhisperDownloadModel} disabled={whisperProgress?.status === "starting"}>
-                      {whisperProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      {t("settings.whisper.download_model")}
-                    </Button>
+                    {appServiceRunning && !whisperModelReady && (
+                      <Button size="sm" variant="outline" onClick={handleWhisperDownloadModel} disabled={whisperProgress?.status === "starting"}>
+                        {whisperProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {t("settings.whisper.download_model")}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
 
@@ -780,29 +812,34 @@ export default function Settings() {
                     {translationModelStatus?.model_dir || translationModelStatus?.model_id || "--"}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          void handleTranslationDownloadModel();
-                        }}
-                        disabled={translationProgress?.status === "starting" || !translationEnv?.installed}
-                      >
-                        {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Download / Load
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          void handleTranslationUnloadModel();
-                        }}
-                        disabled={!translationModelStatus?.loaded}
-                      >
-                        Unload
-                      </Button>
-                    </div>
+                    {appServiceRunning && (
+                      <div className="flex flex-wrap gap-2">
+                        {!translationModelReady && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              void handleTranslationDownloadModel();
+                            }}
+                            disabled={translationProgress?.status === "starting" || !translationEnv?.installed}
+                          >
+                            {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Download / Load
+                          </Button>
+                        )}
+                        {translationModelStatus?.loaded && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              void handleTranslationUnloadModel();
+                            }}
+                          >
+                            Unload
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
 
@@ -820,15 +857,21 @@ export default function Settings() {
                       : "--"}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={handleBgRemoveDownloadModel} disabled={bgRemoveProgress?.status === "starting"}>
-                        {bgRemoveProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Download / Load
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleBgRemoveUnloadModel} disabled={!bgRemoveStatus?.model_loaded}>
-                        Unload
-                      </Button>
-                    </div>
+                    {appServiceRunning && (
+                      <div className="flex flex-wrap gap-2">
+                        {!bgRemoveModelReady && (
+                          <Button size="sm" variant="outline" onClick={handleBgRemoveDownloadModel} disabled={bgRemoveProgress?.status === "starting"}>
+                            {bgRemoveProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Download / Load
+                          </Button>
+                        )}
+                        {bgRemoveStatus?.model_loaded && (
+                          <Button size="sm" variant="outline" onClick={handleBgRemoveUnloadModel}>
+                            Unload
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               </TableBody>

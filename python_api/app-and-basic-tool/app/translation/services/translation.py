@@ -62,7 +62,8 @@ def _model_downloaded() -> bool:
     if not MODEL_DIR.exists():
         return False
     has_config = (MODEL_DIR / "config.json").exists()
-    has_model = any(MODEL_DIR.glob("*.bin")) or any(MODEL_DIR.glob("*.safetensors")) or any(MODEL_DIR.glob("*.pt"))
+    weight_extensions = {".bin", ".safetensors", ".pt", ".msgpack", ".ckpt"}
+    has_model = any(f.suffix in weight_extensions for f in MODEL_DIR.iterdir() if f.is_file())
     return has_config or has_model
 
 

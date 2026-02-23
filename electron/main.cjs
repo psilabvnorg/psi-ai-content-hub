@@ -41,6 +41,7 @@ const MANAGED_SERVICES = [
     relativeRoot: path.join('python_api', 'app-and-basic-tool'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6901',
+    startupTimeoutMs: 90000,
   },
   {
     id: 'f5',
@@ -48,6 +49,7 @@ const MANAGED_SERVICES = [
     relativeRoot: path.join('python_api', 'F5-TTS'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6902',
+    startupTimeoutMs: 90000,
   },
   {
     id: 'vieneu',
@@ -55,6 +57,7 @@ const MANAGED_SERVICES = [
     relativeRoot: path.join('python_api', 'VieNeu-TTS'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6903',
+    startupTimeoutMs: 90000,
   },
 ];
 
