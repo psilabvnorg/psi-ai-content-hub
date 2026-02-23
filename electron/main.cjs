@@ -146,6 +146,7 @@ function buildManagedServiceStatus(serviceId) {
     status: configured && runtime.status === 'not_configured' ? 'stopped' : runtime.status,
     pid: runtime.pid,
     error: runtime.error,
+    message: runtime.message || null,
     api_url: service.apiUrl,
     health_url: service.healthUrl,
     service_root: service.serviceRoot,
@@ -298,6 +299,7 @@ async function startManagedService(serviceId) {
       status: 'starting',
       pid: null,
       error: null,
+      message: 'Creating virtual environment...',
     });
 
     const systemPython = process.platform === 'win32' ? 'python' : 'python3';
@@ -306,11 +308,17 @@ async function startManagedService(serviceId) {
 
     try {
       await runCommand(systemPython, ['-m', 'venv', venvDir], { shell: true });
-      console.log(`[ManagedService:${serviceId}] Installing bootstrap packages...`);
       const bootstrapPkgs =
         service.bootstrapPackages ||
         BOOTSTRAP_PACKAGES[serviceId] ||
         ['fastapi', 'uvicorn', 'python-multipart'];
+      console.log(`[ManagedService:${serviceId}] Installing bootstrap packages...`);
+      setManagedServiceRuntime(serviceId, {
+        status: 'starting',
+        pid: null,
+        error: null,
+        message: `Installing required packages (${bootstrapPkgs.slice(0, 3).join(', ')}, ...)...`,
+      });
       await runCommand(service.venvPythonPath, ['-m', 'pip', 'install', '--quiet', ...bootstrapPkgs], { shell: true });
       console.log(`[ManagedService:${serviceId}] Bootstrap complete.`);
     } catch (error) {
@@ -318,6 +326,7 @@ async function startManagedService(serviceId) {
         status: 'error',
         pid: null,
         error: `Failed to create venv: ${error.message}`,
+        message: null,
       });
       return buildManagedServiceStatus(serviceId);
     }
@@ -346,6 +355,7 @@ async function startManagedService(serviceId) {
     status: 'starting',
     pid: null,
     error: null,
+    message: 'Starting server process...',
   });
 
   const processHandle = spawn(
@@ -367,6 +377,7 @@ async function startManagedService(serviceId) {
     status: 'starting',
     pid: processHandle.pid || null,
     error: null,
+    message: 'Waiting for server to be ready...',
   });
 
   processHandle.stdout.on('data', (data) => {
@@ -422,6 +433,7 @@ async function startManagedService(serviceId) {
     status: 'running',
     pid: processHandle.pid || null,
     error: null,
+    message: null,
   });
   return buildManagedServiceStatus(serviceId);
 }

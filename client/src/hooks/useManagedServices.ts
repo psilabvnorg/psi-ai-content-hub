@@ -15,6 +15,7 @@ export type ManagedServiceStatus = {
   status: ManagedServiceStatusState;
   pid: number | null;
   error: string | null;
+  message: string | null;
   api_url: string;
   health_url: string;
   service_root: string;

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check } from "lucide-react";
-import { APP_API_URL } from "@/lib/api";
+import { Progress } from "@/components/ui/progress";
+import { APP_API_URL, F5_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import { useManagedServices } from "@/hooks/useManagedServices";
 
@@ -50,6 +51,18 @@ type BgRemoveModelStatus = {
   device?: "cuda" | "cpu";
 };
 
+type F5ModelStatus = {
+  installed?: boolean;
+  model_file?: string | null;
+  vocab_file?: string | null;
+};
+
+type F5StatusData = {
+  server_unreachable?: boolean;
+  env?: EnvStatus;
+  model?: F5ModelStatus;
+};
+
 type TranslationModelStatus = {
   loaded?: boolean;
   downloaded?: boolean;
@@ -81,15 +94,7 @@ function aextract_env_status_data(payload: EnvStatus | aprofile_status_envelope_
   return payload as EnvStatus;
 }
 
-const MANAGED_SERVICE_LABELS: Record<string, string> = {
-  app: "App API",
-  f5: "F5 Voice Clone API",
-};
-const MANAGED_SERVICE_IDS = ["app", "f5"] as const;
 
-function isManagedServiceId(value: string): value is (typeof MANAGED_SERVICE_IDS)[number] {
-  return MANAGED_SERVICE_IDS.includes(value as (typeof MANAGED_SERVICE_IDS)[number]);
-}
 
 async function consumeSseStream(response: Response, onMessage: (data: ProgressData) => void) {
   const reader = response.body?.getReader();
@@ -183,14 +188,18 @@ export default function Settings() {
   const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
   const [imageFinderEnv, setImageFinderEnv] = useState<EnvStatus | null>(null);
   const [imageFinderProgress, setImageFinderProgress] = useState<ProgressData | null>(null);
+  const [envInstallAllActive, setEnvInstallAllActive] = useState(false);
+  const [envInstallStep, setEnvInstallStep] = useState("");
+  const [envInstallDoneCount, setEnvInstallDoneCount] = useState(0);
+  const [serverStartProgress, setServerStartProgress] = useState(0);
+  const serverStartTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [f5Status, setF5Status] = useState<F5StatusData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [logsServerUnreachable, setLogsServerUnreachable] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const {
     services,
-    supported: servicesSupported,
-    loading: servicesLoading,
     refresh: refreshServices,
     start: startService,
     stop: stopService,
@@ -493,10 +502,40 @@ export default function Settings() {
   };
 
   const handleInstallAllEnvs = async () => {
-    await handleWhisperEnvInstall();
-    await handleTranslationEnvInstall();
-    await handleImageFinderEnvInstall();
-    await handleBgRemoveEnvInstall();
+    setEnvInstallAllActive(true);
+    setEnvInstallDoneCount(0);
+    try {
+      setEnvInstallStep("Whisper environment");
+      await handleWhisperEnvInstall();
+      setEnvInstallDoneCount(1);
+      setEnvInstallStep("Translation environment");
+      await handleTranslationEnvInstall();
+      setEnvInstallDoneCount(2);
+      setEnvInstallStep("Image search environment");
+      await handleImageFinderEnvInstall();
+      setEnvInstallDoneCount(3);
+      setEnvInstallStep("Background removal environment");
+      await handleBgRemoveEnvInstall();
+      setEnvInstallDoneCount(4);
+    } finally {
+      setEnvInstallAllActive(false);
+      setEnvInstallStep("");
+    }
+  };
+
+  const fetchF5Status = async () => {
+    try {
+      const [envRes, statusRes] = await Promise.all([
+        fetch(`${F5_API_URL}/api/v1/env/status`),
+        fetch(`${F5_API_URL}/api/v1/status`),
+      ]);
+      if (!envRes.ok || !statusRes.ok) throw new Error("status");
+      const envData = (await envRes.json()) as EnvStatus;
+      const statusData = (await statusRes.json()) as { models?: { f5_tts?: F5ModelStatus } };
+      setF5Status({ server_unreachable: false, env: envData, model: statusData.models?.f5_tts });
+    } catch {
+      setF5Status({ server_unreachable: true });
+    }
   };
 
   useEffect(() => {
@@ -505,6 +544,7 @@ export default function Settings() {
     fetchBgRemoveStatus();
     fetchTranslationStatus();
     fetchImageFinderStatus();
+    fetchF5Status();
     refreshServices();
     fetchLogTail();
   }, []);
@@ -556,6 +596,9 @@ export default function Settings() {
   const appService = services.find((service) => service.id === "app");
   const appServiceRunning = appService?.status === "running";
   const appServiceBusy = appService ? isServiceBusy("app") : false;
+  const f5Service = services.find((service) => service.id === "f5");
+  const f5ServiceRunning = f5Service?.status === "running";
+  const f5ServiceBusy = f5Service ? isServiceBusy("f5") : false;
   const whisperModelReady = Boolean(whisperStatus?.cached_models?.length);
   const translationModelReady = Boolean(translationModelStatus?.loaded || translationModelStatus?.downloaded);
   const bgRemoveModelReady = Boolean(bgRemoveStatus?.model_loaded || bgRemoveStatus?.model_downloaded);
@@ -567,6 +610,49 @@ export default function Settings() {
     }
     prevAppServiceRunning.current = appServiceRunning;
   }, [appServiceRunning]);
+
+  const prevF5ServiceRunning = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevF5ServiceRunning.current !== null && f5ServiceRunning !== prevF5ServiceRunning.current) {
+      fetchF5Status();
+    }
+    prevF5ServiceRunning.current = f5ServiceRunning ?? null;
+  }, [f5ServiceRunning]);
+
+  // Simulated elapsed-time progress while App Server is starting
+  useEffect(() => {
+    const isStarting = appService?.status === "starting";
+    if (isStarting) {
+      setServerStartProgress(3);
+      // Tick ~0.25%/s → reaches ~85% after 5 min (max before timeout)
+      serverStartTimerRef.current = setInterval(() => {
+        setServerStartProgress((prev) => Math.min(prev + 0.25, 88));
+      }, 1000);
+    } else {
+      if (serverStartTimerRef.current) {
+        clearInterval(serverStartTimerRef.current);
+        serverStartTimerRef.current = null;
+      }
+      setServerStartProgress(0);
+    }
+    return () => {
+      if (serverStartTimerRef.current) {
+        clearInterval(serverStartTimerRef.current);
+        serverStartTimerRef.current = null;
+      }
+    };
+  }, [appService?.status]);
+
+  const handleToggleF5Server = async () => {
+    if (!f5Service) return;
+    if (f5ServiceRunning) {
+      await stopService("f5");
+      setF5Status({ server_unreachable: true });
+      return;
+    }
+    await startService("f5");
+    await fetchF5Status();
+  };
 
   return (
     <div className="space-y-6">
@@ -588,89 +674,6 @@ export default function Settings() {
       </Card>
 
       <StorageLocationsCard />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Backend Services</CardTitle>
-              <CardDescription>Start and stop FastAPI services manually from Electron</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={refreshServices} disabled={servicesLoading}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!servicesSupported ? (
-            <div className="text-sm text-muted-foreground">
-              Service controls are available in the Electron desktop app.
-            </div>
-          ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("settings.tools.table.tool")}</TableHead>
-                    <TableHead>{t("settings.tools.table.status")}</TableHead>
-                    <TableHead>API</TableHead>
-                    <TableHead>{t("settings.tools.table.path")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {services.map((service) => {
-                    const serviceId = service.id;
-                    if (!isManagedServiceId(serviceId)) {
-                      return null;
-                    }
-                    const running = service.status === "running";
-                    const busy = isServiceBusy(serviceId);
-                    const actionDisabled = busy || service.status === "not_configured";
-                    return (
-                      <TableRow key={serviceId}>
-                        <TableCell className="font-medium">
-                          {MANAGED_SERVICE_LABELS[service.id] || service.name}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {running ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : service.status === "starting" || service.status === "stopping" ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span className="text-sm">{getManagedServiceStatusText(service.status)}</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="ml-2"
-                              disabled={actionDisabled}
-                              onClick={() => {
-                                if (running) {
-                                  stopService(serviceId);
-                                  return;
-                                }
-                                startService(serviceId);
-                              }}
-                            >
-                              {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                              {running ? t("tool.common.stop_server") : t("tool.common.start_server")}
-                            </Button>
-                          </div>
-                          {service.error ? <div className="text-xs text-red-500 mt-1">{service.error}</div> : null}
-                        </TableCell>
-                        <TableCell className="text-xs font-mono break-all">{service.api_url}</TableCell>
-                        <TableCell className="text-xs font-mono break-all">{service.venv_python_path || "--"}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -717,7 +720,7 @@ export default function Settings() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={!appService || appServiceBusy || appService.status === "not_configured"}
+                      disabled={!appService || appServiceBusy}
                       onClick={() => {
                         if (!appService) return;
                         if (appServiceRunning) {
@@ -728,7 +731,7 @@ export default function Settings() {
                       }}
                     >
                       {appServiceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      {appServiceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                      {appServiceRunning ? t("tool.common.stop_server") : appService?.status === "not_configured" ? "Install & Start" : t("tool.common.start_server")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -878,26 +881,170 @@ export default function Settings() {
             </Table>
           </div>
 
-          {whisperProgress && (
+          {appService?.status === "starting" && (
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                  <span className="font-medium">
+                    {appService.message || "Starting server..."}
+                  </span>
+                </div>
+                <span className="text-muted-foreground text-xs">
+                  {Math.round(serverStartProgress)}%
+                </span>
+              </div>
+              <Progress value={serverStartProgress} className="h-2" />
+              {!appService.configured && (
+                <p className="text-xs text-amber-500/80">
+                  First-time setup: creating virtual environment and installing packages. This may take a few minutes.
+                </p>
+              )}
+            </div>
+          )}
+
+          {envInstallAllActive && (
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                  <span className="font-medium">
+                    Installing environments ({envInstallDoneCount}/4)
+                  </span>
+                </div>
+                <span className="text-muted-foreground text-xs">
+                  {Math.round((envInstallDoneCount / 4) * 100)}%
+                </span>
+              </div>
+              {envInstallStep && (
+                <p className="text-xs text-muted-foreground">Current: {envInstallStep}</p>
+              )}
+              <Progress value={envInstallDoneCount === 0 ? 3 : (envInstallDoneCount / 4) * 100} className="h-2" />
+              <p className="text-xs text-amber-500/80">
+                This may take 30 – 60 minutes depending on your internet speed and hardware.
+              </p>
+            </div>
+          )}
+          {!envInstallAllActive && whisperProgress && (
             <div className="text-xs text-muted-foreground">
               Whisper: {whisperProgress.message} {whisperProgress.percent ?? 0}%
             </div>
           )}
-          {translationProgress && (
+          {!envInstallAllActive && translationProgress && (
             <div className="text-xs text-muted-foreground">
               Translation: {translationProgress.message} {translationProgress.percent ?? 0}%
             </div>
           )}
-          {imageFinderProgress && (
+          {!envInstallAllActive && imageFinderProgress && (
             <div className="text-xs text-muted-foreground">
               Image Finder: {imageFinderProgress.message} {imageFinderProgress.percent ?? 0}%
             </div>
           )}
-          {bgRemoveProgress && (
+          {!envInstallAllActive && bgRemoveProgress && (
             <div className="text-xs text-muted-foreground">
               Background Removal: {bgRemoveProgress.message} {bgRemoveProgress.percent ?? 0}%
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* F5 Voice Clone API Service Status */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{t("tool.voice_clone.service_status")}</CardTitle>
+              <CardDescription>F5 Voice Clone server, environment, and model status</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchF5Status}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
+                  <TableHead>{t("settings.tools.table.status")}</TableHead>
+                  <TableHead>{t("settings.tools.table.path")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.server_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {!f5Status?.server_unreachable ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {!f5Status?.server_unreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {f5Service && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleToggleF5Server}
+                          disabled={f5ServiceBusy || f5Service.status === "not_configured"}
+                          className="ml-2"
+                        >
+                          {f5ServiceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                          {f5ServiceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {F5_API_URL}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.env_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {f5Status?.env?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {f5Status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {f5Status?.env?.installed_modules?.length
+                      ? f5Status.env.installed_modules.join(", ")
+                      : f5Status?.env?.missing?.length
+                      ? f5Status.env.missing.join(", ")
+                      : "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {f5Status?.model?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {f5Status?.model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {f5Status?.model?.model_file || "--"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
