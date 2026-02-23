@@ -12,6 +12,7 @@ type LogLine = { line: string };
 
 type SystemStatus = {
   status: string;
+  base_app_dir?: string;
   temp?: { temp_dir: string; file_count: number; total_size_mb: number };
   tools?: {
     ffmpeg?: { installed: boolean; path?: string | null };
@@ -121,16 +122,18 @@ async function consumeSseStream(response: Response, onMessage: (data: ProgressDa
   }
 }
 
-const STORAGE_PATHS = [
-  {
-    label: "Model path",
-    path: "C:\\Users\\ADMIN\\AppData\\Roaming\\psi-ai-content-hub\\models\\",
-  },
-  {
-    label: "Temp media storage path",
-    path: "C:\\Users\\ADMIN\\AppData\\Local\\Temp\\psi_ai_content_hub",
-  },
-];
+function getStoragePaths(baseAppDir: string | null, tempDir: string | null, t: (key: string) => string) {
+  return [
+    {
+      label: t("settings.storage_locations.model_log_path"),
+      path: baseAppDir ?? "--",
+    },
+    {
+      label: t("settings.storage_locations.temp_path"),
+      path: tempDir ?? "--",
+    },
+  ];
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -149,17 +152,32 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function StorageLocationsCard() {
+  const { t } = useI18n();
+  const [baseAppDir, setBaseAppDir] = useState<string | null>(null);
+  const [tempDir, setTempDir] = useState<string | null>(null);
+
+  useEffect(() => {
+    const w = window as unknown as { electronAPI?: { getAppPaths?: () => Promise<{ baseAppDir: string; tempDir: string }> } };
+    if (w.electronAPI?.getAppPaths) {
+      void w.electronAPI.getAppPaths().then((paths) => {
+        setBaseAppDir(paths.baseAppDir);
+        setTempDir(paths.tempDir);
+      });
+    }
+  }, []);
+
+  const paths = getStoragePaths(baseAppDir, tempDir, t);
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FolderOpen className="h-5 w-5" />
-          File Storage Locations
+          {t("settings.storage_locations.title")}
         </CardTitle>
-        <CardDescription>Where models and temporary files are stored on this machine</CardDescription>
+        <CardDescription>{t("settings.storage_locations.desc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {STORAGE_PATHS.map(({ label, path }) => (
+        {paths.map(({ label, path }) => (
           <div key={label} className="flex items-center justify-between rounded-md border px-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">{label}</p>
@@ -679,8 +697,8 @@ export default function Settings() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>App API (6901) Setup</CardTitle>
-              <CardDescription>Centralized server, environment, and model management for all tools running on port 6901.</CardDescription>
+              <CardTitle>{t("settings.main_server.title")}</CardTitle>
+              <CardDescription>{t("settings.main_server.desc")}</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={refreshAppApiSetup}>
               <RefreshCw className="w-4 h-4" />
@@ -954,7 +972,7 @@ export default function Settings() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>{t("tool.voice_clone.service_status")}</CardTitle>
-              <CardDescription>F5 Voice Clone server, environment, and model status</CardDescription>
+              <CardDescription>{t("tool.voice_clone.service_desc")}</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchF5Status}>
               <RefreshCw className="w-4 h-4" />

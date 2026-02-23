@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from python_api.common.logging import read_log_tail, stream_log_lines
-from python_api.common.paths import MODEL_ROOT, TEMP_DIR
+from python_api.common.paths import BASE_APP_DIR, MODEL_ROOT, TEMP_DIR
 from ..services.tools_manager import get_system_tools_status
 
 
@@ -41,6 +41,7 @@ def status() -> dict:
     return {
         "status": "ok",
         "uptime": time.time(),
+        "base_app_dir": str(BASE_APP_DIR),
         "temp": _temp_stats(),
         "tools": tools_status,
         "models": {"shared_root": str(MODEL_ROOT)},

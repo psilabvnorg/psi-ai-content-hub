@@ -671,7 +671,14 @@ function setupIpcHandlers() {
   ipcMain.handle('app:version', async () => {
     return app.getVersion();
   });
-  
+
+  ipcMain.handle('app:paths', async () => {
+    const appdata = process.env.APPDATA || path.join(os.homedir(), '.config');
+    const baseAppDir = path.join(appdata, 'psi-ai-content-hub');
+    const tempDir = path.join(os.tmpdir(), 'psi_ai_content_hub');
+    return { baseAppDir, tempDir };
+  });
+
   ipcMain.handle('shell:openExternal', async (event, url) => {
     return shell.openExternal(url);
   });

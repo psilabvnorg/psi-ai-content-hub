@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // App info
   getAppVersion: () => ipcRenderer.invoke('app:version'),
+  getAppPaths: () => ipcRenderer.invoke('app:paths'),
   
   // Shell operations
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
