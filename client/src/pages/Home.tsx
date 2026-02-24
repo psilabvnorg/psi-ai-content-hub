@@ -38,6 +38,12 @@ const features = {
       descriptionKey: "feature.tool.voice_clone.desc" as I18nKey,
     },
     {
+      id: "voice-clone-custom",
+      titleKey: "feature.tool.voice_clone_custom.title" as I18nKey,
+      icon: Mic,
+      descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey,
+    },
+    {
       id: "background-removal",
       titleKey: "feature.tool.background_removal.title" as I18nKey,
       icon: ImageIcon,

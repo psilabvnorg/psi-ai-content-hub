@@ -17,6 +17,16 @@
       "gender": "male",
       "ref_audio": "steve_jobs/v.wav",
       "ref_text": "my model of business is the beatles, you know they were four very talented guys who kept each others kind of negative tendencies in check"
+    },
+    {
+      "id": "donald_trump",
+      "name": "Donald Trump",
+      "description": "Donald Trump - english",
+      "language": "en",
+      "gender": "unknown",
+      "custom": true,
+      "ref_audio": "donald_trump/donald_trump_sample.wav",
+      "ref_text": "But I am allowed to cut off, any and all trade, or business, with that same country, in other words, I can destroy the trade. I can destroy the country."
     }
   ]
 }

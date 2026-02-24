@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
 from ..deps import get_job_store
@@ -11,6 +11,7 @@ from ..services.voice_clone import (
     list_samples,
     list_voices,
     progress_store,
+    register_voice,
 )
 from python_api.common.jobs import JobStore
 
@@ -19,14 +20,40 @@ router = APIRouter(prefix="/api/v1", tags=["f5-tts"])
 
 
 @router.post("/models/download")
-def model_download(job_store: JobStore = Depends(get_job_store)) -> StreamingResponse:
-    task_id = download_model(job_store)
+def model_download(payload: dict | None = Body(default=None), job_store: JobStore = Depends(get_job_store)) -> StreamingResponse:
+    language = str((payload or {}).get("language") or "vi").strip().lower()
+    if language not in {"vi", "en"}:
+        raise HTTPException(status_code=400, detail="language must be one of: vi, en")
+    task_id = download_model(job_store, language)
     return StreamingResponse(progress_store.sse_stream(task_id), media_type="text/event-stream")
 
 
 @router.get("/voices")
-def voices(language: str = Query(default="vi")) -> dict:
-    return list_voices(language)
+def voices(language: str = Query(default="vi"), custom_only: bool = Query(default=False)) -> dict:
+    return list_voices(language, custom_only=custom_only)
+
+
+@router.post("/voices/register")
+async def voices_register(
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    language: str = Form("vi"),
+    transcript: str = Form(...),
+    description: str = Form(""),
+) -> dict:
+    sample_bytes = await file.read()
+    try:
+        voice_entry = register_voice(
+            name=name,
+            language=language,
+            transcript=transcript,
+            sample_bytes=sample_bytes,
+            sample_filename=file.filename or "sample.wav",
+            description=description,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"status": "success", "voice": voice_entry}
 
 
 @router.get("/samples")

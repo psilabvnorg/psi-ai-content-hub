@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
 import time
+import unicodedata
 import uuid
 from pathlib import Path
 from typing import List
@@ -37,6 +39,17 @@ VOCAB_FILE_EN = MODEL_F5_EN_DIR / "vocab.txt"
 # Backward-compat aliases (VN was the original single model)
 MODEL_FILE = MODEL_FILE_VN
 VOCAB_FILE = VOCAB_FILE_VN
+
+MODEL_DOWNLOAD_SOURCES: dict[str, dict[str, str]] = {
+    "vi": {
+        "model_url": "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/model_last.pt",
+        "vocab_url": "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/config.json",
+    },
+    "en": {
+        "model_url": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/model_1200000.safetensors",
+        "vocab_url": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/vocab.txt",
+    },
+}
 
 progress_store = ProgressStore()
 task_files: dict[str, str] = {}
@@ -71,6 +84,7 @@ def model_status(language: str = "vi") -> dict:
     model_file, vocab_file = _get_model_paths(language)
     return {
         "installed": model_file.exists() and vocab_file.exists(),
+        "model_dir": str(model_file.parent),
         "model_file": str(model_file) if model_file.exists() else None,
         "vocab_file": str(vocab_file) if vocab_file.exists() else None,
     }
@@ -99,6 +113,22 @@ def _get_voice(voice_id: str, language: str = "vi") -> dict | None:
     return None
 
 
+def _slugify(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_value = normalized.encode("ascii", "ignore").decode("ascii").lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_value).strip("_")
+    return slug
+
+
+def _ensure_unique_voice_id(base_id: str, existing_ids: set[str]) -> str:
+    if base_id not in existing_ids:
+        return base_id
+    index = 2
+    while f"{base_id}_{index}" in existing_ids:
+        index += 1
+    return f"{base_id}_{index}"
+
+
 def _download_file(url: str, target: Path, task_id: str, start_percent: int, end_percent: int) -> None:
     progress_store.add_log(task_id, f"Downloading {url}")
     with urlopen(url) as response:
@@ -119,21 +149,95 @@ def _download_file(url: str, target: Path, task_id: str, start_percent: int, end
                 progress_store.set_progress(task_id, "downloading", min(end_percent, percent), "Downloading model files...")
 
 
-def download_model(job_store: JobStore) -> str:
-    task_id = f"voice_model_{uuid.uuid4().hex}"
-    progress_store.set_progress(task_id, "starting", 0, "Starting model download...")
+def _normalize_language(language: str) -> str:
+    normalized = (language or "vi").strip().lower()
+    if normalized not in MODEL_DOWNLOAD_SOURCES:
+        raise ValueError(f"Unsupported language: {language}")
+    return normalized
 
-    HF_MODEL_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/model_last.pt"
-    HF_VOCAB_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/config.json"
+
+def register_voice(
+    name: str,
+    language: str,
+    transcript: str,
+    sample_bytes: bytes,
+    sample_filename: str,
+    description: str | None = None,
+) -> dict:
+    selected_language = _normalize_language(language)
+    clean_name = (name or "").strip()
+    clean_transcript = (transcript or "").strip()
+    if not clean_name:
+        raise ValueError("name is required")
+    if not clean_transcript:
+        raise ValueError("transcript is required")
+    if not sample_bytes:
+        raise ValueError("sample audio is required")
+
+    _ensure_dirs()
+    voices_json, voice_ref_dir = _get_voices_config(selected_language)
+    voice_ref_dir.mkdir(parents=True, exist_ok=True)
+
+    payload: dict = {"voices": []}
+    if voices_json.exists():
+        with voices_json.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    existing_voices = payload.get("voices", [])
+    if not isinstance(existing_voices, list):
+        existing_voices = []
+
+    existing_ids = {str(voice.get("id", "")).strip() for voice in existing_voices if voice.get("id")}
+    base_voice_id = _slugify(clean_name) or f"voice_{uuid.uuid4().hex[:8]}"
+    voice_id = _ensure_unique_voice_id(base_voice_id, existing_ids)
+
+    ext = Path(sample_filename or "").suffix.lower()
+    if ext not in {".wav", ".mp3"}:
+        ext = ".wav"
+
+    voice_dir = voice_ref_dir / voice_id
+    voice_dir.mkdir(parents=True, exist_ok=True)
+    audio_filename = f"{voice_id}_sample{ext}"
+    audio_path = voice_dir / audio_filename
+    audio_path.write_bytes(sample_bytes)
+
+    default_description = "Custom English voice" if selected_language == "en" else "Giọng tùy chỉnh tiếng Việt"
+    voice_entry = {
+        "id": voice_id,
+        "name": clean_name,
+        "description": (description or "").strip() or default_description,
+        "language": selected_language,
+        "gender": "unknown",
+        "custom": True,
+        "ref_audio": f"{voice_id}/{audio_filename}",
+        "ref_text": clean_transcript,
+    }
+
+    existing_voices.append(voice_entry)
+    payload["voices"] = existing_voices
+    voices_json.parent.mkdir(parents=True, exist_ok=True)
+    with voices_json.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    return voice_entry
+
+
+def download_model(job_store: JobStore, language: str = "vi") -> str:
+    selected_language = _normalize_language(language)
+    model_label = "English" if selected_language == "en" else "Vietnamese"
+    sources = MODEL_DOWNLOAD_SOURCES[selected_language]
+    model_file, vocab_file = _get_model_paths(selected_language)
+
+    task_id = f"voice_model_{uuid.uuid4().hex}"
+    progress_store.set_progress(task_id, "starting", 0, f"Starting {model_label} model download...")
 
     def runner() -> None:
         try:
             _ensure_dirs()
-            _download_file(HF_MODEL_URL, MODEL_FILE_VN, task_id, 5, 70)
-            _download_file(HF_VOCAB_URL, VOCAB_FILE_VN, task_id, 70, 95)
-            model_marker = MODEL_F5_VN_DIR / "model_ready.json"
+            _download_file(sources["model_url"], model_file, task_id, 5, 70)
+            _download_file(sources["vocab_url"], vocab_file, task_id, 70, 95)
+            model_marker = model_file.parent / "model_ready.json"
             model_marker.write_text(json.dumps({"ready": True, "time": time.time()}))
-            progress_store.set_progress(task_id, "complete", 100, "Model ready")
+            progress_store.set_progress(task_id, "complete", 100, f"{model_label} model ready")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
             log(f"Voice clone model download failed: {exc}", "error", log_name="f5-tts.log")
@@ -250,8 +354,11 @@ def list_samples() -> dict:
     return {"samples": items}
 
 
-def list_voices(language: str = "vi") -> dict:
-    return {"voices": _load_voices(language)}
+def list_voices(language: str = "vi", custom_only: bool = False) -> dict:
+    voices = _load_voices(language)
+    if custom_only:
+        voices = [voice for voice in voices if bool(voice.get("custom"))]
+    return {"voices": voices}
 
 
 def get_download_file_id(task_id: str) -> str | None:

@@ -59,6 +59,7 @@ type BgRemoveModelStatus = {
 
 type F5ModelStatus = {
   installed?: boolean;
+  model_dir?: string | null;
   model_file?: string | null;
   vocab_file?: string | null;
 };
@@ -70,6 +71,13 @@ type F5StatusData = {
     vi?: F5ModelStatus;
     en?: F5ModelStatus;
   };
+};
+
+type F5Language = "vi" | "en";
+
+const F5_MODEL_DEFAULT_PATHS: Record<F5Language, string> = {
+  vi: "C:\\Users\\ADMIN\\AppData\\Roaming\\psi-ai-content-hub\\models\\f5-tts-vn",
+  en: "C:\\Users\\ADMIN\\AppData\\Roaming\\psi-ai-content-hub\\models\\f5-tts-en",
 };
 
 type TranslationModelStatus = {
@@ -222,6 +230,7 @@ export default function Settings() {
   const [serverStartProgress, setServerStartProgress] = useState(0);
   const serverStartTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [f5Status, setF5Status] = useState<F5StatusData | null>(null);
+  const [f5ModelProgress, setF5ModelProgress] = useState<Partial<Record<F5Language, ProgressData>>>({});
   const [logs, setLogs] = useState<string[]>([]);
   const [logsServerUnreachable, setLogsServerUnreachable] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -600,6 +609,42 @@ export default function Settings() {
       });
     } catch {
       setF5Status({ server_unreachable: true });
+    }
+  };
+
+  const isF5ModelDownloading = (language: F5Language) => {
+    const status = f5ModelProgress[language]?.status;
+    return status === "starting" || status === "downloading" || status === "installing";
+  };
+
+  const handleF5DownloadModel = async (language: F5Language) => {
+    setF5ModelProgress((prev) => ({
+      ...prev,
+      [language]: { status: "starting", percent: 0, message: t("settings.f5.download_model") },
+    }));
+    try {
+      const res = await fetch(`${F5_API_URL}/api/v1/models/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language }),
+      });
+      if (!res.ok) {
+        throw new Error("Model download request failed");
+      }
+      await consumeSseStream(res, (data) =>
+        setF5ModelProgress((prev) => ({
+          ...prev,
+          [language]: data,
+        }))
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Model download failed";
+      setF5ModelProgress((prev) => ({
+        ...prev,
+        [language]: { status: "error", percent: 0, message },
+      }));
+    } finally {
+      void fetchF5Status();
     }
   };
 
@@ -1202,37 +1247,87 @@ export default function Settings() {
                 <TableRow>
                   <TableCell className="font-medium">{t("tool.voice_clone.model_status_vn")}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {f5Status?.models?.vi?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {f5Status?.models?.vi?.installed ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        )}
+                        <span className="text-sm">
+                          {f5Status?.models?.vi?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                        </span>
+                        {!f5Status?.models?.vi?.installed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              void handleF5DownloadModel("vi");
+                            }}
+                            disabled={isF5ModelDownloading("vi") || !f5Status?.env?.installed || Boolean(f5Status?.server_unreachable)}
+                            className="ml-2"
+                          >
+                            {isF5ModelDownloading("vi") ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            {t("settings.f5.download_model")}
+                          </Button>
+                        )}
+                      </div>
+                      {f5ModelProgress.vi && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{f5ModelProgress.vi.message || t("settings.f5.download_model")}</span>
+                            <span>{f5ModelProgress.vi.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={f5ModelProgress.vi.percent ?? 0} className="h-1.5" />
+                        </div>
                       )}
-                      <span className="text-sm">
-                        {f5Status?.models?.vi?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {f5Status?.models?.vi?.model_file || "--"}
+                    {f5Status?.models?.vi?.model_file || f5Status?.models?.vi?.model_dir || F5_MODEL_DEFAULT_PATHS.vi}
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">{t("tool.voice_clone.model_status_en")}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {f5Status?.models?.en?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {f5Status?.models?.en?.installed ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        )}
+                        <span className="text-sm">
+                          {f5Status?.models?.en?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                        </span>
+                        {!f5Status?.models?.en?.installed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              void handleF5DownloadModel("en");
+                            }}
+                            disabled={isF5ModelDownloading("en") || !f5Status?.env?.installed || Boolean(f5Status?.server_unreachable)}
+                            className="ml-2"
+                          >
+                            {isF5ModelDownloading("en") ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            {t("settings.f5.download_model")}
+                          </Button>
+                        )}
+                      </div>
+                      {f5ModelProgress.en && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{f5ModelProgress.en.message || t("settings.f5.download_model")}</span>
+                            <span>{f5ModelProgress.en.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={f5ModelProgress.en.percent ?? 0} className="h-1.5" />
+                        </div>
                       )}
-                      <span className="text-sm">
-                        {f5Status?.models?.en?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {f5Status?.models?.en?.model_file || "--"}
+                    {f5Status?.models?.en?.model_file || f5Status?.models?.en?.model_dir || F5_MODEL_DEFAULT_PATHS.en}
                   </TableCell>
                 </TableRow>
               </TableBody>

@@ -143,6 +143,16 @@
       "gender": "male",
       "ref_audio": "37/37_trimmed.wav",
       "ref_text": "trước những ảnh hưởng lạm phát trên thế giới, các doanh nghiệp dệt may da giày việt nam, lâm vào trình trạng vô cùng khó khăn do đơn hàng sụt giảm, nhiều công ty"
+    },
+    {
+      "id": "tuan_tien_ty",
+      "name": "Tuấn Tiền Tỷ",
+      "description": "Tuấn Tiền Tỷ - vietnamese",
+      "language": "vi",
+      "gender": "unknown",
+      "custom": true,
+      "ref_audio": "tuan_tien_ty/tuan_tien_ty_sample.wav",
+      "ref_text": "Tại sao phụ nữ lại thích những người đàn ông cao, Đây là một nhu cầu bản năng của phụ nữ, Thế nhưng mà nó lại rất đúng trong thời buổi hiện tại, Theo nghiên cứu vào năm 2019"
     }
   ]
 }

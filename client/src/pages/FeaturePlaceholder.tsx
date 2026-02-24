@@ -14,6 +14,7 @@ import AudioTrimmer from "./tools/AudioTrimmer";
 import SpeedAdjuster from "./tools/SpeedAdjuster";
 import TTSFast from "./tools/TTSFast";
 import VoiceClone from "./tools/VoiceClone";
+import VoiceCloneCustom from "./tools/VoiceCloneCustom";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
@@ -64,6 +65,7 @@ export default function FeaturePlaceholder({
       "merge-overlay": "feature.tool.merge_overlay.title",
       "tts-fast": "feature.tool.tts_fast.title",
       "voice-clone": "feature.tool.voice_clone.title",
+      "voice-clone-custom": "feature.tool.voice_clone_custom.title",
       "stt": "feature.tool.stt.title",
       "llm": "feature.tool.llm.title",
       translator: "feature.tool.translator.title",
@@ -107,6 +109,8 @@ export default function FeaturePlaceholder({
         return <TTSFast onOpenSettings={() => onSelectFeature("settings")} />;
       case "voice-clone":
         return <VoiceClone onOpenSettings={() => onSelectFeature("settings")} />;
+      case "voice-clone-custom":
+        return <VoiceCloneCustom onOpenSettings={() => onSelectFeature("settings")} />;
       case "stt":
         return <SpeechToText onOpenSettings={() => onSelectFeature("settings")} />;
       case "thumbnail":
