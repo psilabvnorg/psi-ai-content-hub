@@ -13,6 +13,13 @@ import type { ProgressData, StatusRowConfig } from "@/components/common/tool-pag
 import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
+type TranslationModelStatus = {
+  loaded?: boolean;
+  downloaded?: boolean;
+  model_id?: string;
+  model_dir?: string | null;
+};
+
 type StreamPayload = {
   status?: string;
   percent?: number;
@@ -62,9 +69,12 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
   const [logs, setLogs] = useState<string[]>([]);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
+  const [translationModelStatus, setTranslationModelStatus] = useState<TranslationModelStatus | null>(null);
 
   const translationService = servicesById.app;
   const statusReady = !serverUnreachable;
+  const translationModelLoaded = Boolean(translationModelStatus?.loaded);
+  const translationModelDownloaded = Boolean(translationModelStatus?.downloaded);
 
   useEffect(() => {
     return () => {
@@ -80,6 +90,14 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
       setServerUnreachable(false);
     } catch {
       setServerUnreachable(true);
+      setTranslationModelStatus(null);
+      return;
+    }
+    try {
+      const modelRes = await fetch(`${APP_API_URL}/api/v1/translation/status`);
+      if (modelRes.ok) setTranslationModelStatus((await modelRes.json()) as TranslationModelStatus);
+    } catch {
+      // leave stale value
     }
   };
 
@@ -103,6 +121,16 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
       showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
       secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
+    },
+    {
+      id: "translation-model",
+      label: "Translation Model",
+      isReady: translationModelLoaded,
+      isSleeping: translationModelDownloaded && !translationModelLoaded,
+      path: translationModelStatus?.model_dir || translationModelStatus?.model_id || "--",
+      showActionButton: !translationModelLoaded && Boolean(onOpenSettings),
+      actionButtonLabel: t("tool.common.open_settings"),
+      onAction: onOpenSettings,
     },
   ];
 

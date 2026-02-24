@@ -544,6 +544,16 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
       secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
     },
+    {
+      id: "bg-remove-model",
+      label: "Background Removal Model",
+      isReady: modelLoaded,
+      isSleeping: modelDownloaded && !modelLoaded,
+      path: modelStatus ? `${modelStatus.model_id || "BiRefNet"} (${modelStatus.device || "cpu"})` : "--",
+      showActionButton: !modelLoaded && Boolean(onOpenSettings),
+      actionButtonLabel: t("tool.common.open_settings"),
+      onAction: onOpenSettings,
+    },
   ];
 
   const getAbsoluteImageUrl = (path: string) => (path.startsWith("http") ? path : `${APP_API_URL}${path}`);

@@ -12,6 +12,7 @@ from ..services.translation import (
     download_model,
     get_model_status,
     get_translation_status,
+    load_model,
     start_translation,
     translation_progress,
     unload_model,
@@ -87,6 +88,13 @@ def translate_result(job_id: str, job_store: JobStore = Depends(get_job_store)) 
 def model_download(job_store: JobStore = Depends(get_job_store)) -> StreamingResponse:
     """Download and cache the translation model, streaming progress as SSE."""
     task_id = download_model(job_store)
+    return StreamingResponse(translation_progress.sse_stream(task_id), media_type="text/event-stream")
+
+
+@router.post("/load")
+def model_load() -> StreamingResponse:
+    """Load the translation model into memory, streaming progress as SSE."""
+    task_id = load_model()
     return StreamingResponse(translation_progress.sse_stream(task_id), media_type="text/event-stream")
 
 

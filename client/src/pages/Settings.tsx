@@ -489,6 +489,20 @@ export default function Settings() {
     }
   };
 
+  const handleTranslationLoadModel = async () => {
+    setTranslationProgress({ status: "starting", percent: 0, message: "Loading translation model..." });
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/translation/load`, { method: "POST" });
+      if (!res.ok) throw new Error("Load request failed");
+      await consumeSseStream(res, (data) => setTranslationProgress(data));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Load failed";
+      setTranslationProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchTranslationStatus();
+    }
+  };
+
   const handleTranslationUnloadModel = async () => {
     try {
       await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
@@ -551,6 +565,48 @@ export default function Settings() {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Model download failed";
+      setBgRemoveProgress({ status: "error", percent: 0, message });
+    } finally {
+      fetchBgRemoveStatus();
+    }
+  };
+
+  const handleBgRemoveLoadModel = async () => {
+    setBgRemoveProgress({ status: "starting", percent: 0, message: "Loading background removal model..." });
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/bg-remove-overlay/remove/load`, { method: "POST" });
+      if (!response.ok) throw new Error("Model load request failed");
+      const payload = (await response.json()) as { task_id?: string | null };
+      if (!payload.task_id) {
+        await fetchBgRemoveStatus();
+        return;
+      }
+      await new Promise<void>((resolve, reject) => {
+        const stream = new EventSource(`${APP_API_URL}/api/v1/bg-remove-overlay/remove/stream/${payload.task_id}`);
+        stream.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data) as ProgressData;
+            setBgRemoveProgress(data);
+            if (data.status === "complete") {
+              stream.close();
+              resolve();
+              return;
+            }
+            if (data.status === "error") {
+              stream.close();
+              reject(new Error(data.message || "Model load failed"));
+            }
+          } catch {
+            // Ignore parse errors for keep-alive events.
+          }
+        };
+        stream.onerror = () => {
+          stream.close();
+          reject(new Error("Lost stream while loading model"));
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Model load failed";
       setBgRemoveProgress({ status: "error", percent: 0, message });
     } finally {
       fetchBgRemoveStatus();
@@ -711,9 +767,11 @@ export default function Settings() {
   const f5Service = services.find((service) => service.id === "f5");
   const f5ServiceRunning = f5Service?.status === "running";
   const f5ServiceBusy = f5Service ? isServiceBusy("f5") : false;
-  const whisperModelReady = Boolean(whisperStatus?.cached_models?.length);
-  const translationModelReady = Boolean(translationModelStatus?.loaded || translationModelStatus?.downloaded);
-  const bgRemoveModelReady = Boolean(bgRemoveStatus?.model_loaded || bgRemoveStatus?.model_downloaded);
+  const whisperModelDownloaded = Boolean(whisperStatus?.cached_models?.length);
+  const translationModelDownloaded = Boolean(translationModelStatus?.downloaded);
+  const translationModelLoaded = Boolean(translationModelStatus?.loaded);
+  const bgRemoveModelDownloaded = Boolean(bgRemoveStatus?.model_downloaded);
+  const bgRemoveModelLoaded = Boolean(bgRemoveStatus?.model_loaded);
 
   const prevAppServiceRunning = useRef<boolean | null>(null);
   useEffect(() => {
@@ -824,9 +882,9 @@ export default function Settings() {
                         !translationEnv?.installed ||
                         !imageFinderEnv?.installed ||
                         !bgRemoveEnv?.installed ||
-                        !whisperModelReady ||
-                        !translationModelReady ||
-                        !bgRemoveModelReady
+                        !whisperModelDownloaded ||
+                        !translationModelDownloaded ||
+                        !bgRemoveModelDownloaded
                       );
                       return (
                         <div className="flex items-center gap-2">
@@ -1002,20 +1060,44 @@ export default function Settings() {
                   <TableCell className="font-medium">Whisper Model</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {whisperModelReady ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                      <span className="text-sm">{whisperModelReady ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}</span>
+                      {whisperModelDownloaded ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {whisperModelDownloaded ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
                     {whisperStatus?.cached_models?.length ? whisperStatus.cached_models.join(", ") : whisperStatus?.model_dir || "--"}
                   </TableCell>
                   <TableCell>
-                    {appServiceRunning && !whisperModelReady && (
-                      <Button size="sm" variant="outline" onClick={handleWhisperDownloadModel} disabled={whisperProgress?.status === "starting"}>
-                        {whisperProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        {t("settings.whisper.download_model")}
-                      </Button>
-                    )}
+                    <div className="space-y-2">
+                      {appServiceRunning && !whisperModelDownloaded && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleWhisperDownloadModel}
+                          disabled={Boolean(whisperProgress?.status && !["complete", "error"].includes(whisperProgress.status))}
+                        >
+                          {whisperProgress?.status && !["complete", "error"].includes(whisperProgress.status) ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : null}
+                          {t("settings.whisper.download_model")}
+                        </Button>
+                      )}
+                      {whisperProgress && (
+                        <div className="space-y-1 min-w-[160px]">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{whisperProgress.message}</span>
+                            <span>{whisperProgress.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={whisperProgress.percent ?? 0} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
 
@@ -1023,42 +1105,76 @@ export default function Settings() {
                   <TableCell className="font-medium">Translation Model</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {translationModelReady ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                      <span className="text-sm">{translationModelReady ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}</span>
+                      {translationModelLoaded ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : translationModelDownloaded ? (
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {translationModelLoaded
+                          ? t("settings.tools.status.ready")
+                          : translationModelDownloaded
+                          ? "Sleep"
+                          : t("settings.tools.status.not_ready")}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
                     {translationModelStatus?.model_dir || translationModelStatus?.model_id || "--"}
                   </TableCell>
                   <TableCell>
-                    {appServiceRunning && (
-                      <div className="flex flex-wrap gap-2">
-                        {!translationModelReady && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              void handleTranslationDownloadModel();
-                            }}
-                            disabled={translationProgress?.status === "starting" || !translationEnv?.installed}
-                          >
-                            {translationProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                            Download / Load
-                          </Button>
-                        )}
-                        {translationModelStatus?.loaded && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              void handleTranslationUnloadModel();
-                            }}
-                          >
-                            Unload
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {appServiceRunning && (
+                        <div className="flex flex-wrap gap-2">
+                          {!translationModelDownloaded && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { void handleTranslationDownloadModel(); }}
+                              disabled={Boolean(translationProgress?.status && !["complete", "error"].includes(translationProgress.status)) || !translationEnv?.installed}
+                            >
+                              {translationProgress?.status && !["complete", "error"].includes(translationProgress.status) ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : null}
+                              Download Model
+                            </Button>
+                          )}
+                          {translationModelDownloaded && !translationModelLoaded && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { void handleTranslationLoadModel(); }}
+                              disabled={Boolean(translationProgress?.status && !["complete", "error"].includes(translationProgress.status))}
+                            >
+                              {translationProgress?.status && !["complete", "error"].includes(translationProgress.status) ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : null}
+                              Load Model
+                            </Button>
+                          )}
+                          {translationModelLoaded && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { void handleTranslationUnloadModel(); }}
+                            >
+                              Unload
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {translationProgress && (
+                        <div className="space-y-1 min-w-[160px]">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{translationProgress.message}</span>
+                            <span>{translationProgress.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={translationProgress.percent ?? 0} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
 
@@ -1066,8 +1182,20 @@ export default function Settings() {
                   <TableCell className="font-medium">Background Removal Model</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {bgRemoveModelReady ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                      <span className="text-sm">{bgRemoveModelReady ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}</span>
+                      {bgRemoveModelLoaded ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : bgRemoveModelDownloaded ? (
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {bgRemoveModelLoaded
+                          ? t("settings.tools.status.ready")
+                          : bgRemoveModelDownloaded
+                          ? "Sleep"
+                          : t("settings.tools.status.not_ready")}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
@@ -1076,21 +1204,52 @@ export default function Settings() {
                       : "--"}
                   </TableCell>
                   <TableCell>
-                    {appServiceRunning && (
-                      <div className="flex flex-wrap gap-2">
-                        {!bgRemoveModelReady && (
-                          <Button size="sm" variant="outline" onClick={handleBgRemoveDownloadModel} disabled={bgRemoveProgress?.status === "starting"}>
-                            {bgRemoveProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                            Download / Load
-                          </Button>
-                        )}
-                        {bgRemoveStatus?.model_loaded && (
-                          <Button size="sm" variant="outline" onClick={handleBgRemoveUnloadModel}>
-                            Unload
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {appServiceRunning && (
+                        <div className="flex flex-wrap gap-2">
+                          {!bgRemoveModelDownloaded && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleBgRemoveDownloadModel}
+                              disabled={Boolean(bgRemoveProgress?.status && !["complete", "error"].includes(bgRemoveProgress.status))}
+                            >
+                              {bgRemoveProgress?.status && !["complete", "error"].includes(bgRemoveProgress.status) ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : null}
+                              Download Model
+                            </Button>
+                          )}
+                          {bgRemoveModelDownloaded && !bgRemoveModelLoaded && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleBgRemoveLoadModel}
+                              disabled={Boolean(bgRemoveProgress?.status && !["complete", "error"].includes(bgRemoveProgress.status))}
+                            >
+                              {bgRemoveProgress?.status && !["complete", "error"].includes(bgRemoveProgress.status) ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : null}
+                              Load Model
+                            </Button>
+                          )}
+                          {bgRemoveModelLoaded && (
+                            <Button size="sm" variant="outline" onClick={handleBgRemoveUnloadModel}>
+                              Unload
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {bgRemoveProgress && (
+                        <div className="space-y-1 min-w-[160px]">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{bgRemoveProgress.message}</span>
+                            <span>{bgRemoveProgress.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={bgRemoveProgress.percent ?? 0} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -1141,24 +1300,9 @@ export default function Settings() {
               </p>
             </div>
           )}
-          {!envInstallAllActive && whisperProgress && (
-            <div className="text-xs text-muted-foreground">
-              Whisper: {whisperProgress.message} {whisperProgress.percent ?? 0}%
-            </div>
-          )}
-          {!envInstallAllActive && translationProgress && (
-            <div className="text-xs text-muted-foreground">
-              Translation: {translationProgress.message} {translationProgress.percent ?? 0}%
-            </div>
-          )}
           {!envInstallAllActive && imageFinderProgress && (
             <div className="text-xs text-muted-foreground">
               Image Finder: {imageFinderProgress.message} {imageFinderProgress.percent ?? 0}%
-            </div>
-          )}
-          {!envInstallAllActive && bgRemoveProgress && (
-            <div className="text-xs text-muted-foreground">
-              Background Removal: {bgRemoveProgress.message} {bgRemoveProgress.percent ?? 0}%
             </div>
           )}
         </CardContent>

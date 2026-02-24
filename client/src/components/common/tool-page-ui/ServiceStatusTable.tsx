@@ -155,6 +155,8 @@ export function ServiceStatusTable({
                       <XCircle className="w-4 h-4 text-red-500" />
                     ) : row.isReady ? (
                       <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : row.isSleeping ? (
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
                     ) : (
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
@@ -163,12 +165,14 @@ export function ServiceStatusTable({
                         ? t("settings.tools.status.not_ready")
                         : row.isReady
                         ? t("settings.tools.status.ready")
+                        : row.isSleeping
+                        ? "Sleep"
                         : t("settings.tools.status.not_ready")}
                     </span>
                     {row.showActionButton && row.onAction && (
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="default"
                         onClick={row.onAction}
                         className="ml-2"
                         disabled={row.actionDisabled || row.actionLoading}

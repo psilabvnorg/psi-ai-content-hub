@@ -24,6 +24,8 @@ export type StatusRowConfig = {
   id: string;
   label: string;
   isReady: boolean;
+  /** True when downloaded but not loaded into memory — shows amber Sleep state */
+  isSleeping?: boolean;
   path?: string;
   showActionButton?: boolean;
   actionButtonLabel?: string;

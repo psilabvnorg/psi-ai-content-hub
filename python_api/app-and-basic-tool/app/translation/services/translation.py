@@ -182,6 +182,27 @@ def _translate_segment(
     return " ".join(decoded.split())
 
 
+def load_model() -> str:
+    """Load the translation model into memory, streaming progress via SSE."""
+    task_id = f"translation_load_{uuid.uuid4().hex}"
+    translation_progress.set_progress(task_id, "starting", 0, "Loading model...")
+
+    def runner() -> None:
+        try:
+            if not _model_downloaded():
+                translation_progress.set_progress(task_id, "error", 0, "Model not downloaded. Please download it first.")
+                return
+            preferred_device, _ = _detect_runtime_device()
+            _ensure_model_loaded(task_id, preferred_device)
+            translation_progress.set_progress(task_id, "complete", 100, "Model loaded successfully.")
+        except Exception as exc:
+            translation_progress.set_progress(task_id, "error", 0, str(exc))
+            log(f"Translation model load failed: {exc}", "error", log_name="translation.log")
+
+    threading.Thread(target=runner, daemon=True).start()
+    return task_id
+
+
 def download_model(job_store: JobStore) -> str:
     """Download and cache the NLLB-200 model to MODEL_DIR, streaming progress via SSE."""
     task_id = f"translation_model_{uuid.uuid4().hex}"
