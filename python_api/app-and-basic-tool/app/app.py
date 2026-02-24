@@ -25,7 +25,6 @@ from .bg_remove_overlay.services import remove_overlay as bg_remove_overlay_serv
 from .image_search.routers import config as image_search_config_router
 from .image_search.routers import env as image_search_env_router
 from .image_search.routers import image_finder as image_search_router
-from .image_search.routers import llm as image_search_llm_router
 from .image_search.routers import sources as image_search_sources_router
 from .image_search.routers import system as image_search_system_router
 from .translation.routers import env as translation_env_router
@@ -91,7 +90,6 @@ def create_app() -> FastAPI:
     app.include_router(image_search_system_router.router, prefix="/api/v1/image-search")
     app.include_router(image_search_config_router.router, prefix="/api/v1/image-search")
     app.include_router(image_search_env_router.router, prefix="/api/v1/image-search")
-    app.include_router(image_search_llm_router.router, prefix="/api/v1/image-search")
     app.include_router(image_search_router.router, prefix="/api/v1/image-search")
     app.include_router(image_search_sources_router.router, prefix="/api/v1/image-search")
 
@@ -112,7 +110,6 @@ def create_app() -> FastAPI:
     app.include_router(image_search_system_router.router, prefix="/image-search/api/v1")
     app.include_router(image_search_config_router.router, prefix="/image-search/api/v1")
     app.include_router(image_search_env_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_search_llm_router.router, prefix="/image-search/api/v1")
     app.include_router(image_search_router.router, prefix="/image-search/api/v1")
     app.include_router(image_search_sources_router.router, prefix="/image-search/api/v1")
 

@@ -60,6 +60,12 @@ const TEMPLATES: { id: string; labelKey: I18nKey; prompt: string }[] = [
       "Translate the following text to Vietnamese. Return only the translation.",
   },
   {
+    id: "extract_keyword",
+    labelKey: "tool.llm.template_extract_keyword",
+    prompt:
+      "Extract the main keywords from the following text. Return only a comma-separated list of keywords, no explanation.",
+  },
+  {
     id: "custom",
     labelKey: "tool.llm.custom_prompt",
     prompt: "",

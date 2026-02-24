@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from .image_pipeline.orchestrator import run_pipeline
-from .llm import generate
+from ...services.llm import generate
 
 
 class ImageFinderError(Exception):

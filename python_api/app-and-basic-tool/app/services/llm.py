@@ -2,28 +2,60 @@ from __future__ import annotations
 
 import os
 
-import requests
-
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://172.18.96.1:11434")
+DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1:8b")
 
 
 def get_status() -> dict:
     """Check connectivity and retrieve available models from the Ollama server."""
+    base = {
+        "engine": "ollama",
+        "url": OLLAMA_API_URL,
+        "default_model": DEFAULT_MODEL,
+        "connected": False,
+        "models": [],
+        "version": None,
+    }
+
+    try:
+        import requests
+    except ModuleNotFoundError:
+        base["status"] = "error"
+        base["detail"] = "requests package not installed — run Install Environment first"
+        return base
+
     try:
         resp = requests.get(f"{OLLAMA_API_URL}/api/tags", timeout=10)
         resp.raise_for_status()
         models = [m.get("name") for m in resp.json().get("models", [])]
-        return {"status": "ok", "url": OLLAMA_API_URL, "models": models}
+        base["connected"] = True
+        base["models"] = models
+        base["status"] = "ok"
     except requests.exceptions.ConnectionError:
-        return {"status": "unreachable", "url": OLLAMA_API_URL, "models": []}
+        base["status"] = "unreachable"
+        return base
     except requests.exceptions.Timeout:
-        return {"status": "timeout", "url": OLLAMA_API_URL, "models": []}
+        base["status"] = "timeout"
+        return base
     except Exception as exc:
-        return {"status": "error", "url": OLLAMA_API_URL, "models": [], "detail": str(exc)}
+        base["status"] = "error"
+        base["detail"] = str(exc)
+        return base
+
+    try:
+        ver_resp = requests.get(f"{OLLAMA_API_URL}/api/version", timeout=5)
+        if ver_resp.ok:
+            base["version"] = ver_resp.json().get("version")
+    except Exception:
+        pass
+
+    return base
 
 
-def generate(prompt: str, input_text: str, model: str = "deepseek-r1:8b") -> str:
+def generate(prompt: str, input_text: str, model: str = DEFAULT_MODEL) -> str:
     """Call Ollama API to generate text."""
+    import requests
+
     full_prompt = f"{prompt}\n\n{input_text}" if prompt else input_text
 
     resp = requests.post(

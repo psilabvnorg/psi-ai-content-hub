@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException
 
-from ..services.llm import generate, get_status
+from ..services.llm import DEFAULT_MODEL, generate, get_status
 
 router = APIRouter(prefix="/api/v1/llm", tags=["llm"])
 
@@ -17,7 +17,7 @@ def llm_status() -> dict:
 def llm_generate(payload: dict = Body(...)) -> dict:
     prompt = payload.get("prompt", "")
     input_text = payload.get("input_text", "")
-    model = payload.get("model", "deepseek-r1:8b")
+    model = payload.get("model") or DEFAULT_MODEL
 
     if not input_text:
         raise HTTPException(status_code=400, detail="input_text is required")
