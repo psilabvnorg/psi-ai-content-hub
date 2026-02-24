@@ -38,22 +38,10 @@ const features = {
       descriptionKey: "feature.tool.voice_clone.desc" as I18nKey,
     },
     {
-      id: "voice-clone-custom",
-      titleKey: "feature.tool.voice_clone_custom.title" as I18nKey,
-      icon: Mic,
-      descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey,
-    },
-    {
       id: "background-removal",
       titleKey: "feature.tool.background_removal.title" as I18nKey,
       icon: ImageIcon,
       descriptionKey: "feature.tool.background_removal.desc" as I18nKey,
-    },
-    {
-      id: "thumbnail",
-      titleKey: "feature.tool.thumbnail.title" as I18nKey,
-      icon: ImageIcon,
-      descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
     },
     {
       id: "image-finder",
@@ -111,6 +99,18 @@ const features = {
     },
   ],
   advancedTool: [
+    {
+      id: "voice-clone-custom",
+      titleKey: "feature.tool.voice_clone_custom.title" as I18nKey,
+      icon: Mic,
+      descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey,
+    },
+    {
+      id: "thumbnail",
+      titleKey: "feature.tool.thumbnail.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
+    },
     {
       id: "reup-youtube",
       titleKey: "feature.workflow.reup_youtube.title" as I18nKey,

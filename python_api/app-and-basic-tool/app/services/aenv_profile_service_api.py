@@ -69,6 +69,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "huggingface_hub": "huggingface_hub",
         "transformers": "transformers>=4.39.1",
         "einops": "einops",
+        "cv2": "opencv-python",
     },
 }
 

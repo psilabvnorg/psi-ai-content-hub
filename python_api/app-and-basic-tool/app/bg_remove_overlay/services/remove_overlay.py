@@ -36,14 +36,13 @@ except ImportError:
     _transform_image = None  # type: ignore[assignment]
     _deps_available = False
 
-try:
-    import cv2
-    import numpy as np
-    _video_deps_available = True
-except ImportError:
-    cv2 = None  # type: ignore[assignment]
-    np = None  # type: ignore[assignment]
-    _video_deps_available = False
+def _get_video_deps():
+    try:
+        import cv2  # noqa: PLC0415
+        import numpy as np  # noqa: PLC0415
+        return cv2, np
+    except ImportError:
+        return None, None
 
 from python_api.common.jobs import JobStore
 from python_api.common.logging import log
@@ -469,7 +468,8 @@ def _process_video_task(job_store: JobStore, video_path: Path, base_name: str) -
 
     def runner() -> None:
         try:
-            if not _deps_available or not _video_deps_available or cv2 is None or np is None:
+            cv2, np = _get_video_deps()
+            if not _deps_available or cv2 is None or np is None:
                 progress_store.set_progress(
                     task_id, "error", 0,
                     "Required libraries not installed (torch, opencv-python)."
@@ -730,7 +730,8 @@ def overlay_video(
     def runner() -> None:
         bg_path: Optional[Path] = None
         try:
-            if not _video_deps_available or cv2 is None or np is None:
+            cv2, np = _get_video_deps()
+            if cv2 is None or np is None:
                 progress_store.set_progress(task_id, "error", 0, "Required libraries not installed (opencv-python).")
                 return
 
@@ -994,7 +995,8 @@ def overlay_video_upload(
         mask_path: Optional[Path] = None
         bg_path: Optional[Path] = None
         try:
-            if not _video_deps_available or cv2 is None or np is None:
+            cv2, np = _get_video_deps()
+            if cv2 is None or np is None:
                 progress_store.set_progress(task_id, "error", 0, "Required libraries not installed (opencv-python).")
                 return
 

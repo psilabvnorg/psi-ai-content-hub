@@ -506,6 +506,9 @@ export default function Settings() {
   const handleTranslationUnloadModel = async () => {
     try {
       await fetch(`${APP_API_URL}/api/v1/translation/unload`, { method: "POST" });
+      setTranslationProgress(null);
+    } catch {
+      setTranslationProgress({ status: "error", percent: 0, message: "Failed to unload translation model" });
     } finally {
       void fetchTranslationStatus();
     }
@@ -643,6 +646,10 @@ export default function Settings() {
     } finally {
       setEnvInstallAllActive(false);
       setEnvInstallStep("");
+      setWhisperProgress(null);
+      setTranslationProgress(null);
+      setBgRemoveProgress(null);
+      setImageFinderProgress(null);
     }
   };
 
