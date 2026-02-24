@@ -2,13 +2,14 @@ import { type ChangeEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Volume2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL } from "@/lib/api";
 import { ServiceStatusTable, ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 const MAX_CHARS = 3000;
 
@@ -208,6 +209,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const statusReady = !serverUnreachable;
 
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
 
   const fetchStatus = async () => {
@@ -344,30 +346,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">{t("feature.tool.tts_fast.title")}</h2>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>
-              API:{" "}
-              <a href="http://127.0.0.1:6901" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent/80 underline">
-                http://127.0.0.1:6901
-              </a>
-            </p>
-            <p>
-              API Docs:{" "}
-              <a
-                href="http://127.0.0.1:6901/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:text-accent/80 underline"
-              >
-                http://127.0.0.1:6901/docs
-              </a>
-            </p>
-          </div>
-        </div>
-
-        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.tts_fast.select_language")}</label>
@@ -376,11 +355,36 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
               <SelectValue placeholder={t("tool.tts_fast.choose_language")} />
             </SelectTrigger>
             <SelectContent viewportClassName="!h-auto max-h-[220px] overflow-y-auto">
-              {languages.map((language) => (
-                <SelectItem key={language.code} value={language.code}>
-                  {getLanguageLabel(language.code, language.voice_count)}
-                </SelectItem>
-              ))}
+              {(() => {
+                const TOP_LANGUAGE_CODES = ["en-US", "vi-VN", "ja-JP", "ko-KR", "de-DE", "zh-CN"];
+                const topLanguages = languages.filter((l) => TOP_LANGUAGE_CODES.includes(l.code));
+                const otherLanguages = languages.filter((l) => !TOP_LANGUAGE_CODES.includes(l.code));
+                return (
+                  <>
+                    {topLanguages.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">Popular</SelectLabel>
+                        {topLanguages.map((language) => (
+                          <SelectItem key={language.code} value={language.code}>
+                            {getLanguageLabel(language.code, language.voice_count)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {topLanguages.length > 0 && otherLanguages.length > 0 && <SelectSeparator />}
+                    {otherLanguages.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">All Languages</SelectLabel>
+                        {otherLanguages.map((language) => (
+                          <SelectItem key={language.code} value={language.code}>
+                            {getLanguageLabel(language.code, language.voice_count)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                  </>
+                );
+              })()}
             </SelectContent>
           </Select>
         </div>
@@ -419,7 +423,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
               size="sm"
               variant={charLimitEnabled ? "outline" : "secondary"}
               onClick={() => setCharLimitEnabled(!charLimitEnabled)}
-              className="h-6 text-xs px-2"
+              className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
             >
               {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
             </Button>

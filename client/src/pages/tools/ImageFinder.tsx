@@ -32,6 +32,7 @@ import type {
   StatusRowConfig,
 } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 type ImageFinderImage = {
   url?: string;
@@ -159,6 +160,7 @@ export default function ImageFinder({
   const aimage_search_base_url = `${APP_API_URL}/api/v1/image-search`;
   const { t } = useI18n();
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
 
   const [text, setText] = useState("");
   const [numberOfImages, setNumberOfImages] = useState("5");
@@ -455,6 +457,8 @@ export default function ImageFinder({
           serverUnreachable={serverUnreachable}
           rows={statusRows}
           onRefresh={fetchStatus}
+          serverWarning={hasMissingDeps}
+          onOpenSettings={onOpenSettings}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

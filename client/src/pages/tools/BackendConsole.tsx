@@ -5,6 +5,9 @@ import { AlertCircle, RefreshCw, Terminal } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL } from "@/lib/api";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 type SystemStatus = {
   status?: string;
@@ -23,6 +26,7 @@ export default function BackendConsole() {
   const [isStreaming, setIsStreaming] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
   const serviceRunning = serviceStatus?.status === "running";
   const serviceBusy = isBusy("app");
@@ -115,9 +119,20 @@ export default function BackendConsole() {
     };
   }, [serverUnreachable]);
 
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+    },
+  ];
+
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} />
+
         {serverUnreachable && (
           <div className="p-4 bg-destructive/12 rounded-xl border border-destructive/45">
             <div className="flex items-start gap-3">

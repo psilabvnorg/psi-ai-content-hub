@@ -37,6 +37,10 @@ export type StatusRowConfig = {
 
 export type ServiceStatusConfig = {
   serverUnreachable: boolean;
+  /** True when server is reachable but dependencies are missing — shows a yellow warning icon */
+  serverWarning?: boolean;
+  /** Called when user clicks "Open Settings" button shown alongside the warning icon */
+  onOpenSettings?: () => void;
   rows: StatusRowConfig[];
   onRefresh: () => void;
   onServerToggle?: () => void;

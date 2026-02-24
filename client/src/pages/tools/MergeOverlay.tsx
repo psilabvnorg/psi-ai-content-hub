@@ -9,6 +9,7 @@ import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/comm
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useI18n } from "@/i18n/i18n";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 type OverlayResult = {
   status: string;
@@ -55,6 +56,7 @@ export default function MergeOverlay({ onOpenSettings }: { onOpenSettings?: () =
   const [serverUnreachable, setServerUnreachable] = useState(false);
 
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
   const statusReady = !serverUnreachable;
 
@@ -183,7 +185,7 @@ export default function MergeOverlay({ onOpenSettings }: { onOpenSettings?: () =
           </p>
         </div>
 
-        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
         <Tabs
           value={activeTab}

@@ -9,6 +9,7 @@ import { APP_API_URL } from "@/lib/api";
 import { ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 const MODELS = ["tiny", "base", "small", "medium", "large"] as const;
 const LANGUAGES: Array<{ code: string; nameKey: I18nKey }> = [
@@ -72,6 +73,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [result, setResult] = useState<ResultData | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
 
   const serverUnreachable = status?.server_unreachable === true;
@@ -202,6 +204,8 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
             } satisfies StatusRowConfig,
           ]}
           onRefresh={fetchStatus}
+          serverWarning={hasMissingDeps}
+          onOpenSettings={onOpenSettings}
         />
 
         <div className="space-y-2">

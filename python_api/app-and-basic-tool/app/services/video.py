@@ -38,7 +38,13 @@ def start_download(
             if not yt_dlp_bin:
                 # Fallback: check venv Scripts dir
                 venv_scripts = Path(sys.executable).parent
-                yt_dlp_bin = venv_scripts / ("yt-dlp.exe" if sys.platform == "win32" else "yt-dlp")
+                candidate = venv_scripts / ("yt-dlp.exe" if sys.platform == "win32" else "yt-dlp")
+                if candidate.exists():
+                    yt_dlp_bin = candidate
+            if not yt_dlp_bin:
+                raise RuntimeError(
+                    "yt-dlp not found. Please install it from the Settings page."
+                )
             ytdlp_args = [
                 str(yt_dlp_bin),
                 "-f",

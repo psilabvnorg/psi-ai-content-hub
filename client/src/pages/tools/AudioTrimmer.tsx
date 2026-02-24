@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Music, Loader2, Upload, Download, X } from "lucide-react";
+import { Scissors, Loader2, Download, Upload, X, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
@@ -12,14 +12,16 @@ import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
-export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: () => void }) {
+export default function AudioTrimmer({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
-  type ExtractionResult = { download_url?: string; filename?: string };
+  type TrimResult = { download_url?: string; filename?: string };
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [format, setFormat] = useState<"mp3" | "wav">("mp3");
+  const [startTime, setStartTime] = useState("00:00:00");
+  const [endTime, setEndTime] = useState("");
+  const [outputFormat, setOutputFormat] = useState<"mp3" | "wav">("mp3");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ExtractionResult | null>(null);
+  const [result, setResult] = useState<TrimResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -64,9 +66,9 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const validTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-      if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|mpeg|mov|avi|webm|mkv)$/i)) {
-        toast({ title: t("tool.common.invalid_file"), description: t("tool.common.select_valid_video"), variant: "destructive" });
+      const validTypes = ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/wave"];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav)$/i)) {
+        toast({ title: t("tool.common.invalid_file"), description: t("tool.audio_trimmer.select_valid_audio"), variant: "destructive" });
         return;
       }
       setSelectedFile(file);
@@ -78,12 +80,19 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
     setSelectedFile(null);
     setResult(null);
     setProgress(0);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
-  const handleExtract = async () => {
+  const handleTrim = async () => {
     if (!selectedFile) {
-      toast({ title: t("tool.common.error"), description: t("tool.audio_extractor.select_prompt"), variant: "destructive" });
+      toast({ title: t("tool.common.error"), description: t("tool.audio_trimmer.select_valid_audio"), variant: "destructive" });
+      return;
+    }
+
+    if (!startTime) {
+      toast({ title: t("tool.common.error"), description: t("tool.video_trimmer.start_required"), variant: "destructive" });
       return;
     }
 
@@ -97,10 +106,12 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
       }, 500);
 
       const formData = new FormData();
-      formData.append("file", selectedFile!);
-      formData.append("format", format);
+      formData.append("file", selectedFile);
+      formData.append("start_time", startTime);
+      if (endTime) formData.append("end_time", endTime);
+      formData.append("output_format", outputFormat);
 
-      const response = await fetch(`${APP_API_URL}/api/v1/video/extract-audio`, {
+      const response = await fetch(`${APP_API_URL}/api/v1/audio/trim`, {
         method: "POST",
         body: formData,
       });
@@ -115,7 +126,7 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
 
       const data = await response.json();
       setResult(data);
-      toast({ title: t("tool.common.success"), description: t("tool.audio_extractor.success") });
+      toast({ title: t("tool.common.success"), description: t("tool.audio_trimmer.success") });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("tool.common.error");
       toast({ title: t("tool.common.error"), description: message, variant: "destructive" });
@@ -123,6 +134,12 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const handleDownload = async () => {
@@ -137,36 +154,30 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
-
   return (
     <div className="space-y-6">
       <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("tool.audio_extractor.title")}</CardTitle>
+          <CardTitle>{t("tool.audio_trimmer.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t("tool.common.video_file")}</label>
-            
+            <label className="text-sm font-medium">{t("tool.common.audio_file")}</label>
+
             {!selectedFile ? (
-              <div 
+              <div
                 className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm font-medium mb-1">{t("tool.common.upload_video")}</p>
-                <p className="text-xs text-muted-foreground">{t("tool.common.supported_videos")}</p>
+                <p className="text-sm font-medium mb-1">{t("tool.audio_trimmer.upload_audio")}</p>
+                <p className="text-xs text-muted-foreground">{t("tool.audio_trimmer.supported_formats")}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="video/*"
+                  accept=".mp3,.wav,audio/mpeg,audio/wav"
                   className="hidden"
                   onChange={handleFileSelect}
                 />
@@ -182,41 +193,85 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
                     <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleClearFile} disabled={loading}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFile}
+                  disabled={loading}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
             )}
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("tool.video_trimmer.start_time")}</label>
+              <Input
+                placeholder="00:00:30"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("tool.video_trimmer.format_hint")}</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("tool.video_trimmer.end_time")}</label>
+              <Input
+                placeholder="00:02:15"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("tool.video_trimmer.end_hint")}</p>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t("tool.common.output_format")}</label>
-            <Select value={format} onValueChange={(v) => setFormat(v as "mp3" | "wav")} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mp3">MP3</SelectItem>
-                <SelectItem value="wav">WAV</SelectItem>
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium">{t("tool.audio_trimmer.output_format")}</label>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant={outputFormat === "mp3" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOutputFormat("mp3")}
+                disabled={loading}
+              >
+                MP3
+              </Button>
+              <Button
+                type="button"
+                variant={outputFormat === "wav" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOutputFormat("wav")}
+                disabled={loading}
+              >
+                WAV
+              </Button>
+            </div>
           </div>
 
           {loading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("tool.audio_extractor.progress")}</span>
+                <span className="text-muted-foreground">{t("tool.audio_trimmer.progress")}</span>
                 <span className="font-medium">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
           )}
 
-          <Button onClick={handleExtract} disabled={loading || !selectedFile} className="w-full">
+          <Button onClick={handleTrim} disabled={loading || !selectedFile} className="w-full">
             {loading ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("tool.audio_extractor.extracting")}</>
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t("tool.audio_trimmer.trimming")}
+              </>
             ) : (
-              <><Music className="w-4 h-4 mr-2" />{t("tool.audio_extractor.extract")}</>
+              <>
+                <Scissors className="w-4 h-4 mr-2" />
+                {t("tool.audio_trimmer.title")}
+              </>
             )}
           </Button>
         </CardContent>
@@ -224,16 +279,10 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
 
       {result && (
         <Card>
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">{t("tool.common.audio_ready")}</p>
-              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                {format.toUpperCase()}
-              </span>
-            </div>
+          <CardContent className="pt-6">
             <Button onClick={handleDownload} variant="download" className="w-full">
               <Download className="w-4 h-4 mr-2" />
-              {t("tool.common.download")} {format.toUpperCase()}
+              {t("tool.audio_trimmer.download")} ({outputFormat.toUpperCase()})
             </Button>
           </CardContent>
         </Card>

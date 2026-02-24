@@ -9,6 +9,7 @@ import { downloadFile } from "@/lib/download";
 import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 type BgModelStatus = {
   model_id?: string;
@@ -134,6 +135,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const modelPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
 
   const envReady = envStatus?.installed === true;
@@ -557,7 +559,7 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
           <p className="text-sm text-muted-foreground">{t("feature.tool.background_removal.desc")}</p>
         </div>
 
-        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
         <Tabs
           value={activeTab}

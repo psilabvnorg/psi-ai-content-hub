@@ -14,16 +14,28 @@ import type { I18nKey } from "@/i18n/translations";
 const features = {
   basicTool: [
     {
-      id: "voice-clone",
-      titleKey: "feature.tool.voice_clone.title" as I18nKey,
-      icon: Mic,
-      descriptionKey: "feature.tool.voice_clone.desc" as I18nKey,
-    },
-    {
       id: "tts-fast",
       titleKey: "feature.tool.tts_fast.title" as I18nKey,
       icon: Play,
       descriptionKey: "feature.tool.tts_fast.desc" as I18nKey,
+    },
+    {
+      id: "dl-tiktok",
+      titleKey: "feature.tool.dl_tiktok.title" as I18nKey,
+      icon: Download,
+      descriptionKey: "feature.tool.dl_tiktok.desc" as I18nKey,
+    },
+    {
+      id: "dl-music",
+      titleKey: "feature.tool.dl_music.title" as I18nKey,
+      icon: Music,
+      descriptionKey: "feature.tool.dl_music.desc" as I18nKey,
+    },
+    {
+      id: "voice-clone",
+      titleKey: "feature.tool.voice_clone.title" as I18nKey,
+      icon: Mic,
+      descriptionKey: "feature.tool.voice_clone.desc" as I18nKey,
     },
     {
       id: "background-removal",
@@ -36,12 +48,6 @@ const features = {
       titleKey: "feature.tool.thumbnail.title" as I18nKey,
       icon: ImageIcon,
       descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
-    },
-    {
-      id: "dl-tiktok",
-      titleKey: "feature.tool.dl_tiktok.title" as I18nKey,
-      icon: Download,
-      descriptionKey: "feature.tool.dl_tiktok.desc" as I18nKey,
     },
     {
       id: "image-finder",
@@ -62,12 +68,6 @@ const features = {
       descriptionKey: "feature.tool.translator.desc" as I18nKey,
     },
     {
-      id: "dl-music",
-      titleKey: "feature.tool.dl_music.title" as I18nKey,
-      icon: Music,
-      descriptionKey: "feature.tool.dl_music.desc" as I18nKey,
-    },
-    {
       id: "mp3-to-wav",
       titleKey: "feature.tool.mp3_to_wav.title" as I18nKey,
       icon: FileAudio,
@@ -78,6 +78,12 @@ const features = {
       titleKey: "feature.tool.trim_video.title" as I18nKey,
       icon: Scissors,
       descriptionKey: "feature.tool.trim_video.desc" as I18nKey,
+    },
+    {
+      id: "trim-audio",
+      titleKey: "feature.tool.trim_audio.title" as I18nKey,
+      icon: Scissors,
+      descriptionKey: "feature.tool.trim_audio.desc" as I18nKey,
     },
     {
       id: "adjust-speed",

@@ -136,6 +136,28 @@ def audio_convert(
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
 
 
+@router.post("/audio/trim")
+def audio_trim(
+    file: UploadFile = File(...),
+    start_time: str = Form(...),
+    end_time: Optional[str] = Form(None),
+    output_format: str = Form("mp3"),
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    if output_format not in ("mp3", "wav"):
+        raise HTTPException(status_code=400, detail="output_format must be mp3 or wav")
+    input_path = _save_upload(file)
+    output_path = input_path.with_suffix(f".trimmed.{output_format}")
+    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
+    cmd = [_get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
+    if end_time:
+        cmd.extend(["-to", end_time])
+    cmd.extend(["-acodec", codec, "-vn", "-y", str(output_path)])
+    subprocess.check_call(cmd)
+    file_record = job_store.add_file(output_path, output_path.name)
+    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
+
+
 @router.post("/video/speed")
 def video_speed(
     file: UploadFile = File(...),

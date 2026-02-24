@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,8 +6,12 @@ import { FileAudio, Loader2, Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
-export default function AudioConverter() {
+export default function AudioConverter({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   type ConversionResult = { download_url?: string; filename?: string };
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -15,6 +19,44 @@ export default function AudioConverter() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ConversionResult | null>(null);
   const { toast } = useToast();
+
+  const [serverUnreachable, setServerUnreachable] = useState(false);
+  const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
+  const serviceStatus = servicesById.app;
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
+      setServerUnreachable(false);
+    } catch {
+      setServerUnreachable(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+    }
+  }, [serviceStatus?.status]);
+
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -66,6 +108,8 @@ export default function AudioConverter() {
 
   return (
     <div className="space-y-6">
+      <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
+
       <Card>
         <CardHeader>
           <CardTitle>{t("tool.audio_converter.title")}</CardTitle>

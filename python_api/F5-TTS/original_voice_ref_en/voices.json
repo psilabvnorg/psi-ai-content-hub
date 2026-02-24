@@ -1,0 +1,22 @@
+{
+  "voices": [
+    {
+      "id": "elon_musk",
+      "name": "Elon Musk",
+      "description": "Male voice, Elon Musk, clear pronunciation, suitable for narration",
+      "language": "en",
+      "gender": "male",
+      "ref_audio": "elon_musk/v.wav",
+      "ref_text": "we're making are, are very basic, things, that I think are very likely to remain in place, such as, the improvements to the treasury financial system"
+    },
+    {
+      "id": "steve_jobs",
+      "name": "Steve Jobs",
+      "description": "Male voice, Steve Jobs, clear pronunciation, suitable for narration",
+      "language": "en",
+      "gender": "male",
+      "ref_audio": "steve_jobs/v.wav",
+      "ref_text": "my model of business is the beatles, you know they were four very talented guys who kept each others kind of negative tendencies in check"
+    }
+  ]
+}

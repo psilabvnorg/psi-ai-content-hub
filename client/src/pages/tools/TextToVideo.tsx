@@ -11,6 +11,7 @@ import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 const MAX_CHARS = 5000;
 const VOICE_CLONE_URL = "http://127.0.0.1:6902";
@@ -201,6 +202,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [sttServerReachable, setSttServerReachable] = useState(false);
 
   const { servicesById, start, stop, isBusy } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const appService = servicesById.app;
   const appRunning = appService?.status === "running";
   const appBusy = isBusy("app");
@@ -639,7 +641,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           <p className="text-sm text-muted-foreground">{t("feature.workflow.text_to_video.desc")}</p>
         </div>
 
-        <ServiceStatusTable serverUnreachable={!appServerReachable} rows={statusRows} onRefresh={fetchStatus} />
+        <ServiceStatusTable serverUnreachable={!appServerReachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
         <div className="space-y-3">
           <h3 className="text-sm font-bold uppercase">{t("tool.t2v.step1_title")}</h3>

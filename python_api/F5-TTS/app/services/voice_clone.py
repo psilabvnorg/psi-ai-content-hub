@@ -12,56 +12,88 @@ from typing import List
 from urllib.request import urlopen
 
 from python_api.common.logging import log
-from python_api.common.paths import MODEL_F5_DIR, TEMP_DIR
+from python_api.common.paths import MODEL_F5_VN_DIR, MODEL_F5_EN_DIR, TEMP_DIR
 from python_api.common.progress import ProgressStore
 from python_api.common.jobs import JobStore
 
 
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
 ASSETS_ROOT = Path(os.environ.get("VOICE_CLONE_ASSETS", str(SERVICE_ROOT))).resolve()
-VOICES_JSON = Path(os.environ.get("VOICE_CLONE_VOICES_JSON", str(ASSETS_ROOT / "original_voice_ref" / "voices.json"))).resolve()
 
 SAMPLES_DIR = ASSETS_ROOT / "static" / "samples"
-VOICE_REF_DIR = ASSETS_ROOT / "original_voice_ref"
 
-MODEL_FILE = MODEL_F5_DIR / "model_last.pt"
-VOCAB_FILE = MODEL_F5_DIR / "vocab.txt"
-MODEL_MARKER = MODEL_F5_DIR / "model_ready.json"
+# Per-language voice reference directories and config files
+VOICE_REF_DIR_VI = ASSETS_ROOT / "original_voice_ref"
+VOICE_REF_DIR_EN = ASSETS_ROOT / "original_voice_ref_en"
+VOICES_JSON_VI = VOICE_REF_DIR_VI / "voices.json"
+VOICES_JSON_EN = VOICE_REF_DIR_EN / "voices.json"
 
-HF_MODEL_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/model_last.pt"
-HF_VOCAB_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/config.json"
+# Per-language model paths
+MODEL_FILE_VN = MODEL_F5_VN_DIR / "model_last.pt"
+VOCAB_FILE_VN = MODEL_F5_VN_DIR / "vocab.txt"
+MODEL_FILE_EN = MODEL_F5_EN_DIR / "model_last.pt"
+VOCAB_FILE_EN = MODEL_F5_EN_DIR / "vocab.txt"
+
+# Backward-compat aliases (VN was the original single model)
+MODEL_FILE = MODEL_FILE_VN
+VOCAB_FILE = VOCAB_FILE_VN
 
 progress_store = ProgressStore()
 task_files: dict[str, str] = {}
 
 
 def _ensure_dirs() -> None:
-    MODEL_F5_DIR.mkdir(parents=True, exist_ok=True)
+    MODEL_F5_VN_DIR.mkdir(parents=True, exist_ok=True)
+    MODEL_F5_EN_DIR.mkdir(parents=True, exist_ok=True)
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _model_ready() -> bool:
-    return MODEL_FILE.exists() and VOCAB_FILE.exists()
+def _get_model_paths(language: str) -> tuple[Path, Path]:
+    """Return (model_file, vocab_file) for the given language code."""
+    if language == "en":
+        return MODEL_FILE_EN, VOCAB_FILE_EN
+    return MODEL_FILE_VN, VOCAB_FILE_VN
 
 
-def model_status() -> dict:
+def _get_voices_config(language: str) -> tuple[Path, Path]:
+    """Return (voices_json, voice_ref_dir) for the given language code."""
+    if language == "en":
+        return VOICES_JSON_EN, VOICE_REF_DIR_EN
+    return VOICES_JSON_VI, VOICE_REF_DIR_VI
+
+
+def _model_ready(language: str = "vi") -> bool:
+    model_file, vocab_file = _get_model_paths(language)
+    return model_file.exists() and vocab_file.exists()
+
+
+def model_status(language: str = "vi") -> dict:
+    model_file, vocab_file = _get_model_paths(language)
     return {
-        "installed": _model_ready(),
-        "model_file": str(MODEL_FILE) if MODEL_FILE.exists() else None,
-        "vocab_file": str(VOCAB_FILE) if VOCAB_FILE.exists() else None,
+        "installed": model_file.exists() and vocab_file.exists(),
+        "model_file": str(model_file) if model_file.exists() else None,
+        "vocab_file": str(vocab_file) if vocab_file.exists() else None,
     }
 
 
-def _load_voices() -> List[dict]:
-    if not VOICES_JSON.exists():
+def model_status_all() -> dict:
+    return {
+        "vi": model_status("vi"),
+        "en": model_status("en"),
+    }
+
+
+def _load_voices(language: str = "vi") -> List[dict]:
+    voices_json, _ = _get_voices_config(language)
+    if not voices_json.exists():
         return []
-    with VOICES_JSON.open("r", encoding="utf-8") as handle:
+    with voices_json.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     return data.get("voices", [])
 
 
-def _get_voice(voice_id: str) -> dict | None:
-    for voice in _load_voices():
+def _get_voice(voice_id: str, language: str = "vi") -> dict | None:
+    for voice in _load_voices(language):
         if voice.get("id") == voice_id:
             return voice
     return None
@@ -91,12 +123,16 @@ def download_model(job_store: JobStore) -> str:
     task_id = f"voice_model_{uuid.uuid4().hex}"
     progress_store.set_progress(task_id, "starting", 0, "Starting model download...")
 
+    HF_MODEL_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/model_last.pt"
+    HF_VOCAB_URL = "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/config.json"
+
     def runner() -> None:
         try:
             _ensure_dirs()
-            _download_file(HF_MODEL_URL, MODEL_FILE, task_id, 5, 70)
-            _download_file(HF_VOCAB_URL, VOCAB_FILE, task_id, 70, 95)
-            MODEL_MARKER.write_text(json.dumps({"ready": True, "time": time.time()}))
+            _download_file(HF_MODEL_URL, MODEL_FILE_VN, task_id, 5, 70)
+            _download_file(HF_VOCAB_URL, VOCAB_FILE_VN, task_id, 70, 95)
+            model_marker = MODEL_F5_VN_DIR / "model_ready.json"
+            model_marker.write_text(json.dumps({"ready": True, "time": time.time()}))
             progress_store.set_progress(task_id, "complete", 100, "Model ready")
         except Exception as exc:
             progress_store.set_progress(task_id, "error", 0, str(exc))
@@ -114,22 +150,26 @@ def generate(
     cfg_strength: float,
     nfe_step: int,
     remove_silence: bool,
+    language: str = "vi",
 ) -> str:
     task_id = f"voice_tts_{uuid.uuid4().hex}"
     progress_store.set_progress(task_id, "starting", 0, "Starting generation...")
 
     def runner() -> None:
         try:
-            if not _model_ready():
-                progress_store.set_progress(task_id, "error", 0, "Model not downloaded")
+            if not _model_ready(language):
+                progress_store.set_progress(task_id, "error", 0, f"Model not downloaded for language: {language}")
                 return
 
-            voice = _get_voice(voice_id)
+            voice = _get_voice(voice_id, language)
             if not voice:
                 progress_store.set_progress(task_id, "error", 0, "Voice not found")
                 return
 
-            ref_audio = VOICE_REF_DIR / voice["ref_audio"]
+            _, voice_ref_dir = _get_voices_config(language)
+            model_file, vocab_file = _get_model_paths(language)
+
+            ref_audio = voice_ref_dir / voice["ref_audio"]
             ref_text = voice.get("ref_text", "")
             if not ref_audio.exists():
                 progress_store.set_progress(task_id, "error", 0, "Reference audio not found")
@@ -151,8 +191,8 @@ def generate(
                 "--gen_text", text,
                 "--speed", str(speed),
                 "--vocoder_name", "vocos",
-                "--vocab_file", str(VOCAB_FILE),
-                "--ckpt_file", str(MODEL_FILE),
+                "--vocab_file", str(vocab_file),
+                "--ckpt_file", str(model_file),
                 "--output_dir", str(TEMP_DIR),
                 "--output_file", output_name,
             ]
@@ -160,12 +200,11 @@ def generate(
                 cmd.append("--remove_silence")
 
             progress_store.set_progress(task_id, "generating", 30, "Generating audio...")
-            
+
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
             env["PYTHONLEGACYWINDOWSSTDIO"] = "utf-8"
-            
-            # Run with subprocess.run like the working infer.py
+
             result = subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -175,13 +214,12 @@ def generate(
                 errors="replace",
                 env=env
             )
-            
-            # Log output
+
             if result.stdout:
                 for line in result.stdout.split('\n'):
                     if line.strip():
                         progress_store.add_log(task_id, line.strip())
-            
+
             code = result.returncode
             if code != 0:
                 progress_store.set_progress(task_id, "error", 0, "TTS process failed")
@@ -212,8 +250,8 @@ def list_samples() -> dict:
     return {"samples": items}
 
 
-def list_voices() -> dict:
-    return {"voices": _load_voices()}
+def list_voices(language: str = "vi") -> dict:
+    return {"voices": _load_voices(language)}
 
 
 def get_download_file_id(task_id: str) -> str | None:

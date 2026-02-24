@@ -35,7 +35,10 @@ type ModelStatus = {
 type StatusData = {
   server_unreachable?: boolean;
   env?: EnvStatus;
-  model?: ModelStatus;
+  models?: {
+    vi?: ModelStatus;
+    en?: ModelStatus;
+  };
 };
 
 type ProgressData = {
@@ -50,6 +53,7 @@ type ProgressData = {
 
 export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
+  const [language, setLanguage] = useState<"vi" | "en">("vi");
   const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("");
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -74,7 +78,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
   const depsReady = status?.env?.installed === true;
-  const modelReady = status?.model?.installed === true;
+  const modelReady = status?.models?.[language]?.installed === true;
   const statusReady = !serverUnreachable && depsReady && modelReady;
 
   // Auto-scroll logs to bottom
@@ -92,16 +96,23 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("status");
       const envData = (await envRes.json()) as EnvStatus;
-      const statusData = (await statusRes.json()) as { models?: { f5_tts?: ModelStatus } };
-      setStatus({ server_unreachable: false, env: envData, model: statusData.models?.f5_tts });
+      const statusData = (await statusRes.json()) as { models?: { f5_tts_vn?: ModelStatus; f5_tts_en?: ModelStatus } };
+      setStatus({
+        server_unreachable: false,
+        env: envData,
+        models: {
+          vi: statusData.models?.f5_tts_vn,
+          en: statusData.models?.f5_tts_en,
+        },
+      });
     } catch {
       setStatus({ server_unreachable: true });
     }
   };
 
-  const fetchVoices = async () => {
+  const fetchVoices = async (lang?: string) => {
     try {
-      const res = await fetch(`${F5_API_URL}/api/v1/voices`);
+      const res = await fetch(`${F5_API_URL}/api/v1/voices?language=${lang ?? language}`);
       const data = await res.json();
       setVoices(data.voices || []);
     } catch {}
@@ -110,14 +121,20 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
 
   useEffect(() => {
     fetchStatus();
-    fetchVoices();
+    fetchVoices(language);
   }, []);
+
+  // Reload voices when language changes
+  useEffect(() => {
+    setSelectedVoice("");
+    fetchVoices(language);
+  }, [language]);
 
   useEffect(() => {
     if (!serviceStatus) return;
     if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
       fetchStatus();
-      fetchVoices();
+      fetchVoices(language);
     }
   }, [serviceStatus?.status]);
 
@@ -130,7 +147,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     }
     await start("f5");
     await fetchStatus();
-    await fetchVoices();
+    await fetchVoices(language);
   };
 
   const handleGenerate = async () => {
@@ -152,6 +169,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
           cfg_strength: cfgStrength,
           nfe_step: nfeStep,
           remove_silence: removeSilence,
+          language,
         }),
       });
       const data = await res.json();
@@ -278,18 +296,18 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.model_status")}</TableCell>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_vn")}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {status?.model?.installed ? (
+                      {status?.models?.vi?.installed ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       ) : (
                         <XCircle className="w-4 h-4 text-red-500" />
                       )}
                       <span className="text-sm">
-                        {status?.model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                        {status?.models?.vi?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
-                      {!serverUnreachable && !status?.model?.installed && onOpenSettings && (
+                      {!serverUnreachable && !status?.models?.vi?.installed && onOpenSettings && (
                         <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
                           {t("tool.common.open_settings")}
                         </Button>
@@ -297,12 +315,48 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {status?.model?.model_file || "--"}
+                    {status?.models?.vi?.model_file || "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_en")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {status?.models?.en?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {status?.models?.en?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!serverUnreachable && !status?.models?.en?.installed && onOpenSettings && (
+                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
+                          {t("tool.common.open_settings")}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {status?.models?.en?.model_file || "--"}
                   </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.select_mode")}</label>
+          <Select value={language} onValueChange={(v) => setLanguage(v as "vi" | "en")}>
+            <SelectTrigger className="bg-card border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="vi">{t("tool.voice_clone.mode_vi")}</SelectItem>
+              <SelectItem value="en">{t("tool.voice_clone.mode_en")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -339,7 +393,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
               size="sm"
               variant={charLimitEnabled ? "outline" : "secondary"}
               onClick={() => setCharLimitEnabled(!charLimitEnabled)}
-              className="h-6 text-xs px-2"
+              className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
             >
               {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
             </Button>

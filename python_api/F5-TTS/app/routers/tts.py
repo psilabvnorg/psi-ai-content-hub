@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from ..deps import get_job_store
@@ -25,8 +25,8 @@ def model_download(job_store: JobStore = Depends(get_job_store)) -> StreamingRes
 
 
 @router.get("/voices")
-def voices() -> dict:
-    return list_voices()
+def voices(language: str = Query(default="vi")) -> dict:
+    return list_voices(language)
 
 
 @router.get("/samples")
@@ -42,9 +42,10 @@ def generate_voice(payload: dict = Body(...), job_store: JobStore = Depends(get_
     cfg_strength = float(payload.get("cfg_strength", 2.0))
     nfe_step = int(payload.get("nfe_step", 32))
     remove_silence = bool(payload.get("remove_silence", False))
+    language = str(payload.get("language", "vi"))
     if not voice_id or not text:
         raise HTTPException(status_code=400, detail="voice_id and text are required")
-    task_id = generate(job_store, voice_id, text, speed, cfg_strength, nfe_step, remove_silence)
+    task_id = generate(job_store, voice_id, text, speed, cfg_strength, nfe_step, remove_silence, language)
     return {"task_id": task_id}
 
 

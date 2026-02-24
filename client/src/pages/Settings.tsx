@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { APP_API_URL, F5_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
@@ -19,6 +19,11 @@ type SystemStatus = {
     yt_dlp?: { installed: boolean; path?: string | null };
     torch?: { installed: boolean; version?: string | null; cuda?: string | null; path?: string | null };
   };
+};
+
+type ToolsStatus = {
+  ffmpeg?: { installed: boolean; path?: string | null };
+  yt_dlp?: { installed: boolean; path?: string | null };
 };
 
 type ProgressData = {
@@ -61,7 +66,10 @@ type F5ModelStatus = {
 type F5StatusData = {
   server_unreachable?: boolean;
   env?: EnvStatus;
-  model?: F5ModelStatus;
+  models?: {
+    vi?: F5ModelStatus;
+    en?: F5ModelStatus;
+  };
 };
 
 type TranslationModelStatus = {
@@ -206,6 +214,8 @@ export default function Settings() {
   const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
   const [imageFinderEnv, setImageFinderEnv] = useState<EnvStatus | null>(null);
   const [imageFinderProgress, setImageFinderProgress] = useState<ProgressData | null>(null);
+  const [toolsStatus, setToolsStatus] = useState<ToolsStatus | null>(null);
+  const [toolsProgress, setToolsProgress] = useState<Record<string, ProgressData>>({});
   const [envInstallAllActive, setEnvInstallAllActive] = useState(false);
   const [envInstallStep, setEnvInstallStep] = useState("");
   const [envInstallDoneCount, setEnvInstallDoneCount] = useState(0);
@@ -363,6 +373,36 @@ export default function Settings() {
       );
     } catch {
       setImageFinderEnv(null);
+    }
+  };
+
+  const fetchToolsStatus = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/tools/status`);
+      if (!res.ok) throw new Error("tools status failed");
+      setToolsStatus((await res.json()) as ToolsStatus);
+    } catch {
+      setToolsStatus(null);
+    }
+  };
+
+  const handleInstallTool = async (toolId: string) => {
+    setToolsProgress((prev) => ({ ...prev, [toolId]: { status: "starting", percent: 0, message: `Installing ${toolId}...` } }));
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/tools/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: toolId }),
+      });
+      if (!res.ok) throw new Error("Install request failed");
+      await consumeSseStream(res, (data) =>
+        setToolsProgress((prev) => ({ ...prev, [toolId]: data }))
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Install failed";
+      setToolsProgress((prev) => ({ ...prev, [toolId]: { status: "error", percent: 0, message } }));
+    } finally {
+      void fetchToolsStatus();
     }
   };
 
@@ -549,8 +589,15 @@ export default function Settings() {
       ]);
       if (!envRes.ok || !statusRes.ok) throw new Error("status");
       const envData = (await envRes.json()) as EnvStatus;
-      const statusData = (await statusRes.json()) as { models?: { f5_tts?: F5ModelStatus } };
-      setF5Status({ server_unreachable: false, env: envData, model: statusData.models?.f5_tts });
+      const statusData = (await statusRes.json()) as { models?: { f5_tts_vn?: F5ModelStatus; f5_tts_en?: F5ModelStatus } };
+      setF5Status({
+        server_unreachable: false,
+        env: envData,
+        models: {
+          vi: statusData.models?.f5_tts_vn,
+          en: statusData.models?.f5_tts_en,
+        },
+      });
     } catch {
       setF5Status({ server_unreachable: true });
     }
@@ -562,6 +609,7 @@ export default function Settings() {
     fetchBgRemoveStatus();
     fetchTranslationStatus();
     fetchImageFinderStatus();
+    fetchToolsStatus();
     fetchF5Status();
     refreshServices();
     fetchLogTail();
@@ -608,6 +656,7 @@ export default function Settings() {
     fetchBgRemoveStatus();
     fetchTranslationStatus();
     fetchImageFinderStatus();
+    fetchToolsStatus();
     refreshServices();
   };
 
@@ -691,14 +740,16 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <StorageLocationsCard />
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>{t("settings.main_server.title")}</CardTitle>
               <CardDescription>{t("settings.main_server.desc")}</CardDescription>
+              <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                <div>API: <a href="http://127.0.0.1:6901" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">http://127.0.0.1:6901</a></div>
+                <div>API Docs: <a href="http://127.0.0.1:6901/docs" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">http://127.0.0.1:6901/docs</a></div>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={refreshAppApiSetup}>
               <RefreshCw className="w-4 h-4" />
@@ -720,16 +771,39 @@ export default function Settings() {
                 <TableRow>
                   <TableCell className="font-medium">App Server (6901)</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {appServiceRunning ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : appService?.status === "starting" || appService?.status === "stopping" ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">{appService ? getManagedServiceStatusText(appService.status) : t("settings.tools.status.not_ready")}</span>
-                    </div>
+                    {(() => {
+                      const hasMissingDeps = appServiceRunning && (
+                        !toolsStatus?.ffmpeg?.installed ||
+                        !toolsStatus?.yt_dlp?.installed ||
+                        !whisperEnv?.installed ||
+                        !translationEnv?.installed ||
+                        !imageFinderEnv?.installed ||
+                        !bgRemoveEnv?.installed ||
+                        !whisperModelReady ||
+                        !translationModelReady ||
+                        !bgRemoveModelReady
+                      );
+                      return (
+                        <div className="flex items-center gap-2">
+                          {appServiceRunning && hasMissingDeps ? (
+                            <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          ) : appServiceRunning ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : appService?.status === "starting" || appService?.status === "stopping" ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span className="text-sm">
+                            {appServiceRunning && hasMissingDeps
+                              ? "Warning"
+                              : appService
+                              ? getManagedServiceStatusText(appService.status)
+                              : t("settings.tools.status.not_ready")}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
                     {appService ? `${appService.api_url} | ${appService.venv_python_path || "--"}` : APP_API_URL}
@@ -797,6 +871,85 @@ export default function Settings() {
                         </Button>
                       );
                     })()}
+                  </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell className="font-medium">System Tools</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const allReady = toolsStatus?.ffmpeg?.installed && toolsStatus?.yt_dlp?.installed;
+                      return (
+                        <div className="flex items-center gap-2">
+                          {allReady ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                          <span className="text-sm">{allReady ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}</span>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    <div className="space-y-0.5">
+                      <div className={toolsStatus?.ffmpeg?.installed ? "" : "text-red-400"}>
+                        ffmpeg: {toolsStatus?.ffmpeg?.installed ? (toolsStatus.ffmpeg.path ?? "in PATH") : "not found"}
+                      </div>
+                      <div className={toolsStatus?.yt_dlp?.installed ? "" : "text-red-400"}>
+                        yt-dlp: {toolsStatus?.yt_dlp?.installed ? (toolsStatus.yt_dlp.path ?? "in PATH") : "not found"}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {appServiceRunning && (
+                      <div className="flex flex-wrap gap-2">
+                        {!toolsStatus?.ffmpeg?.installed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { void handleInstallTool("ffmpeg"); }}
+                            disabled={toolsProgress["ffmpeg"]?.status === "starting" || toolsProgress["ffmpeg"]?.status === "downloading" || toolsProgress["ffmpeg"]?.status === "extracting"}
+                          >
+                            {(toolsProgress["ffmpeg"]?.status === "starting" || toolsProgress["ffmpeg"]?.status === "downloading" || toolsProgress["ffmpeg"]?.status === "extracting") ? (
+                              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                            ) : null}
+                            Install ffmpeg
+                          </Button>
+                        )}
+                        {!toolsStatus?.yt_dlp?.installed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { void handleInstallTool("yt-dlp"); }}
+                            disabled={toolsProgress["yt-dlp"]?.status === "starting" || toolsProgress["yt-dlp"]?.status === "installing"}
+                          >
+                            {(toolsProgress["yt-dlp"]?.status === "starting" || toolsProgress["yt-dlp"]?.status === "installing") ? (
+                              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                            ) : null}
+                            Install yt-dlp
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {(toolsProgress["ffmpeg"] || toolsProgress["yt-dlp"]) && (
+                      <div className="mt-2 space-y-2 min-w-[180px]">
+                        {toolsProgress["ffmpeg"] && (
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>ffmpeg: {toolsProgress["ffmpeg"].message}</span>
+                              <span>{toolsProgress["ffmpeg"].percent ?? 0}%</span>
+                            </div>
+                            <Progress value={toolsProgress["ffmpeg"].percent ?? 0} className="h-1.5" />
+                          </div>
+                        )}
+                        {toolsProgress["yt-dlp"] && (
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>yt-dlp: {toolsProgress["yt-dlp"].message}</span>
+                              <span>{toolsProgress["yt-dlp"].percent ?? 0}%</span>
+                            </div>
+                            <Progress value={toolsProgress["yt-dlp"].percent ?? 0} className="h-1.5" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
 
@@ -973,6 +1126,10 @@ export default function Settings() {
             <div>
               <CardTitle>{t("tool.voice_clone.service_status")}</CardTitle>
               <CardDescription>{t("tool.voice_clone.service_desc")}</CardDescription>
+              <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                <div>API: <a href="http://127.0.0.1:6902" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">http://127.0.0.1:6902</a></div>
+                <div>API Docs: <a href="http://127.0.0.1:6902/docs" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">http://127.0.0.1:6902/docs</a></div>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={fetchF5Status}>
               <RefreshCw className="w-4 h-4" />
@@ -1043,21 +1200,39 @@ export default function Settings() {
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.model_status")}</TableCell>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_vn")}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {f5Status?.model?.installed ? (
+                      {f5Status?.models?.vi?.installed ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       ) : (
                         <XCircle className="w-4 h-4 text-red-500" />
                       )}
                       <span className="text-sm">
-                        {f5Status?.model?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                        {f5Status?.models?.vi?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
-                    {f5Status?.model?.model_file || "--"}
+                    {f5Status?.models?.vi?.model_file || "--"}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_en")}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {f5Status?.models?.en?.installed ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {f5Status?.models?.en?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {f5Status?.models?.en?.model_file || "--"}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -1099,6 +1274,8 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      <StorageLocationsCard />
 
       <Card>
         <CardHeader>

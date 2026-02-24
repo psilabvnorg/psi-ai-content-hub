@@ -47,6 +47,11 @@ def _yt_dlp_path() -> Optional[Path]:
     direct = _which("yt-dlp")
     if direct:
         return Path(direct)
+    # Fallback: check venv Scripts dir (venv not activated when launched from Electron)
+    venv_scripts = Path(sys.executable).parent
+    candidate = venv_scripts / ("yt-dlp.exe" if sys.platform == "win32" else "yt-dlp")
+    if candidate.exists():
+        return candidate
     return None
 
 

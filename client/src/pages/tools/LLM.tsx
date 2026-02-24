@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,11 @@ import { Loader2, Copy, Check } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useManagedServices } from "@/hooks/useManagedServices";
 import type { I18nKey } from "@/i18n/translations";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 const TEMPLATES: { id: string; labelKey: I18nKey; prompt: string }[] = [
   {
@@ -62,7 +66,7 @@ const TEMPLATES: { id: string; labelKey: I18nKey; prompt: string }[] = [
   },
 ];
 
-export default function LLM() {
+export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
   const [templateId, setTemplateId] = useState("fix_grammar");
@@ -71,6 +75,44 @@ export default function LLM() {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [serverUnreachable, setServerUnreachable] = useState(false);
+  const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
+  const serviceStatus = servicesById.app;
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
+      setServerUnreachable(false);
+    } catch {
+      setServerUnreachable(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+    }
+  }, [serviceStatus?.status]);
+
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
 
   const selectedTemplate = TEMPLATES.find((t) => t.id === templateId);
   const activePrompt =
@@ -111,6 +153,8 @@ export default function LLM() {
 
   return (
     <div className="space-y-6">
+      <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
+
       {/* Section 1: Prompt Template */}
       <Card>
         <CardHeader>

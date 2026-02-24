@@ -18,6 +18,8 @@ MODEL_ROOT = BASE_APP_DIR / "models"
 MODEL_ROOT.mkdir(parents=True, exist_ok=True)
 
 MODEL_F5_DIR = MODEL_ROOT / "f5-tts"
+MODEL_F5_VN_DIR = MODEL_ROOT / "f5-tts-vn"
+MODEL_F5_EN_DIR = MODEL_ROOT / "f5-tts-en"
 MODEL_VIENEU_DIR = MODEL_ROOT / "vieneu-tts"
 MODEL_WHISPER_DIR = MODEL_ROOT / "whisper"
 MODEL_TRANSLATION_DIR = MODEL_ROOT / "translation"

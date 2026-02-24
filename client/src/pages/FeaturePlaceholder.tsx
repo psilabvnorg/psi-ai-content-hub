@@ -10,6 +10,7 @@ import VideoDownloader from "./tools/VideoDownloader";
 import AudioExtractor from "./tools/AudioExtractor";
 import AudioConverter from "./tools/AudioConverter";
 import VideoTrimmer from "./tools/VideoTrimmer";
+import AudioTrimmer from "./tools/AudioTrimmer";
 import SpeedAdjuster from "./tools/SpeedAdjuster";
 import TTSFast from "./tools/TTSFast";
 import VoiceClone from "./tools/VoiceClone";
@@ -56,6 +57,7 @@ export default function FeaturePlaceholder({
       "dl-music": "feature.tool.dl_music.title",
       "mp3-to-wav": "feature.tool.mp3_to_wav.title",
       "trim-video": "feature.tool.trim_video.title",
+      "trim-audio": "feature.tool.trim_audio.title",
       "adjust-speed": "feature.tool.adjust_speed.title",
       "thumbnail": "feature.tool.thumbnail.title",
       "background-removal": "feature.tool.background_removal.title",
@@ -90,15 +92,17 @@ export default function FeaturePlaceholder({
       case "dl-tiktok":
       case "dl-facebook":
       case "dl-instagram":
-        return <VideoDownloader />;
+        return <VideoDownloader onOpenSettings={() => onSelectFeature("settings")} />;
       case "dl-music":
-        return <AudioExtractor />;
+        return <AudioExtractor onOpenSettings={() => onSelectFeature("settings")} />;
       case "mp3-to-wav":
-        return <AudioConverter />;
+        return <AudioConverter onOpenSettings={() => onSelectFeature("settings")} />;
       case "trim-video":
-        return <VideoTrimmer />;
+        return <VideoTrimmer onOpenSettings={() => onSelectFeature("settings")} />;
+      case "trim-audio":
+        return <AudioTrimmer onOpenSettings={() => onSelectFeature("settings")} />;
       case "adjust-speed":
-        return <SpeedAdjuster />;
+        return <SpeedAdjuster onOpenSettings={() => onSelectFeature("settings")} />;
       case "tts-fast":
         return <TTSFast onOpenSettings={() => onSelectFeature("settings")} />;
       case "voice-clone":
@@ -114,9 +118,9 @@ export default function FeaturePlaceholder({
       case "text-to-video":
         return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
-        return <ReupYoutube />;
+        return <ReupYoutube onOpenSettings={() => onSelectFeature("settings")} />;
       case "llm":
-        return <LLM />;
+        return <LLM onOpenSettings={() => onSelectFeature("settings")} />;
       case "translator":
         return <Translator onOpenSettings={() => onSelectFeature("settings")} />;
       case "image-finder":

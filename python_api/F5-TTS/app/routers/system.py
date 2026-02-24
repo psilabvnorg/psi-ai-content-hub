@@ -4,7 +4,7 @@ import time
 
 from fastapi import APIRouter
 
-from ..services.voice_clone import model_status
+from ..services.voice_clone import model_status_all
 
 
 router = APIRouter(prefix="/api/v1", tags=["system"])
@@ -17,8 +17,13 @@ def health() -> dict:
 
 @router.get("/status")
 def status() -> dict:
+    all_models = model_status_all()
     return {
         "status": "ok",
         "uptime": time.time(),
-        "models": {"f5_tts": model_status()},
+        "models": {
+            "f5_tts": all_models["vi"],      # backward compat
+            "f5_tts_vn": all_models["vi"],
+            "f5_tts_en": all_models["en"],
+        },
     }

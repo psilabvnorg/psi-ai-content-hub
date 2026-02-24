@@ -11,6 +11,7 @@ import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 type StreamPayload = {
   status?: string;
@@ -48,6 +49,7 @@ const LANGUAGE_OPTIONS: Array<{ code: string; key: I18nKey }> = [
 export default function Translator({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
   const streamRef = useRef<EventSource | null>(null);
 
   const [sourceLang, setSourceLang] = useState("vi");
@@ -241,7 +243,7 @@ export default function Translator({ onOpenSettings }: { onOpenSettings?: () => 
           <p className="text-sm text-muted-foreground">{t("feature.tool.translator.desc")}</p>
         </div>
 
-        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} />
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">

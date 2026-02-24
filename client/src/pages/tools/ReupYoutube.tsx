@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Video, AlertCircle } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
-import { API_URL } from "@/lib/api";
+import { API_URL, APP_API_URL } from "@/lib/api";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useManagedServices } from "@/hooks/useManagedServices";
+import { useAppStatus } from "@/context/AppStatusContext";
 
 const LANGUAGES: Array<{ code: string; nameKey: I18nKey }> = [
   { code: "en", nameKey: "lang.en" },
@@ -21,13 +25,51 @@ type WorkflowResult = {
   reason?: string;
 };
 
-export default function ReupYoutube() {
+export default function ReupYoutube({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   const [url, setUrl] = useState("");
   const [language, setLanguage] = useState("vi");
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<WorkflowResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [serverUnreachable, setServerUnreachable] = useState(false);
+  const { servicesById } = useManagedServices();
+  const { hasMissingDeps } = useAppStatus();
+  const serviceStatus = servicesById.app;
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
+      setServerUnreachable(false);
+    } catch {
+      setServerUnreachable(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!serviceStatus) return;
+    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
+      fetchStatus();
+    }
+  }, [serviceStatus?.status]);
+
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
 
   const startJob = async () => {
     if (!url) return;
@@ -53,6 +95,8 @@ export default function ReupYoutube() {
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
+
         <div className="p-4 bg-accent/12 rounded-xl border border-accent/45">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-accent mt-0.5" />

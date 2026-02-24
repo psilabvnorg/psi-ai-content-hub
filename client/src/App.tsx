@@ -11,6 +11,7 @@ import { LanguageProvider, useI18n } from "@/i18n/i18n";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Settings } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import { AppStatusProvider } from "@/context/AppStatusContext";
 
 // Check if running in Electron - file:// protocol indicates desktop shell
 const isElectron = typeof window !== "undefined" && window.location.protocol === "file:";
@@ -23,7 +24,20 @@ function AppRouter() {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-background/90 px-6 backdrop-blur-md">
         <div className="flex h-full items-center justify-between">
-          <BrandLogo label={t("app.name")} imageClassName="h-9 border-white/15 bg-black" />
+          <div className="flex items-center gap-2">
+            <BrandLogo label={t("app.name")} imageClassName="h-9 border-white/15 bg-black" />
+            {activeFeature !== null && (
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => setActiveFeature(null)}
+                className="text-base [&_svg]:size-6 font-semibold"
+              >
+                <ChevronLeft className="mr-1" />
+                {t("home.back_dashboard")}
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {activeFeature !== null && (
               <Button
@@ -73,10 +87,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <WouterRouter hook={isElectron ? useHashLocation : undefined}>
-          <AppRouter />
-        </WouterRouter>
-        <Toaster />
+        <AppStatusProvider>
+          <WouterRouter hook={isElectron ? useHashLocation : undefined}>
+            <AppRouter />
+          </WouterRouter>
+          <Toaster />
+        </AppStatusProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );

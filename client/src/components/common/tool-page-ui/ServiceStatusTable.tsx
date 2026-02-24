@@ -1,27 +1,42 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle, XCircle, RefreshCw, Play, Square } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Play, Square, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import type { ServiceStatusConfig } from "./types";
 
-export function ServiceStatusTable({ 
-  serverUnreachable, 
-  rows, 
+export function ServiceStatusTable({
+  serverUnreachable,
+  serverWarning = false,
+  onOpenSettings,
+  rows,
   onRefresh,
   onServerToggle,
   isServerStarting = false,
 }: ServiceStatusConfig) {
   const { t } = useI18n();
-  
+
   // Check if running in Electron
   const isElectron = typeof window !== "undefined" && window.electronAPI !== undefined;
 
   // Find the server row from the rows array
   const serverRow = rows.find(row => row.id === "server");
   const otherRows = rows.filter(row => row.id !== "server");
-  
+
   // In browser mode, only show stop button when server is running
   const showServerToggle = onServerToggle && (isElectron || !serverUnreachable);
+
+  // Derive server icon + label
+  const serverIcon = serverUnreachable
+    ? <XCircle className="w-4 h-4 text-red-500" />
+    : serverWarning
+    ? <AlertTriangle className="w-4 h-4 text-amber-500" />
+    : <CheckCircle className="w-4 h-4 text-green-500" />;
+
+  const serverStatusText = serverUnreachable
+    ? t("settings.tools.status.not_ready")
+    : serverWarning
+    ? "Warning"
+    : t("settings.tools.status.ready");
 
   return (
     <div className="space-y-2">
@@ -29,8 +44,8 @@ export function ServiceStatusTable({
         <h3 className="text-sm font-semibold text-foreground/85">{t("tool.tts_fast.service_status")}</h3>
         <div className="flex items-center gap-2">
           {showServerToggle && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant={serverUnreachable ? "default" : "destructive"}
               onClick={onServerToggle}
               disabled={isServerStarting}
@@ -74,14 +89,18 @@ export function ServiceStatusTable({
                 <TableCell className="font-medium">{serverRow.label}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {!serverUnreachable ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-500" />
+                    {serverIcon}
+                    <span className="text-sm">{serverStatusText}</span>
+                    {!serverUnreachable && serverWarning && onOpenSettings && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onOpenSettings}
+                        className="ml-2 h-7 px-2 text-xs border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                      >
+                        Open Settings
+                      </Button>
                     )}
-                    <span className="text-sm">
-                      {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                    </span>
                     {serverRow.showActionButton && serverRow.onAction && (
                       <Button
                         size="sm"
@@ -140,10 +159,10 @@ export function ServiceStatusTable({
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm">
-                      {serverUnreachable 
+                      {serverUnreachable
                         ? t("settings.tools.status.not_ready")
-                        : row.isReady 
-                        ? t("settings.tools.status.ready") 
+                        : row.isReady
+                        ? t("settings.tools.status.ready")
                         : t("settings.tools.status.not_ready")}
                     </span>
                     {row.showActionButton && row.onAction && (
