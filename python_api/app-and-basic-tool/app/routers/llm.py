@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException
 
-from ..services.llm import DEFAULT_MODEL, generate, get_status
+from ..services.llm import generate, get_default_model, get_ollama_url, get_status, update_config
 
 router = APIRouter(prefix="/api/v1/llm", tags=["llm"])
 
@@ -13,11 +13,30 @@ def llm_status() -> dict:
     return get_status()
 
 
+@router.get("/config")
+def llm_get_config() -> dict:
+    """Return current Ollama runtime configuration."""
+    return {"url": get_ollama_url(), "model": get_default_model()}
+
+
+@router.put("/config")
+def llm_update_config(payload: dict = Body(...)) -> dict:
+    """Update Ollama runtime configuration (URL and/or default model)."""
+    url = payload.get("url")
+    model = payload.get("model")
+    if url is not None and not isinstance(url, str):
+        raise HTTPException(status_code=400, detail="url must be a string")
+    if model is not None and not isinstance(model, str):
+        raise HTTPException(status_code=400, detail="model must be a string")
+    update_config(url=url, model=model)
+    return {"status": "ok", "url": get_ollama_url(), "model": get_default_model()}
+
+
 @router.post("/generate")
 def llm_generate(payload: dict = Body(...)) -> dict:
     prompt = payload.get("prompt", "")
     input_text = payload.get("input_text", "")
-    model = payload.get("model") or DEFAULT_MODEL
+    model = payload.get("model") or None
 
     if not input_text:
         raise HTTPException(status_code=400, detail="input_text is required")

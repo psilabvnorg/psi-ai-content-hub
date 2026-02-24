@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  BrainCircuit,
   Check,
   Download,
   Eye,
@@ -164,7 +165,7 @@ export default function ImageFinder({
 
   const [text, setText] = useState("");
   const [numberOfImages, setNumberOfImages] = useState("5");
-  const [model, setModel] = useState("deepseek-r1:8b");
+  const [useLlm, setUseLlm] = useState(false);
   const [selectedSources, setSelectedSources] = useState<string[]>([
     "google",
     "bing",
@@ -353,7 +354,7 @@ export default function ImageFinder({
           body: JSON.stringify({
             text: text.trim(),
             number_of_images: Number(numberOfImages),
-            model: model.trim(),
+            use_llm: useLlm,
             sources: selectedSources,
           }),
         },
@@ -464,17 +465,6 @@ export default function ImageFinder({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold text-muted-foreground uppercase">
-              {t("tool.image_finder.model")}
-            </label>
-            <Input
-              value={model}
-              onChange={(event) => setModel(event.target.value)}
-              placeholder="deepseek-r1:8b"
-              className="bg-card border-border"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase">
               {t("tool.image_finder.number_of_images")}
             </label>
             <Select value={numberOfImages} onValueChange={setNumberOfImages}>
@@ -489,6 +479,27 @@ export default function ImageFinder({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {t("tool.image_finder.llm_extraction")}
+            </label>
+            <button
+              type="button"
+              onClick={() => setUseLlm((v) => !v)}
+              className={`flex items-center gap-2 w-full px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                useLlm
+                  ? "bg-accent text-accent-foreground border-accent"
+                  : "bg-card text-muted-foreground border-border hover:border-accent/50"
+              }`}
+            >
+              <BrainCircuit className="w-4 h-4 shrink-0" />
+              <span>
+                {useLlm
+                  ? t("tool.image_finder.llm_extraction_on")
+                  : t("tool.image_finder.llm_extraction_off")}
+              </span>
+            </button>
           </div>
         </div>
 

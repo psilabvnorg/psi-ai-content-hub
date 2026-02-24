@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RefreshCw, CheckCircle, XCircle, Loader2, FolderOpen, Copy, Check, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -202,6 +203,150 @@ function StorageLocationsCard() {
             <CopyButton text={path} />
           </div>
         ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+type OllamaStatus = {
+  status: string;
+  connected: boolean;
+  url: string;
+  default_model: string;
+  models: string[];
+};
+
+function OllamaSettingsCard() {
+  const { t } = useI18n();
+  const [url, setUrl] = useState("");
+  const [model, setModel] = useState("");
+  const [status, setStatus] = useState<OllamaStatus | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/llm/config`);
+      if (!res.ok) return;
+      const data = await res.json() as { url: string; model: string };
+      setUrl(data.url || "");
+      setModel(data.model || "");
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/llm/status`);
+      if (!res.ok) throw new Error("unreachable");
+      const data = await res.json() as OllamaStatus;
+      setStatus(data);
+    } catch {
+      setStatus({ status: "unreachable", connected: false, url: "", default_model: "", models: [] });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveStatus("idle");
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/llm/config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() || undefined, model: model.trim() || undefined }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch {
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchConfig();
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("settings.ollama.title")}</CardTitle>
+        <CardDescription>{t("settings.ollama.desc")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {t("settings.ollama.url")}
+            </label>
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={t("settings.ollama.url_placeholder")}
+              className="font-mono text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {t("settings.ollama.model")}
+            </label>
+            <Input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder={t("settings.ollama.model_placeholder")}
+              className="font-mono text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTest} disabled={testing}>
+            {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            {t("settings.ollama.test")}
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : saveStatus === "saved" ? (
+              <Check className="w-4 h-4 mr-2 text-green-500" />
+            ) : null}
+            {saveStatus === "saved" ? t("settings.ollama.saved") : t("settings.ollama.save")}
+          </Button>
+        </div>
+
+        {saveStatus === "error" && (
+          <p className="text-xs text-destructive">{t("settings.ollama.save_failed")}</p>
+        )}
+
+        {status && (
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5 text-sm">
+            <div className="flex items-center gap-2">
+              {status.connected ? (
+                <CheckCircle className="w-4 h-4 text-green-500" />
+              ) : (
+                <XCircle className="w-4 h-4 text-destructive" />
+              )}
+              <span className="font-medium">
+                {status.connected ? t("settings.ollama.connected") : t("settings.ollama.unreachable")}
+              </span>
+            </div>
+            {status.connected && status.models.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold uppercase mr-1">{t("settings.ollama.models_label")}:</span>
+                {status.models.join(", ")}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -1522,6 +1667,8 @@ export default function Settings() {
       </Card>
 
       <StorageLocationsCard />
+
+      <OllamaSettingsCard />
 
       <Card>
         <CardHeader>

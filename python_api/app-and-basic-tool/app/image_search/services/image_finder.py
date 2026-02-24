@@ -66,27 +66,15 @@ def _extract_visual_keywords(text: str, target_words: int, model: str) -> str:
     return search_phrase
 
 
-def _build_search_query(text: str, target_words: int, model: str, lang: str) -> tuple[str, str]:
-    keywords = _extract_visual_keywords(text, target_words=target_words, model=model)
-    phrase_by_lang = {
-        "en": "latest, up to date information",
-        "vi": "thong tin moi nhat",
-        "ja": "saishin joho",
-        "de": "aktuelle informationen",
-    }
-    suffix = phrase_by_lang.get(lang.lower(), phrase_by_lang["en"])
-    search_query = f"{keywords} {suffix}".strip()
-    return keywords, search_query
-
 
 def find_images(
     text: str,
     number_of_images: int = 5,
     target_words: int = 15,
     model: str = "deepseek-r1:8b",
-    lang: str = "en",
     timeout_seconds: int = 60,
     sources: Sequence[str] | None = None,
+    use_llm: bool = True,
 ) -> dict[str, Any]:
     """Generate image results from semantic text keywords using all configured sources."""
     cleaned_text = text.strip()
@@ -95,19 +83,13 @@ def find_images(
 
     normalized_count = max(1, min(20, int(number_of_images)))
     normalized_words = max(5, min(30, int(target_words)))
+
     word_count = len(cleaned_text.split())
-    if word_count <= 30:
+    if not use_llm or word_count <= 30:
         keywords = cleaned_text
-        phrase_by_lang = {
-            "en": "latest, up to date information",
-            "vi": "thong tin moi nhat",
-            "ja": "最新情報",
-            "de": "aktuelle informationen",
-        }
-        suffix = phrase_by_lang.get(lang.lower(), phrase_by_lang["en"])
-        search_query = f"{keywords} {suffix}".strip()
     else:
-        keywords, search_query = _build_search_query(cleaned_text, normalized_words, model, lang)
+        keywords = _extract_visual_keywords(cleaned_text, target_words=normalized_words, model=model)
+    search_query = keywords
 
     pipeline_payload = run_pipeline(
         paragraph=cleaned_text,

@@ -44,10 +44,9 @@ def image_finder_search(payload: dict = Body(...)) -> dict:
     text = str(payload.get("text") or "").strip()
     number_of_images = _parse_int(payload.get("number_of_images"), "number_of_images", 5)
     target_words = _parse_int(payload.get("target_words"), "target_words", 15)
-    model = str(payload.get("model") or "deepseek-r1:8b").strip()
-    lang = str(payload.get("lang") or "en").strip()
     timeout_seconds = _parse_int(payload.get("timeout_seconds"), "timeout_seconds", 60)
     sources = _parse_sources(payload.get("sources"))
+    use_llm = bool(payload.get("use_llm", True))
 
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
@@ -59,10 +58,9 @@ def image_finder_search(payload: dict = Body(...)) -> dict:
             text=text,
             number_of_images=number_of_images,
             target_words=target_words,
-            model=model,
-            lang=lang,
             timeout_seconds=timeout_seconds,
             sources=sources,
+            use_llm=use_llm,
         )
         return {"status": "ok", **result}
     except ImageFinderError as exc:
