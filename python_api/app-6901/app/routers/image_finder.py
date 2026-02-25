@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Body, HTTPException
+
+from ..services.image_search.image_pipeline.search import ALL_SOURCE_IDS
+from ..services.image_search.image_finder import ImageFinderError, find_images
+
+
+router = APIRouter(prefix="/image-finder", tags=["image-finder"])
+
+
+def _parse_int(value: object, field_name: str, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail=f"{field_name} must be an integer")
+
+
+def _parse_sources(value: object) -> list[str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise HTTPException(status_code=400, detail="sources must be an array of source ids")
+
+    valid = set(ALL_SOURCE_IDS)
+    parsed: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise HTTPException(status_code=400, detail="sources must be an array of strings")
+        normalized = item.strip()
+        if not normalized:
+            continue
+        if normalized not in valid:
+            continue
+        parsed.append(normalized)
+
+    return parsed if parsed else None
+
+
+@router.post("/search")
+def image_finder_search(payload: dict = Body(...)) -> dict:
+    text = str(payload.get("text") or "").strip()
+    number_of_images = _parse_int(payload.get("number_of_images"), "number_of_images", 5)
+    target_words = _parse_int(payload.get("target_words"), "target_words", 15)
+    timeout_seconds = _parse_int(payload.get("timeout_seconds"), "timeout_seconds", 60)
+    sources = _parse_sources(payload.get("sources"))
+    use_llm = bool(payload.get("use_llm", True))
+
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+    if number_of_images < 1:
+        raise HTTPException(status_code=400, detail="number_of_images must be >= 1")
+
+    try:
+        result = find_images(
+            text=text,
+            number_of_images=number_of_images,
+            target_words=target_words,
+            timeout_seconds=timeout_seconds,
+            sources=sources,
+            use_llm=use_llm,
+        )
+        return {"status": "ok", **result}
+    except ImageFinderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))

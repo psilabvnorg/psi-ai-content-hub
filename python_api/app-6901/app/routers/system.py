@@ -10,6 +10,9 @@ from fastapi.responses import StreamingResponse
 from python_api.common.logging import read_log_tail, stream_log_lines
 from python_api.common.paths import BASE_APP_DIR, MODEL_ROOT, TEMP_DIR
 from ..services.tools_manager import get_system_tools_status
+from ..services.stt import status as stt_status
+from ..services.remove_overlay import model_status as bg_remove_status
+from ..services.translation import get_model_status as translation_status
 
 
 LOG_NAME = "app-service.log"
@@ -45,6 +48,12 @@ def status() -> dict:
         "temp": _temp_stats(),
         "tools": tools_status,
         "models": {"shared_root": str(MODEL_ROOT)},
+        "services": {
+            "whisper": stt_status(),
+            "bg_remove_overlay": bg_remove_status(),
+            "translation": translation_status(),
+            "image_search": {"status": "ok"},
+        },
     }
 
 

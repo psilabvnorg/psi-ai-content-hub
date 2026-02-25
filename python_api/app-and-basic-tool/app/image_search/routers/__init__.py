@@ -1,2 +1,0 @@
-"""ImageFinder API routers."""
-

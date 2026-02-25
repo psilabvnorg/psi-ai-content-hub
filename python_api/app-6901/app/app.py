@@ -16,22 +16,17 @@ from .routers import system as system_router
 from .routers import text_to_video as text_to_video_router
 from .routers import tools as tools_router
 from .routers import aenv_profile_router_api as aenv_profile_router
-from .bg_remove_overlay.routers import env as bg_remove_overlay_env_router
-from .bg_remove_overlay.routers import files as bg_remove_overlay_files_router
-from .bg_remove_overlay.routers import remove_overlay as bg_remove_overlay_router
-from .bg_remove_overlay.routers import system as bg_remove_overlay_system_router
-from .bg_remove_overlay.services import remove_overlay as bg_remove_overlay_service
-from .image_search.routers import config as image_search_config_router
-from .image_search.routers import env as image_search_env_router
-from .image_search.routers import image_finder as image_search_router
-from .image_search.routers import sources as image_search_sources_router
-from .image_search.routers import system as image_search_system_router
-from .translation.routers import env as translation_env_router
-from .translation.routers import system as translation_system_router
-from .translation.routers import translation as translation_router
-from .whisper.routers import env as whisper_env_router
-from .whisper.routers import stt as whisper_stt_router
-from .whisper.routers import system as whisper_system_router
+from .routers import stt as stt_router
+from .routers import translation as translation_router
+from .routers import remove_overlay as remove_overlay_router
+from .routers import image_finder as image_finder_router
+from .routers import sources as image_sources_router
+from .services.remove_overlay import (
+    cleanup_results,
+    cleanup_video_results,
+    cleanup_overlay_results,
+    cleanup_video_overlay_results,
+)
 from .services.text_to_video import cleanup_text_to_video_state
 
 
@@ -39,10 +34,10 @@ def _cleanup_loop() -> None:
     while True:
         time.sleep(60)
         job_store.cleanup()
-        bg_remove_overlay_service.cleanup_results()
-        bg_remove_overlay_service.cleanup_video_results()
-        bg_remove_overlay_service.cleanup_overlay_results()
-        bg_remove_overlay_service.cleanup_video_overlay_results()
+        cleanup_results()
+        cleanup_video_results()
+        cleanup_overlay_results()
+        cleanup_video_overlay_results()
         cleanup_text_to_video_state()
 
 
@@ -61,6 +56,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Core routers
     app.include_router(system_router.router)
     app.include_router(media_router.router)
     app.include_router(text_to_video_router.router)
@@ -71,45 +67,19 @@ def create_app() -> FastAPI:
     app.include_router(aenv_profile_router.router)
     app.include_router(edge_tts_router.router)
 
-    # Canonical feature routes
-    app.include_router(whisper_system_router.router, prefix="/api/v1/whisper")
-    app.include_router(whisper_env_router.router, prefix="/api/v1/whisper")
-    app.include_router(whisper_stt_router.router, prefix="/api/v1/whisper")
-
-    app.include_router(bg_remove_overlay_system_router.router, prefix="/api/v1/bg-remove-overlay")
-    app.include_router(bg_remove_overlay_env_router.router, prefix="/api/v1/bg-remove-overlay")
-    app.include_router(bg_remove_overlay_router.router, prefix="/api/v1/bg-remove-overlay")
-    app.include_router(bg_remove_overlay_files_router.router, prefix="/api/v1/bg-remove-overlay")
-
-    app.include_router(translation_system_router.router, prefix="/api/v1/translation/system")
-    app.include_router(translation_env_router.router, prefix="/api/v1/translation")
+    # Feature action routes (canonical)
+    app.include_router(stt_router.router, prefix="/api/v1/whisper")
+    app.include_router(remove_overlay_router.router, prefix="/api/v1/bg-remove-overlay")
     app.include_router(translation_router.router, prefix="/api/v1/translation")
+    app.include_router(image_finder_router.router, prefix="/api/v1/image-search")
+    app.include_router(image_sources_router.router, prefix="/api/v1/image-search")
 
-    app.include_router(image_search_system_router.router, prefix="/api/v1/image-search")
-    app.include_router(image_search_config_router.router, prefix="/api/v1/image-search")
-    app.include_router(image_search_env_router.router, prefix="/api/v1/image-search")
-    app.include_router(image_search_router.router, prefix="/api/v1/image-search")
-    app.include_router(image_search_sources_router.router, prefix="/api/v1/image-search")
-
-    # Legacy compatibility routes (to keep existing clients working during migration)
-    app.include_router(whisper_system_router.router, prefix="/whisper/api/v1")
-    app.include_router(whisper_env_router.router, prefix="/whisper/api/v1")
-    app.include_router(whisper_stt_router.router, prefix="/whisper/api/v1")
-
-    app.include_router(bg_remove_overlay_system_router.router, prefix="/bg-remove-overlay/api/v1")
-    app.include_router(bg_remove_overlay_env_router.router, prefix="/bg-remove-overlay/api/v1")
-    app.include_router(bg_remove_overlay_router.router, prefix="/bg-remove-overlay/api/v1")
-    app.include_router(bg_remove_overlay_files_router.router, prefix="/bg-remove-overlay/api/v1")
-
-    app.include_router(translation_system_router.router, prefix="/translation/api/v1")
-    app.include_router(translation_env_router.router, prefix="/translation/api/v1")
+    # Legacy compatibility routes
+    app.include_router(stt_router.router, prefix="/whisper/api/v1")
+    app.include_router(remove_overlay_router.router, prefix="/bg-remove-overlay/api/v1")
     app.include_router(translation_router.router, prefix="/translation/api/v1/translation")
-
-    app.include_router(image_search_system_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_search_config_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_search_env_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_search_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_search_sources_router.router, prefix="/image-search/api/v1")
+    app.include_router(image_finder_router.router, prefix="/image-search/api/v1")
+    app.include_router(image_sources_router.router, prefix="/image-search/api/v1")
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app
