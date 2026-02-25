@@ -14,7 +14,8 @@
       "Bash(python3:*)",
       "Bash(npm run:*)",
       "Bash(head:*)",
-      "Bash(find D:/AI/psi-ai-content-hub/python_api -name \"*.py\" | xargs grep -l \"bg.remove\\\\|bg_remove\" 2>/dev/null)"
+      "Bash(find D:/AI/psi-ai-content-hub/python_api -name \"*.py\" | xargs grep -l \"bg.remove\\\\|bg_remove\" 2>/dev/null)",
+      "Bash(curl:*)"
     ]
   }
 }

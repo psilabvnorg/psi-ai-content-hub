@@ -37,26 +37,17 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
   const { toast } = useToast();
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [binaryFound, setBinaryFound] = useState(false);
   const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
 
   const fetchStatus = async () => {
     try {
-      const [statusRes, modelsRes] = await Promise.all([
-        fetch(`${APP_API_URL}/api/v1/status`),
-        fetch(`${APP_API_URL}/api/v1/image/upscale/models`),
-      ]);
-      if (!statusRes.ok) throw new Error("status");
+      const res = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!res.ok) throw new Error("status");
       setServerUnreachable(false);
-      if (modelsRes.ok) {
-        const data = (await modelsRes.json()) as { models: string[]; binary_found: boolean };
-        setBinaryFound(data.binary_found);
-      }
     } catch {
       setServerUnreachable(true);
-      setBinaryFound(false);
     }
   };
 
@@ -80,13 +71,6 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
       showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
       secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
-    },
-    {
-      id: "binary",
-      label: "upscayl-bin",
-      isReady: binaryFound,
-      path: binaryFound ? "upscayl-bin.exe" : t("tool.image_upscaler.binary_missing"),
-      showSecondaryAction: false,
     },
   ];
 
@@ -267,7 +251,7 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
             </div>
           )}
 
-          <Button onClick={handleUpscale} disabled={loading || !selectedFile || !binaryFound} className="w-full">
+          <Button onClick={handleUpscale} disabled={loading || !selectedFile} className="w-full">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

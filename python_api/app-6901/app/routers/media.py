@@ -196,7 +196,7 @@ UPSCAYL_MODELS = [
     "upscayl-lite-4x",
 ]
 
-_UPSCAYL_DIR = Path(__file__).resolve().parent.parent / "upscale_image" / "resources"
+_UPSCAYL_DIR = Path(__file__).resolve().parent.parent / "services" / "upscale_image" / "resources"
 _UPSCAYL_BIN = _UPSCAYL_DIR / "win" / "bin" / "upscayl-bin.exe"
 _UPSCAYL_MODELS_DIR = _UPSCAYL_DIR / "models"
 
