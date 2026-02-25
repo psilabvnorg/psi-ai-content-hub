@@ -367,8 +367,7 @@ export default function Settings() {
   const [translationProgress, setTranslationProgress] = useState<ProgressData | null>(null);
   const [imageFinderEnv, setImageFinderEnv] = useState<EnvStatus | null>(null);
   const [imageFinderProgress, setImageFinderProgress] = useState<ProgressData | null>(null);
-  const [imageUpscalerEnv, setImageUpscalerEnv] = useState<EnvStatus | null>(null);
-  const [imageUpscalerProgress, setImageUpscalerProgress] = useState<ProgressData | null>(null);
+
   const [toolsStatus, setToolsStatus] = useState<ToolsStatus | null>(null);
   const [toolsProgress, setToolsProgress] = useState<Record<string, ProgressData>>({});
   const [envInstallAllActive, setEnvInstallAllActive] = useState(false);
@@ -580,35 +579,6 @@ export default function Settings() {
     }
   };
 
-  const fetchImageUpscalerStatus = async () => {
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/image-upscaler/status`);
-      if (!res.ok) throw new Error("ImageUpscaler status failed");
-      setImageUpscalerEnv(
-        aextract_env_status_data((await res.json()) as EnvStatus | aprofile_status_envelope_data)
-      );
-    } catch {
-      setImageUpscalerEnv(null);
-    }
-  };
-
-  const handleImageUpscalerEnvInstall = async () => {
-    setImageUpscalerProgress({ status: "starting", percent: 0, message: "Installing super-image environment..." });
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/image-upscaler/install`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error("Environment install failed");
-      setImageUpscalerProgress({ status: "complete", percent: 100, message: "super-image environment installed" });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Environment install failed";
-      setImageUpscalerProgress({ status: "error", percent: 0, message });
-    } finally {
-      void fetchImageUpscalerStatus();
-    }
-  };
 
   const fetchTranslationStatus = async () => {
     try {
@@ -820,9 +790,6 @@ export default function Settings() {
       setEnvInstallStep("Background removal environment");
       await handleBgRemoveEnvInstall();
       setEnvInstallDoneCount(4);
-      setEnvInstallStep("Image upscaler environment");
-      await handleImageUpscalerEnvInstall();
-      setEnvInstallDoneCount(5);
     } finally {
       setEnvInstallAllActive(false);
       setEnvInstallStep("");
@@ -830,7 +797,6 @@ export default function Settings() {
       setTranslationProgress(null);
       setBgRemoveProgress(null);
       setImageFinderProgress(null);
-      setImageUpscalerProgress(null);
     }
   };
 
@@ -898,7 +864,6 @@ export default function Settings() {
     fetchBgRemoveStatus();
     fetchTranslationStatus();
     fetchImageFinderStatus();
-    fetchImageUpscalerStatus();
     fetchToolsStatus();
     fetchF5Status();
     refreshServices();
@@ -1071,7 +1036,6 @@ export default function Settings() {
                         !translationEnv?.installed ||
                         !imageFinderEnv?.installed ||
                         !bgRemoveEnv?.installed ||
-                        !imageUpscalerEnv?.installed ||
                         !whisperModelDownloaded ||
                         !translationModelDownloaded ||
                         !bgRemoveModelDownloaded
@@ -1125,7 +1089,7 @@ export default function Settings() {
                   <TableCell className="font-medium">Environments</TableCell>
                   <TableCell>
                     {(() => {
-                      const allReady = whisperEnv?.installed && translationEnv?.installed && imageFinderEnv?.installed && bgRemoveEnv?.installed && imageUpscalerEnv?.installed;
+                      const allReady = whisperEnv?.installed && translationEnv?.installed && imageFinderEnv?.installed && bgRemoveEnv?.installed;
                       return (
                         <div className="flex items-center gap-2">
                           {allReady ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
@@ -1136,13 +1100,13 @@ export default function Settings() {
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
                     {(() => {
-                      const pythonPath = whisperEnv?.python_path || translationEnv?.python_path || imageFinderEnv?.python_path || bgRemoveEnv?.python_path || imageUpscalerEnv?.python_path;
+                      const pythonPath = whisperEnv?.python_path || translationEnv?.python_path || imageFinderEnv?.python_path || bgRemoveEnv?.python_path;
                       const profiles: { name: string; env: EnvStatus | null }[] = [
                         { name: "whisper", env: whisperEnv },
                         { name: "translation", env: translationEnv },
                         { name: "image-search", env: imageFinderEnv },
                         { name: "bg-remove-overlay", env: bgRemoveEnv },
-                        { name: "image-upscaler", env: imageUpscalerEnv },
+
                       ];
                       return (
                         <div className="space-y-1">
@@ -1164,8 +1128,8 @@ export default function Settings() {
                     })()}
                   </TableCell>
                   <TableCell>
-                    {appServiceRunning && !(whisperEnv?.installed && translationEnv?.installed && imageFinderEnv?.installed && bgRemoveEnv?.installed && imageUpscalerEnv?.installed) && (() => {
-                      const isInstalling = [whisperProgress, translationProgress, imageFinderProgress, bgRemoveProgress, imageUpscalerProgress].some((p) => p?.status === "starting");
+                    {appServiceRunning && !(whisperEnv?.installed && translationEnv?.installed && imageFinderEnv?.installed && bgRemoveEnv?.installed) && (() => {
+                      const isInstalling = [whisperProgress, translationProgress, imageFinderProgress, bgRemoveProgress].some((p) => p?.status === "starting");
                       return (
                         <Button size="sm" variant="outline" onClick={() => { void handleInstallAllEnvs(); }} disabled={isInstalling}>
                           {isInstalling ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
@@ -1504,11 +1468,7 @@ export default function Settings() {
               Image Finder: {imageFinderProgress.message} {imageFinderProgress.percent ?? 0}%
             </div>
           )}
-          {!envInstallAllActive && imageUpscalerProgress && (
-            <div className="text-xs text-muted-foreground">
-              Image Upscaler: {imageUpscalerProgress.message} {imageUpscalerProgress.percent ?? 0}%
-            </div>
-          )}
+
         </CardContent>
       </Card>
 

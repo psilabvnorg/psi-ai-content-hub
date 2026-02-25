@@ -153,15 +153,15 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
   const fetchStatus = async () => {
     try {
       const [envRes, statusRes] = await Promise.all([
-        fetch(`${abg_remove_overlay_base_url}/env/status`),
+        fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/status`),
         fetch(`${abg_remove_overlay_base_url}/status`),
       ]);
       if (!envRes.ok || !statusRes.ok) {
         throw new Error("status");
       }
-      const envData = (await envRes.json()) as EnvStatus;
+      const envResponse = (await envRes.json()) as { profile_status: EnvStatus };
       const statusData = (await statusRes.json()) as BgStatusResponse;
-      setEnvStatus(envData);
+      setEnvStatus(envResponse.profile_status);
       setModelStatus(statusData.models?.background_removal ?? null);
       setServerUnreachable(false);
     } catch {
@@ -187,35 +187,17 @@ export default function BackgroundRemoval({ onOpenSettings }: { onOpenSettings?:
     setLogs([]);
     setProgress({ status: "starting", percent: 0, message: "Starting installation..." });
     try {
-      const res = await fetch(`${abg_remove_overlay_base_url}/env/install`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to start install");
-      const { task_id } = (await res.json()) as { task_id: string };
-
-      const source = new EventSource(`${abg_remove_overlay_base_url}/env/install/stream/${task_id}`);
-      source.onmessage = (event) => {
-        const data = JSON.parse(event.data as string) as { status: string; percent: number; logs?: string[] };
-        setProgress({ status: data.status as ProgressData["status"], percent: data.percent, message: "Installing dependencies..." });
-        if (data.logs?.length) {
-          setLogs((prev) => [...prev, ...data.logs!].slice(-200));
-        }
-        if (data.status === "complete") {
-          source.close();
-          setProgress({ status: "complete", percent: 100, message: "Dependencies installed. Restart the server to load the model." });
-          setIsInstallingEnv(false);
-          void fetchStatus();
-        } else if (data.status === "error") {
-          source.close();
-          setProgress({ status: "error", percent: 0, message: "Failed to install dependencies." });
-          setIsInstallingEnv(false);
-        }
-      };
-      source.onerror = () => {
-        source.close();
-        setProgress({ status: "error", percent: 0, message: "Lost connection during install." });
-        setIsInstallingEnv(false);
-      };
+      const res = await fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Failed to install dependencies.");
+      setProgress({ status: "complete", percent: 100, message: "Dependencies installed. Restart the server to load the model." });
+      setIsInstallingEnv(false);
+      void fetchStatus();
     } catch {
-      setProgress({ status: "error", percent: 0, message: "Failed to start installation." });
+      setProgress({ status: "error", percent: 0, message: "Failed to install dependencies." });
       setIsInstallingEnv(false);
     }
   };

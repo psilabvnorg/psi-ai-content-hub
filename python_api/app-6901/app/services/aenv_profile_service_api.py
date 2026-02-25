@@ -71,9 +71,6 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "einops": "einops",
         "cv2": "opencv-python",
     },
-    # image-upscaler uses upscayl-bin.exe (no Python packages required)
-    "image-upscaler": {},
-
 }
 
 
