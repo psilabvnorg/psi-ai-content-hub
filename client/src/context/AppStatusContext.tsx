@@ -55,14 +55,15 @@ export function AppStatusProvider({ children }: { children: ReactNode }) {
 
     // 3. Env profiles — a quick check: all 4 profiles installed?
     try {
-      const [whisper, translation, imageFinder, bgRemove] = await Promise.all([
+      const [whisper, translation, imageFinder, bgRemove, imageUpscaler] = await Promise.all([
         fetch(`${APP_API_URL}/api/v1/env/profiles/whisper/status`),
         fetch(`${APP_API_URL}/api/v1/env/profiles/translation/status`),
         fetch(`${APP_API_URL}/api/v1/env/profiles/image-search/status`),
         fetch(`${APP_API_URL}/api/v1/env/profiles/bg-remove-overlay/status`),
+        fetch(`${APP_API_URL}/api/v1/env/profiles/image-upscaler/status`),
       ]);
       const jsons = await Promise.all(
-        [whisper, translation, imageFinder, bgRemove].map((r) =>
+        [whisper, translation, imageFinder, bgRemove, imageUpscaler].map((r) =>
           r.ok ? (r.json() as Promise<{ installed?: boolean; profile_status?: { installed?: boolean } }>) : Promise.resolve(null)
         )
       );

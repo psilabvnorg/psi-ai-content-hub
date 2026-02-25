@@ -50,6 +50,12 @@ const features = {
       descriptionKey: "feature.tool.image_finder.desc" as I18nKey,
     },
     {
+      id: "image-upscaler",
+      titleKey: "feature.tool.image_upscaler.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.image_upscaler.desc" as I18nKey,
+    },
+    {
       id: "llm",
       titleKey: "feature.tool.llm.title" as I18nKey,
       icon: BrainCircuit,

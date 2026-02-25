@@ -24,6 +24,7 @@ import TextToVideo from "./tools/TextToVideo";
 import LLM from "./tools/LLM";
 import Translator from "./tools/Translator";
 import ImageFinder from "./tools/ImageFinder";
+import ImageUpscaler from "./tools/ImageUpscaler";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -70,6 +71,7 @@ export default function FeaturePlaceholder({
       "llm": "feature.tool.llm.title",
       translator: "feature.tool.translator.title",
       "image-finder": "feature.tool.image_finder.title",
+      "image-upscaler": "feature.tool.image_upscaler.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -129,6 +131,8 @@ export default function FeaturePlaceholder({
         return <Translator onOpenSettings={() => onSelectFeature("settings")} />;
       case "image-finder":
         return <ImageFinder onOpenSettings={() => onSelectFeature("settings")} />;
+      case "image-upscaler":
+        return <ImageUpscaler onOpenSettings={() => onSelectFeature("settings")} />;
       case "settings":
         return <Settings />;
       default:
