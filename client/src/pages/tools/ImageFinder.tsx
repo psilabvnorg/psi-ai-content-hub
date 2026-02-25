@@ -27,7 +27,6 @@ import type {
   ProgressData,
   StatusRowConfig,
 } from "@/components/common/tool-page-ui";
-import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
 type ImageFinderImage = {
@@ -127,7 +126,6 @@ export default function ImageFinder({
 }) {
   const aimage_search_base_url = `${APP_API_URL}/api/v1/image-search`;
   const { t } = useI18n();
-  const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
 
   const [text, setText] = useState("");
@@ -149,7 +147,6 @@ export default function ImageFinder({
 
   const [serverUnreachable, setServerUnreachable] = useState(true);
 
-  const imageFinderService = servicesById.app;
   const statusReady = !serverUnreachable;
 
   const fetchStatus = async () => {
@@ -166,15 +163,6 @@ export default function ImageFinder({
     void fetchStatus();
   }, []);
 
-  useEffect(() => {
-    if (!imageFinderService) return;
-    if (
-      imageFinderService.status === "running" ||
-      imageFinderService.status === "stopped"
-    ) {
-      void fetchStatus();
-    }
-  }, [imageFinderService?.status]);
 
   const handleToggleSource = (sourceId: string, checked: boolean) => {
     setSelectedSources((previous) => {

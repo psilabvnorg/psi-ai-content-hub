@@ -265,14 +265,12 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   };
 
   useEffect(() => {
-    fetchStatus();
     fetchLanguages();
   }, []);
 
   useEffect(() => {
     if (!serviceStatus) return;
     if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
-      fetchStatus();
       fetchLanguages();
     }
   }, [serviceStatus?.status]);

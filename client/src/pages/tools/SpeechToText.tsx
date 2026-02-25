@@ -8,7 +8,6 @@ import type { I18nKey } from "@/i18n/translations";
 import { APP_API_URL } from "@/lib/api";
 import { ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { StatusRowConfig } from "@/components/common/tool-page-ui";
-import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
 const MODELS = ["tiny", "base", "small", "medium", "large"] as const;
@@ -28,10 +27,6 @@ type ProgressData = {
   percent: number;
   message?: string;
   logs?: string[];
-};
-
-type StatusData = {
-  server_unreachable?: boolean;
 };
 
 type Segment = {
@@ -66,17 +61,13 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [model, setModel] = useState<(typeof MODELS)[number]>("base");
   const [addPunctuation, setAddPunctuation] = useState(true);
   const [wordTimestamps, setWordTimestamps] = useState(false);
-  const [status, setStatus] = useState<StatusData | null>(null);
+  const [serverUnreachable, setServerUnreachable] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [result, setResult] = useState<ResultData | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
-  const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
-  const serviceStatus = servicesById.app;
-
-  const serverUnreachable = status?.server_unreachable === true;
 
   useEffect(() => {
     if (logRef.current) {
@@ -88,22 +79,15 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     try {
       const response = await fetch(`${APP_API_URL}/api/v1/status`);
       if (!response.ok) throw new Error("status");
-      setStatus({ server_unreachable: false });
+      setServerUnreachable(false);
     } catch {
-      setStatus({ server_unreachable: true });
+      setServerUnreachable(true);
     }
   };
 
   useEffect(() => {
     fetchStatus();
   }, []);
-
-  useEffect(() => {
-    if (!serviceStatus) return;
-    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
-      fetchStatus();
-    }
-  }, [serviceStatus?.status]);
 
   const handleTranscribe = async () => {
     if (!audioFile) return;

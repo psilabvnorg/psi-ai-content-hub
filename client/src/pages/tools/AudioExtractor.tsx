@@ -9,7 +9,6 @@ import { APP_API_URL } from "@/lib/api";
 import { useI18n } from "@/i18n/i18n";
 import { ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { StatusRowConfig } from "@/components/common/tool-page-ui";
-import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
 export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: () => void }) {
@@ -24,9 +23,7 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
   const { toast } = useToast();
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
-  const serviceStatus = servicesById.app;
 
   const fetchStatus = async () => {
     try {
@@ -42,12 +39,6 @@ export default function AudioExtractor({ onOpenSettings }: { onOpenSettings?: ()
     fetchStatus();
   }, []);
 
-  useEffect(() => {
-    if (!serviceStatus) return;
-    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
-      fetchStatus();
-    }
-  }, [serviceStatus?.status]);
 
   const statusRows: StatusRowConfig[] = [
     {

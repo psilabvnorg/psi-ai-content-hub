@@ -8,7 +8,6 @@ import { downloadFile } from "@/lib/download";
 import { DropZone, ServiceStatusTable, ProgressDisplay } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useI18n } from "@/i18n/i18n";
-import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
 type OverlayResult = {
@@ -55,14 +54,12 @@ export default function MergeOverlay({ onOpenSettings }: { onOpenSettings?: () =
   // Service status
   const [serverUnreachable, setServerUnreachable] = useState(false);
 
-  const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
-  const serviceStatus = servicesById.app;
   const statusReady = !serverUnreachable;
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch(`${abg_remove_overlay_base_url}/status`);
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
       if (!response.ok) throw new Error("status");
       setServerUnreachable(false);
     } catch {
@@ -71,13 +68,6 @@ export default function MergeOverlay({ onOpenSettings }: { onOpenSettings?: () =
   };
 
   useEffect(() => { void fetchStatus(); }, []);
-
-  useEffect(() => {
-    if (!serviceStatus) return;
-    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
-      void fetchStatus();
-    }
-  }, [serviceStatus?.status]);
 
   const statusRows: StatusRowConfig[] = [
     {

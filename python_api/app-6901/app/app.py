@@ -76,13 +76,6 @@ def create_app() -> FastAPI:
     app.include_router(image_sources_router.router, prefix="/api/v1/image-search")
     app.include_router(upscale_image_router.router, prefix="/api/v1/image/upscale")
 
-    # Legacy compatibility routes
-    app.include_router(stt_router.router, prefix="/whisper/api/v1")
-    app.include_router(remove_overlay_router.router, prefix="/bg-remove-overlay/api/v1")
-    app.include_router(translation_router.router, prefix="/translation/api/v1/translation")
-    app.include_router(image_finder_router.router, prefix="/image-search/api/v1")
-    app.include_router(image_sources_router.router, prefix="/image-search/api/v1")
-
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app
 
