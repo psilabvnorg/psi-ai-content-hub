@@ -5,185 +5,8 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-
 from python_api.common.paths import TEMP_DIR
-from ..deps import get_job_store
-from ..services.video import get_download_status, progress_store as video_progress, start_download
-from ..services.tools_manager import aget_ffmpeg_bin_path_data
-from python_api.common.jobs import JobStore
-
-
-def _get_ffmpeg_cmd() -> str:
-    """Return full path to ffmpeg, falling back to bare name."""
-    ffmpeg_bin = aget_ffmpeg_bin_path_data()
-    return str(ffmpeg_bin) if ffmpeg_bin else "ffmpeg"
-
-
-router = APIRouter(prefix="/api/v1", tags=["media"])
-
-
-def _save_upload(file: UploadFile) -> Path:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="file is required")
-    suffix = Path(file.filename).suffix or ".bin"
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
-    target = TEMP_DIR / f"upload_{os.getpid()}_{file.filename}{suffix if not file.filename.endswith(suffix) else ''}"
-    with target.open("wb") as handle:
-        handle.write(file.file.read())
-    return target
-
-
-@router.post("/video/download")
-def video_download(payload: dict = Body(...), job_store: JobStore = Depends(get_job_store)) -> dict:
-    url = payload.get("url")
-    platform = payload.get("platform")
-    convert_to_h264 = bool(payload.get("convert_to_h264", False))
-    if not url or not platform:
-        raise HTTPException(status_code=400, detail="url and platform are required")
-    job_id = start_download(job_store, url, platform, convert_to_h264)
-    return {"job_id": job_id}
-
-
-@router.get("/video/download/stream/{job_id}")
-def video_download_stream(job_id: str) -> StreamingResponse:
-    return StreamingResponse(video_progress.sse_stream(job_id), media_type="text/event-stream")
-
-
-@router.post("/video/trim")
-def video_trim(
-    file: UploadFile = File(...),
-    start_time: str = Form(...),
-    end_time: Optional[str] = Form(None),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    input_path = _save_upload(file)
-    output_path = input_path.with_suffix(".trimmed.mp4")
-    cmd = [_get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
-    if end_time:
-        cmd.extend(["-to", end_time])
-    cmd.extend(["-c", "copy", "-y", str(output_path)])
-    subprocess.check_call(cmd)
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
-
-
-@router.post("/video/extract-audio")
-def video_extract_audio(
-    file: UploadFile = File(...),
-    format: str = Form("mp3"),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    if format not in ("mp3", "wav"):
-        raise HTTPException(status_code=400, detail="format must be mp3 or wav")
-    input_path = _save_upload(file)
-    output_path = input_path.with_suffix(f".{format}")
-    codec = "libmp3lame" if format == "mp3" else "pcm_s16le"
-    subprocess.check_call(
-        [_get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
-    )
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
-
-
-class ExtractAudioFromFileIdRequest(BaseModel):
-    file_id: str
-    format: str = "mp3"
-
-
-@router.post("/video/extract-audio-from-fileid")
-def video_extract_audio_from_fileid(
-    payload: ExtractAudioFromFileIdRequest,
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    """Extract audio from an already-downloaded video file stored on the server.
-
-    @param payload - Request body with file_id of the downloaded video and desired format.
-    @return dict with status, filename, and download_url for the extracted audio.
-    """
-    if payload.format not in ("mp3", "wav"):
-        raise HTTPException(status_code=400, detail="format must be mp3 or wav")
-    file_record = job_store.get_file(payload.file_id)
-    if not file_record:
-        raise HTTPException(status_code=404, detail="File not found")
-    input_path = file_record.path
-    if not input_path.exists():
-        raise HTTPException(status_code=404, detail="File no longer exists on disk")
-    output_path = input_path.with_suffix(f".audio.{payload.format}")
-    codec = "libmp3lame" if payload.format == "mp3" else "pcm_s16le"
-    subprocess.check_call(
-        [_get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
-    )
-    audio_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{audio_record.file_id}"}
-
-
-@router.post("/audio/convert")
-def audio_convert(
-    file: UploadFile = File(...),
-    output_format: str = Form(...),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    if output_format not in ("mp3", "wav"):
-        raise HTTPException(status_code=400, detail="output_format must be mp3 or wav")
-    input_path = _save_upload(file)
-    output_path = input_path.with_suffix(f".{output_format}")
-    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
-    subprocess.check_call([_get_ffmpeg_cmd(), "-i", str(input_path), "-acodec", codec, "-y", str(output_path)])
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
-
-
-@router.post("/audio/trim")
-def audio_trim(
-    file: UploadFile = File(...),
-    start_time: str = Form(...),
-    end_time: Optional[str] = Form(None),
-    output_format: str = Form("mp3"),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    if output_format not in ("mp3", "wav"):
-        raise HTTPException(status_code=400, detail="output_format must be mp3 or wav")
-    input_path = _save_upload(file)
-    output_path = input_path.with_suffix(f".trimmed.{output_format}")
-    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
-    cmd = [_get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
-    if end_time:
-        cmd.extend(["-to", end_time])
-    cmd.extend(["-acodec", codec, "-vn", "-y", str(output_path)])
-    subprocess.check_call(cmd)
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
-
-
-@router.post("/video/speed")
-def video_speed(
-    file: UploadFile = File(...),
-    speed: float = Form(...),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
-    if speed < 0.5 or speed > 2.0:
-        raise HTTPException(status_code=400, detail="speed must be between 0.5 and 2.0")
-    input_path = _save_upload(file)
-    output_path = input_path.with_suffix(".speed.mp4")
-    pts_multiplier = 1.0 / speed
-    subprocess.check_call(
-        [
-            _get_ffmpeg_cmd(),
-            "-i",
-            str(input_path),
-            "-filter:v",
-            f"setpts={pts_multiplier}*PTS",
-            "-filter:a",
-            f"atempo={speed}",
-            "-y",
-            str(output_path),
-        ]
-    )
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}", "speed": speed}
+from .tools_manager import aget_ffmpeg_bin_path_data
 
 
 UPSCAYL_MODELS = [
@@ -196,31 +19,171 @@ UPSCAYL_MODELS = [
     "upscayl-lite-4x",
 ]
 
-_UPSCAYL_DIR = Path(__file__).resolve().parent.parent / "upscale_image" / "resources"
+_UPSCAYL_DIR = Path(__file__).resolve().parent / "upscale_image" / "resources"
 _UPSCAYL_BIN = _UPSCAYL_DIR / "win" / "bin" / "upscayl-bin.exe"
 _UPSCAYL_MODELS_DIR = _UPSCAYL_DIR / "models"
 
 
-@router.get("/image/upscale/models")
-def image_upscale_models() -> dict:
-    """Return available upscaling models and whether the binary is found."""
-    return {"models": UPSCAYL_MODELS, "binary_found": _UPSCAYL_BIN.exists()}
+def get_ffmpeg_cmd() -> str:
+    """Return full path to ffmpeg binary, falling back to bare name."""
+    ffmpeg_bin = aget_ffmpeg_bin_path_data()
+    return str(ffmpeg_bin) if ffmpeg_bin else "ffmpeg"
 
 
-@router.post("/image/upscale")
-def image_upscale(
-    file: UploadFile = File(...),
-    scale: int = Form(4),
-    model_name: str = Form("ultrasharp-4x"),
-    job_store: JobStore = Depends(get_job_store),
-) -> dict:
+def save_upload(filename: str, content: bytes) -> Path:
+    """Write upload bytes to a temp file and return its path.
+
+    Raises:
+        ValueError: if filename is empty.
+    """
+    if not filename:
+        raise ValueError("filename is required")
+    suffix = Path(filename).suffix or ".bin"
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    target = TEMP_DIR / f"upload_{os.getpid()}_{filename}{suffix if not filename.endswith(suffix) else ''}"
+    with target.open("wb") as handle:
+        handle.write(content)
+    return target
+
+
+def trim_video(input_path: Path, start_time: str, end_time: Optional[str] = None) -> Path:
+    """Trim a video file between start_time and optional end_time.
+
+    Returns the output path.
+    """
+    output_path = input_path.with_suffix(".trimmed.mp4")
+    cmd = [get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
+    if end_time:
+        cmd.extend(["-to", end_time])
+    cmd.extend(["-c", "copy", "-y", str(output_path)])
+    subprocess.check_call(cmd)
+    return output_path
+
+
+def extract_audio(input_path: Path, format: str) -> Path:
+    """Extract audio track from a video file.
+
+    Args:
+        format: 'mp3' or 'wav'.
+
+    Raises:
+        ValueError: if format is unsupported.
+    """
+    if format not in ("mp3", "wav"):
+        raise ValueError("format must be mp3 or wav")
+    output_path = input_path.with_suffix(f".{format}")
+    codec = "libmp3lame" if format == "mp3" else "pcm_s16le"
+    subprocess.check_call(
+        [get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
+    )
+    return output_path
+
+
+def extract_audio_from_path(input_path: Path, format: str, output_suffix: str = ".audio") -> Path:
+    """Extract audio from a video at a given path using a custom output suffix.
+
+    Args:
+        output_suffix: suffix inserted before the format extension, e.g. '.audio'.
+
+    Raises:
+        ValueError: if format is unsupported.
+        FileNotFoundError: if input_path does not exist.
+    """
+    if format not in ("mp3", "wav"):
+        raise ValueError("format must be mp3 or wav")
+    if not input_path.exists():
+        raise FileNotFoundError(f"File no longer exists on disk: {input_path}")
+    output_path = input_path.with_suffix(f"{output_suffix}.{format}")
+    codec = "libmp3lame" if format == "mp3" else "pcm_s16le"
+    subprocess.check_call(
+        [get_ffmpeg_cmd(), "-i", str(input_path), "-vn", "-acodec", codec, "-ar", "44100", "-ac", "2", "-y", str(output_path)]
+    )
+    return output_path
+
+
+def convert_audio(input_path: Path, output_format: str) -> Path:
+    """Convert an audio file to mp3 or wav.
+
+    Raises:
+        ValueError: if output_format is unsupported.
+    """
+    if output_format not in ("mp3", "wav"):
+        raise ValueError("output_format must be mp3 or wav")
+    output_path = input_path.with_suffix(f".{output_format}")
+    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
+    subprocess.check_call([get_ffmpeg_cmd(), "-i", str(input_path), "-acodec", codec, "-y", str(output_path)])
+    return output_path
+
+
+def trim_audio(
+    input_path: Path,
+    start_time: str,
+    end_time: Optional[str] = None,
+    output_format: str = "mp3",
+) -> Path:
+    """Trim an audio file between start_time and optional end_time.
+
+    Raises:
+        ValueError: if output_format is unsupported.
+    """
+    if output_format not in ("mp3", "wav"):
+        raise ValueError("output_format must be mp3 or wav")
+    output_path = input_path.with_suffix(f".trimmed.{output_format}")
+    codec = "libmp3lame" if output_format == "mp3" else "pcm_s16le"
+    cmd = [get_ffmpeg_cmd(), "-i", str(input_path), "-ss", start_time]
+    if end_time:
+        cmd.extend(["-to", end_time])
+    cmd.extend(["-acodec", codec, "-vn", "-y", str(output_path)])
+    subprocess.check_call(cmd)
+    return output_path
+
+
+def adjust_video_speed(input_path: Path, speed: float) -> Path:
+    """Change the playback speed of a video.
+
+    Raises:
+        ValueError: if speed is outside [0.5, 2.0].
+    """
+    if speed < 0.5 or speed > 2.0:
+        raise ValueError("speed must be between 0.5 and 2.0")
+    output_path = input_path.with_suffix(".speed.mp4")
+    pts_multiplier = 1.0 / speed
+    subprocess.check_call(
+        [
+            get_ffmpeg_cmd(),
+            "-i", str(input_path),
+            "-filter:v", f"setpts={pts_multiplier}*PTS",
+            "-filter:a", f"atempo={speed}",
+            "-y", str(output_path),
+        ]
+    )
+    return output_path
+
+
+def get_upscayl_models() -> list[str]:
+    """Return the list of supported Upscayl model names."""
+    return UPSCAYL_MODELS
+
+
+def is_upscayl_binary_found() -> bool:
+    """Return True if the Upscayl binary exists."""
+    return _UPSCAYL_BIN.exists()
+
+
+def upscale_image(input_path: Path, model_name: str, scale: int) -> Path:
+    """Upscale an image using Upscayl.
+
+    Raises:
+        ValueError: if scale or model_name is invalid.
+        RuntimeError: if the binary is missing or upscaling fails.
+        FileNotFoundError: if output file was not produced.
+    """
     if scale not in (2, 3, 4):
-        raise HTTPException(status_code=400, detail="scale must be 2, 3, or 4")
+        raise ValueError("scale must be 2, 3, or 4")
     if model_name not in UPSCAYL_MODELS:
-        raise HTTPException(status_code=400, detail=f"Unknown model. Choose from: {', '.join(UPSCAYL_MODELS)}")
+        raise ValueError(f"Unknown model. Choose from: {', '.join(UPSCAYL_MODELS)}")
     if not _UPSCAYL_BIN.exists():
-        raise HTTPException(status_code=500, detail="upscayl-bin not found. Check installation.")
-    input_path = _save_upload(file)
+        raise RuntimeError("upscayl-bin not found. Check installation.")
     output_path = input_path.with_suffix(f".upscaled_{scale}x.png")
     cmd = [
         str(_UPSCAYL_BIN),
@@ -235,23 +198,7 @@ def image_upscale(
     try:
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError as exc:
-        raise HTTPException(status_code=500, detail=f"Upscaling failed (exit code {exc.returncode})")
+        raise RuntimeError(f"Upscaling failed (exit code {exc.returncode})") from exc
     if not output_path.exists():
-        raise HTTPException(status_code=500, detail="Upscaling produced no output file")
-    file_record = job_store.add_file(output_path, output_path.name)
-    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
-
-
-@router.get("/video/download/status/{job_id}")
-def video_download_status(job_id: str, job_store: JobStore = Depends(get_job_store)) -> dict:
-    record = get_download_status(job_store, job_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="job not found")
-    progress = video_progress.get_payload(job_id, include_logs=False)
-    return {
-        "job_id": job_id,
-        "status": record.get("status"),
-        "result": record.get("result"),
-        "error": record.get("error"),
-        "progress": progress,
-    }
+        raise FileNotFoundError("Upscaling produced no output file")
+    return output_path

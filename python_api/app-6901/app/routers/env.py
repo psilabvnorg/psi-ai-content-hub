@@ -1,55 +1,19 @@
 from __future__ import annotations
 
-import importlib.util
-import subprocess
-import sys
-from typing import Dict, List
-
 from fastapi import APIRouter, Body
+
+from ..services.env import get_status, install_packages
 
 
 router = APIRouter(prefix="/api/v1/env", tags=["env"])
 
-_MODULE_TO_PACKAGE: Dict[str, str] = {
-    "fastapi": "fastapi",
-    "uvicorn": "uvicorn",
-    "multipart": "python-multipart",
-    "yt_dlp": "yt-dlp",
-    "edge_tts": "edge-tts",
-}
-
-
-def _missing_modules() -> List[str]:
-    missing = []
-    for module in _MODULE_TO_PACKAGE:
-        if importlib.util.find_spec(module) is None:
-            missing.append(module)
-    return missing
-
-
-def _installed_modules() -> List[str]:
-    installed = []
-    for module in _MODULE_TO_PACKAGE:
-        if importlib.util.find_spec(module) is not None:
-            installed.append(module)
-    return installed
-
 
 @router.get("/status")
 def env_status() -> dict:
-    missing = _missing_modules()
-    installed = _installed_modules()
-    return {"installed": len(missing) == 0, "missing": missing, "installed_modules": installed}
+    return get_status()
 
 
 @router.post("/install")
 def env_install(payload: dict = Body(None)) -> dict:
-    packages = None
-    if payload:
-        packages = payload.get("packages")
-    if not packages:
-        packages = [_MODULE_TO_PACKAGE[name] for name in _missing_modules()]
-    if not packages:
-        return {"status": "success", "installed": []}
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-U", *packages])
-    return {"status": "success", "installed": packages}
+    packages = (payload or {}).get("packages") or None
+    return install_packages(packages)

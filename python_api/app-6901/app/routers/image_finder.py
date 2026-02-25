@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Body, HTTPException
 
-from ..services.image_search.image_pipeline.search import ALL_SOURCE_IDS
-from ..services.image_search.image_finder import ImageFinderError, find_images
+from ..services.image_finder import ALL_SOURCE_IDS, ImageFinderError, find_images
 
 
 router = APIRouter(prefix="/image-finder", tags=["image-finder"])
