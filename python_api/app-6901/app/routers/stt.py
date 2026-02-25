@@ -11,10 +11,16 @@ from ..deps import get_job_store
 from ..services.stt import download_model as stt_download_model
 from ..services.stt import progress_store as stt_progress
 from ..services.stt import transcribe as stt_transcribe
-from ..services.stt import get_result, save_upload
+from ..services.stt import get_result, save_upload, status as stt_status
 
 
 router = APIRouter(prefix="", tags=["stt"])
+
+
+@router.get("/status")
+def stt_status_route() -> dict:
+    data = stt_status()
+    return {"models": {"whisper": data}}
 
 
 @router.post("/models/download")

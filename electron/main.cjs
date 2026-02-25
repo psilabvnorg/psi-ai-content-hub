@@ -38,7 +38,7 @@ const MANAGED_SERVICES = [
   {
     id: 'app',
     name: 'App API',
-    relativeRoot: path.join('python_api', 'app-and-basic-tool'),
+    relativeRoot: path.join('python_api', 'app-6901'),
     entryModule: 'app.main',
     apiUrl: 'http://127.0.0.1:6901',
     startupTimeoutMs: 90000,

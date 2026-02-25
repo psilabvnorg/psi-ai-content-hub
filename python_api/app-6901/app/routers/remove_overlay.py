@@ -15,6 +15,7 @@ from ..services.remove_overlay import (
     get_result,
     get_video_overlay_result,
     get_video_result,
+    model_status,
     overlay_image,
     overlay_image_upload,
     overlay_video,
@@ -32,6 +33,11 @@ from ..services.remove_overlay import (
 
 
 router = APIRouter(prefix="", tags=["bg-remove-overlay"])
+
+
+@router.get("/status")
+def bg_remove_status_route() -> dict:
+    return {"models": {"background_removal": model_status()}}
 
 
 # ---------------------------------------------------------------------------

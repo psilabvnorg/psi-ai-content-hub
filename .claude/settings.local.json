@@ -9,7 +9,10 @@
       "Bash(npx tsc:*)",
       "Bash(\"d:/AI/psi-ai-content-hub/python_api/bg-remove-overlay/venv/Scripts/python.exe\" -c:*)",
       "Bash(time:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(find:*)",
+      "Bash(python3:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

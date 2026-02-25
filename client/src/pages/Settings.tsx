@@ -1137,20 +1137,28 @@ export default function Settings() {
                   <TableCell className="text-xs font-mono break-all">
                     {(() => {
                       const pythonPath = whisperEnv?.python_path || translationEnv?.python_path || imageFinderEnv?.python_path || bgRemoveEnv?.python_path || imageUpscalerEnv?.python_path;
-                      const missing = [
-                        ...(whisperEnv?.missing ?? []),
-                        ...(translationEnv?.missing ?? []),
-                        ...(imageFinderEnv?.missing ?? []),
-                        ...(bgRemoveEnv?.missing ?? []),
-                        ...(imageUpscalerEnv?.missing ?? []),
-                      ].filter((v, i, a) => a.indexOf(v) === i);
+                      const profiles: { name: string; env: EnvStatus | null }[] = [
+                        { name: "whisper", env: whisperEnv },
+                        { name: "translation", env: translationEnv },
+                        { name: "image-search", env: imageFinderEnv },
+                        { name: "bg-remove-overlay", env: bgRemoveEnv },
+                        { name: "image-upscaler", env: imageUpscalerEnv },
+                      ];
                       return (
-                        <div className="space-y-0.5">
-                          {pythonPath && <div>{pythonPath}</div>}
-                          {missing.length > 0 && (
-                            <div className="text-red-400">MISSING: {missing.join(", ")}</div>
-                          )}
-                          {!pythonPath && missing.length === 0 && "--"}
+                        <div className="space-y-1">
+                          {pythonPath && <div className="text-muted-foreground">{pythonPath}</div>}
+                          {profiles.map(({ name, env }) => (
+                            <div key={name} className="flex flex-col gap-0">
+                              {env === null ? (
+                                <span className="text-yellow-500">{name}: no response</span>
+                              ) : env.installed ? (
+                                <span className="text-green-500">{name}: ok</span>
+                              ) : (
+                                <span className="text-red-400">{name}: missing [{(env.missing ?? []).join(", ")}]</span>
+                              )}
+                            </div>
+                          ))}
+                          {!pythonPath && profiles.every(p => p.env === null) && "--"}
                         </div>
                       );
                     })()}

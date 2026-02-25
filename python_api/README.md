@@ -4,11 +4,11 @@ This folder contains FastAPI services used by the desktop app.
 
 ## Services and Ports
 
-1. `app-and-basic-tool` -> `6901`
+1. `app-6901` -> `6901`
 2. `F5-TTS` -> `6902`
 3. `VieNeu-TTS` -> `6903`
 
-Only `F5-TTS` stays isolated in its own venv/process. Non-F5 APIs are merged into `app-and-basic-tool`.
+Only `F5-TTS` stays isolated in its own venv/process. Non-F5 APIs are merged into `app-6901`.
 
 ## Merged API Bases on 6901
 

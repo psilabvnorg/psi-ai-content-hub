@@ -10,6 +10,7 @@ from python_api.common.jobs import JobStore
 from ..deps import get_job_store
 from ..services.translation import (
     download_model,
+    get_model_status,
     get_translation_status,
     load_model,
     start_translation,
@@ -19,6 +20,11 @@ from ..services.translation import (
 
 
 router = APIRouter(prefix="", tags=["translation"])
+
+
+@router.get("/status")
+def translation_status_route() -> dict:
+    return get_model_status()
 
 
 def _validate_segments(raw_segments: Any) -> list[dict] | None:

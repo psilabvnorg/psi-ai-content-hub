@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict
 
 
-# parents: [0]=services, [1]=app, [2]=app-and-basic-tool → venv lives here
+# parents: [0]=services, [1]=app, [2]=app-6901 → venv lives here
 aenv_venv_dir_path = Path(__file__).resolve().parents[2] / "venv"
 
 aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
@@ -71,6 +71,8 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "einops": "einops",
         "cv2": "opencv-python",
     },
+    # image-upscaler uses upscayl-bin.exe (no Python packages required)
+    "image-upscaler": {},
 
 }
 
