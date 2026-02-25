@@ -3,64 +3,11 @@ from __future__ import annotations
 import logging
 
 from ..models import ImageResult
-from ._api_source import search_api_source
 from ._scrape_source import fetch_page
 
 
 LOGGER = logging.getLogger(__name__)
-_LEXICA_API_URL = "https://lexica.art/api/v1/search"
 _LEXICA_SCRAPE_URL = "https://lexica.art/"
-
-
-def _extract_lexica_urls(payload: dict[str, object]) -> list[str]:
-    """Extract image URLs from Lexica API JSON response."""
-    images = payload.get("images")
-    if not isinstance(images, list):
-        return []
-
-    results: list[str] = []
-    for item in images:
-        if not isinstance(item, dict):
-            continue
-        for key in ("src", "srcSmall"):
-            value = item.get(key)
-            if isinstance(value, str) and value.startswith("http"):
-                results.append(value)
-                break
-    return results
-
-
-def _scrape_lexica_images(
-    query: str,
-    max_results: int,
-    timeout_seconds: int,
-) -> list[ImageResult]:
-    """Fallback: scrape Lexica search page when API is unavailable."""
-    LOGGER.warning("[Lexica] Using scrape fallback")
-    soup = fetch_page(
-        _LEXICA_SCRAPE_URL,
-        timeout_seconds=timeout_seconds,
-        params={"q": query},
-    )
-
-    results: list[ImageResult] = []
-    seen: set[str] = set()
-
-    for img in soup.select("img[src]"):
-        if len(results) >= max_results:
-            break
-        src = img.get("src") or img.get("data-src") or ""
-        if not isinstance(src, str) or not src.startswith("http"):
-            continue
-        # Lexica image CDN patterns
-        if "lexica.art" not in src and "image.lexica.art" not in src:
-            continue
-        if src in seen:
-            continue
-        seen.add(src)
-        results.append(ImageResult(source="lexica", url=src))
-
-    return results
 
 
 def search_lexica_images(
@@ -68,7 +15,7 @@ def search_lexica_images(
     max_results: int = 10,
     timeout_seconds: int = 30,
 ) -> list[ImageResult]:
-    """Search Lexica via API (preferred) or scrape fallback.
+    """Search Lexica by scraping the search page.
 
     @param query The image search query string.
     @param max_results Maximum number of image results to return.
@@ -77,32 +24,54 @@ def search_lexica_images(
     if max_results <= 0:
         return []
 
+    import json as _json
+    import re as _re
+
     LOGGER.warning("[Lexica] Starting: query=%r, max_results=%d, timeout=%ds", query, max_results, timeout_seconds)
 
-    # Lexica API is public, but may require a key for higher rate limits
-    from ...credentials import get_credential
-    api_key = get_credential("LEXICA_API_KEY")
+    soup = fetch_page(
+        _LEXICA_SCRAPE_URL,
+        timeout_seconds=timeout_seconds,
+        params={"q": query},
+    )
 
-    headers: dict[str, str] = {}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
+    # Regex to extract the JSON-string argument from __next_f.push([1, "..."])
+    _push_re = _re.compile(
+        r'self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)',
+        _re.DOTALL,
+    )
+    # Matches image objects: {"id":"<uuid>","promptid":"  (not prompt objects)
+    _img_id_re = _re.compile(
+        r'"id":"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})","promptid":'
+    )
 
-    try:
-        urls = search_api_source(
-            url=_LEXICA_API_URL,
-            params={"q": query},
-            headers=headers,
-            extract_fn=_extract_lexica_urls,
-            max_results=max_results,
-            timeout_seconds=timeout_seconds,
-        )
-        if urls:
-            LOGGER.warning("[Lexica] Complete: returning %d results (API)", len(urls))
-            return [ImageResult(source="lexica", url=url) for url in urls]
-    except Exception as exc:
-        LOGGER.warning("[Lexica] API failed (%s), falling back to scrape", exc)
+    image_ids: list[str] = []
+    seen: set[str] = set()
 
-    # Fallback to scrape
-    results = _scrape_lexica_images(query, max_results, timeout_seconds)
-    LOGGER.warning("[Lexica] Complete: returning %d results (scrape fallback)", len(results))
+    for script in soup.find_all("script"):
+        text = script.string or ""
+        if "__next_f.push" not in text or "initialPrompts" not in text:
+            continue
+        for push_match in _push_re.finditer(text):
+            try:
+                decoded: str = _json.loads(push_match.group(1))
+            except Exception:
+                continue
+            if "initialPrompts" not in decoded:
+                continue
+            for m in _img_id_re.finditer(decoded):
+                img_id = m.group(1)
+                if img_id not in seen:
+                    seen.add(img_id)
+                    image_ids.append(img_id)
+                    if len(image_ids) >= max_results:
+                        break
+            if len(image_ids) >= max_results:
+                break
+
+    results = [
+        ImageResult(source="lexica", url=f"https://image.lexica.art/full_jpg/{img_id}")
+        for img_id in image_ids
+    ]
+    LOGGER.warning("[Lexica] Complete: returning %d results", len(results))
     return results

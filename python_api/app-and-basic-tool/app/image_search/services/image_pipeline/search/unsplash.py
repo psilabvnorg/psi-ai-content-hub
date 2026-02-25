@@ -4,34 +4,12 @@ import logging
 from urllib.parse import quote, urljoin, urlparse
 
 from ..models import ImageResult
-from ._api_source import search_api_source
 from ._scrape_source import fetch_page
 
 
 LOGGER = logging.getLogger(__name__)
-UNSPLASH_SEARCH_API = "https://api.unsplash.com/search/photos"
 _UNSPLASH_SCRAPE_BASE = "https://unsplash.com/s/photos"
 _DISALLOWED_TOKENS = ("avatar", "profile", "logo", ".svg")
-
-
-def _extract_unsplash_urls(payload: dict[str, object]) -> list[str]:
-    rows = payload.get("results")
-    if not isinstance(rows, list):
-        return []
-
-    results: list[str] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        raw_urls = row.get("urls")
-        if not isinstance(raw_urls, dict):
-            continue
-        for key in ("full", "regular", "raw"):
-            value = raw_urls.get(key)
-            if isinstance(value, str) and value.startswith("http"):
-                results.append(value)
-                break
-    return results
 
 
 def _select_srcset_candidate(raw_srcset: object) -> str:
@@ -97,34 +75,12 @@ def search_unsplash_images(
     max_results: int = 10,
     timeout_seconds: int = 30,
 ) -> list[ImageResult]:
-    """Search Unsplash via API (preferred) or scrape fallback."""
+    """Search Unsplash via scrape."""
     if max_results <= 0:
         return []
 
-    from ...credentials import get_credential
-
     LOGGER.warning("[Unsplash] Starting: query=%r, max_results=%d, timeout=%ds", query, max_results, timeout_seconds)
-    api_key = get_credential("UNSPLASH_ACCESS_KEY")
-
-    if api_key:
-        try:
-            urls = search_api_source(
-                url=UNSPLASH_SEARCH_API,
-                params={"query": query, "page": 1, "per_page": max(1, min(30, max_results))},
-                headers={"Authorization": f"Client-ID {api_key}"},
-                extract_fn=_extract_unsplash_urls,
-                max_results=max_results,
-                timeout_seconds=timeout_seconds,
-            )
-            if urls:
-                LOGGER.warning("[Unsplash] Complete: returning %d results (API)", len(urls))
-                return [ImageResult(source="unsplash", url=url) for url in urls]
-        except Exception as exc:
-            LOGGER.warning("[Unsplash] API failed (%s), falling back to scrape", exc)
-    else:
-        LOGGER.warning("[Unsplash] API key missing (UNSPLASH_ACCESS_KEY), using scrape fallback")
-
     results = _scrape_unsplash_images(query, max_results, timeout_seconds)
-    LOGGER.warning("[Unsplash] Complete: returning %d results (scrape fallback)", len(results))
+    LOGGER.warning("[Unsplash] Complete: returning %d results", len(results))
     return results
 

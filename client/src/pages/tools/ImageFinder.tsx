@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,12 +11,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   BrainCircuit,
-  Check,
   Download,
-  Eye,
-  EyeOff,
   Image as ImageIcon,
-  Key,
   Loader2,
   Search,
 } from "lucide-react";
@@ -63,30 +58,13 @@ type PreviewImage = {
   resolution?: number;
 };
 
-type ApiKeysStatusResponse = {
-  unsplash?: {
-    configured?: boolean;
-    masked?: string;
-  };
-  pexels?: {
-    configured?: boolean;
-    masked?: string;
-  };
-};
-
 const IMAGE_COUNTS = ["5", "6", "7", "8", "9", "10"];
 const ALL_SOURCE_IDS = [
   "google",
   "bing",
-  "stocksnap",
   "unsplash",
-  "pexels",
   "lexica",
-  "civitai",
-  "kling_ai",
   "artvee",
-  "wga",
-  "public_domain_archive",
 ] as const;
 
 const SOURCE_GROUPS: Array<{
@@ -112,7 +90,7 @@ const SOURCE_GROUPS: Array<{
       "Best for synthetic visuals, prompts, styles, and model-generated artwork.",
     example:
       "Example: cyberpunk portrait, fantasy character concept, cinematic AI style",
-    sources: ["civitai", "kling_ai", "lexica"],
+    sources: ["lexica"],
   },
   {
     groupKey: "gallery",
@@ -121,7 +99,7 @@ const SOURCE_GROUPS: Array<{
       "High-quality regular photos from stock and free image libraries.",
     example:
       "Example: office team photo, nature landscape, city street lifestyle",
-    sources: ["unsplash", "pexels", "stocksnap"],
+    sources: ["unsplash"],
   },
   {
     groupKey: "story_art",
@@ -130,27 +108,16 @@ const SOURCE_GROUPS: Array<{
       "Classical art and archival references suited for themes and narratives.",
     example:
       "Example: renaissance painting, mythology scene, philosophical symbolism",
-    sources: ["artvee", "wga", "public_domain_archive"],
+    sources: ["artvee"],
   },
 ];
-
-const API_KEY_REQUIRED_SOURCES = new Set<(typeof ALL_SOURCE_IDS)[number]>([
-  "unsplash",
-  "pexels",
-]);
 
 const SOURCE_LABELS: Record<(typeof ALL_SOURCE_IDS)[number], string> = {
   google: "Google",
   bing: "Bing",
-  stocksnap: "StockSnap",
   unsplash: "Unsplash",
-  pexels: "Pexels",
   lexica: "Lexica",
-  civitai: "Civitai",
-  kling_ai: "KlingAI",
   artvee: "Artvee",
-  wga: "WGA",
-  public_domain_archive: "Public Domain Archive",
 };
 
 export default function ImageFinder({
@@ -171,24 +138,6 @@ export default function ImageFinder({
     "bing",
   ]);
 
-  const [unsplashKey, setUnsplashKey] = useState("");
-  const [unsplashKeyMasked, setUnsplashKeyMasked] = useState("");
-  const [unsplashConfigured, setUnsplashConfigured] = useState(false);
-  const [unsplashKeyVisible, setUnsplashKeyVisible] = useState(false);
-  const [unsplashSaving, setUnsplashSaving] = useState(false);
-  const [unsplashSaveStatus, setUnsplashSaveStatus] = useState<
-    "idle" | "saved" | "error"
-  >("idle");
-
-  const [pexelsKey, setPexelsKey] = useState("");
-  const [pexelsKeyMasked, setPexelsKeyMasked] = useState("");
-  const [pexelsConfigured, setPexelsConfigured] = useState(false);
-  const [pexelsKeyVisible, setPexelsKeyVisible] = useState(false);
-  const [pexelsSaving, setPexelsSaving] = useState(false);
-  const [pexelsSaveStatus, setPexelsSaveStatus] = useState<
-    "idle" | "saved" | "error"
-  >("idle");
-
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -203,98 +152,6 @@ export default function ImageFinder({
   const imageFinderService = servicesById.app;
   const statusReady = !serverUnreachable;
 
-  const fetchApiKeyStatus = async () => {
-    try {
-      const res = await fetch(`${aimage_search_base_url}/config/api-keys`);
-      if (!res.ok) return;
-      const data = (await res.json()) as ApiKeysStatusResponse;
-      setUnsplashConfigured(data.unsplash?.configured === true);
-      setUnsplashKeyMasked(data.unsplash?.masked || "");
-      setPexelsConfigured(data.pexels?.configured === true);
-      setPexelsKeyMasked(data.pexels?.masked || "");
-    } catch {
-      // Server may not support config endpoint yet — silently ignore.
-    }
-  };
-
-  const handleSaveApiKey = async ({
-    sourceId,
-    keyValue,
-    setSaving,
-    setSaveStatus,
-    setConfigured,
-    setMasked,
-    setKeyValue,
-    setKeyVisible,
-  }: {
-    sourceId: string;
-    keyValue: string;
-    setSaving: (v: boolean) => void;
-    setSaveStatus: (v: "idle" | "saved" | "error") => void;
-    setConfigured: (v: boolean) => void;
-    setMasked: (v: string) => void;
-    setKeyValue: (v: string) => void;
-    setKeyVisible: (v: boolean) => void;
-  }) => {
-    setSaving(true);
-    setSaveStatus("idle");
-    try {
-      const res = await fetch(
-        `${aimage_search_base_url}/config/api-keys/${sourceId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: keyValue.trim() }),
-        },
-      );
-      if (!res.ok) {
-        const payload = (await res.json().catch(() => ({}))) as {
-          detail?: string;
-        };
-        throw new Error(payload.detail || "Save failed");
-      }
-      const data = (await res.json()) as {
-        configured?: boolean;
-        masked?: string;
-      };
-      setConfigured(data.configured === true);
-      setMasked(data.masked || "");
-      setKeyValue("");
-      setKeyVisible(false);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveUnsplashKey = () =>
-    handleSaveApiKey({
-      sourceId: "unsplash",
-      keyValue: unsplashKey,
-      setSaving: setUnsplashSaving,
-      setSaveStatus: setUnsplashSaveStatus,
-      setConfigured: setUnsplashConfigured,
-      setMasked: setUnsplashKeyMasked,
-      setKeyValue: setUnsplashKey,
-      setKeyVisible: setUnsplashKeyVisible,
-    });
-
-  const handleSavePexelsKey = () =>
-    handleSaveApiKey({
-      sourceId: "pexels",
-      keyValue: pexelsKey,
-      setSaving: setPexelsSaving,
-      setSaveStatus: setPexelsSaveStatus,
-      setConfigured: setPexelsConfigured,
-      setMasked: setPexelsKeyMasked,
-      setKeyValue: setPexelsKey,
-      setKeyVisible: setPexelsKeyVisible,
-    });
-
   const fetchStatus = async () => {
     try {
       const response = await fetch(`${APP_API_URL}/api/v1/status`);
@@ -307,7 +164,6 @@ export default function ImageFinder({
 
   useEffect(() => {
     void fetchStatus();
-    void fetchApiKeyStatus();
   }, []);
 
   useEffect(() => {
@@ -317,7 +173,6 @@ export default function ImageFinder({
       imageFinderService.status === "stopped"
     ) {
       void fetchStatus();
-      void fetchApiKeyStatus();
     }
   }, [imageFinderService?.status]);
 
@@ -518,7 +373,6 @@ export default function ImageFinder({
                 <div className="flex flex-wrap gap-3">
                   {sources.map((sourceId) => {
                     const isChecked = selectedSources.includes(sourceId);
-                    const needsApiKey = API_KEY_REQUIRED_SOURCES.has(sourceId);
                     return (
                       <label
                         key={sourceId}
@@ -533,7 +387,6 @@ export default function ImageFinder({
                         />
                         <span className="text-sm">
                           {SOURCE_LABELS[sourceId]}
-                          {needsApiKey && !isChecked ? " (API key needed)" : ""}
                         </span>
                       </label>
                     );
@@ -543,166 +396,6 @@ export default function ImageFinder({
             ),
           )}
         </div>
-
-        {selectedSources.includes("unsplash") && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Key className="w-4 h-4 text-muted-foreground" />
-              <label className="text-xs font-bold text-muted-foreground uppercase">
-                {t("tool.image_finder.unsplash_api_key")}
-              </label>
-              {unsplashConfigured && (
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  {t("tool.image_finder.unsplash_configured")}
-                  {unsplashKeyMasked ? ` (${unsplashKeyMasked})` : ""}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("tool.image_finder.unsplash_note")}{" "}
-              <a
-                href="https://unsplash.com/developers"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-accent hover:text-accent/80"
-              >
-                unsplash.com/developers
-              </a>
-            </p>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={unsplashKeyVisible ? "text" : "password"}
-                  value={unsplashKey}
-                  onChange={(e) => setUnsplashKey(e.target.value)}
-                  placeholder={
-                    unsplashConfigured
-                      ? t("tool.image_finder.unsplash_placeholder_update")
-                      : t("tool.image_finder.unsplash_placeholder")
-                  }
-                  className="bg-card border-border pr-10 font-mono text-sm"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setUnsplashKeyVisible((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {unsplashKeyVisible ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleSaveUnsplashKey}
-                disabled={unsplashSaving || !unsplashKey.trim()}
-                className="min-w-[80px]"
-              >
-                {unsplashSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : unsplashSaveStatus === "saved" ? (
-                  <>
-                    <Check className="w-4 h-4 mr-1 text-green-600" />
-                    {t("tool.image_finder.unsplash_saved")}
-                  </>
-                ) : (
-                  t("tool.image_finder.unsplash_save")
-                )}
-              </Button>
-            </div>
-            {unsplashSaveStatus === "error" && (
-              <p className="text-xs text-destructive">
-                {t("tool.image_finder.unsplash_save_failed")}
-              </p>
-            )}
-          </div>
-        )}
-
-        {selectedSources.includes("pexels") && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Key className="w-4 h-4 text-muted-foreground" />
-              <label className="text-xs font-bold text-muted-foreground uppercase">
-                {t("tool.image_finder.pexels_api_key")}
-              </label>
-              {pexelsConfigured && (
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  {t("tool.image_finder.pexels_configured")}
-                  {pexelsKeyMasked ? ` (${pexelsKeyMasked})` : ""}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("tool.image_finder.pexels_note")}{" "}
-              <a
-                href="https://www.pexels.com/api/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-accent hover:text-accent/80"
-              >
-                pexels.com/api
-              </a>
-            </p>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={pexelsKeyVisible ? "text" : "password"}
-                  value={pexelsKey}
-                  onChange={(e) => setPexelsKey(e.target.value)}
-                  placeholder={
-                    pexelsConfigured
-                      ? t("tool.image_finder.pexels_placeholder_update")
-                      : t("tool.image_finder.pexels_placeholder")
-                  }
-                  className="bg-card border-border pr-10 font-mono text-sm"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setPexelsKeyVisible((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {pexelsKeyVisible ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleSavePexelsKey}
-                disabled={pexelsSaving || !pexelsKey.trim()}
-                className="min-w-[80px]"
-              >
-                {pexelsSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : pexelsSaveStatus === "saved" ? (
-                  <>
-                    <Check className="w-4 h-4 mr-1 text-green-600" />
-                    {t("tool.image_finder.pexels_saved")}
-                  </>
-                ) : (
-                  t("tool.image_finder.pexels_save")
-                )}
-              </Button>
-            </div>
-            {pexelsSaveStatus === "error" && (
-              <p className="text-xs text-destructive">
-                {t("tool.image_finder.pexels_save_failed")}
-              </p>
-            )}
-          </div>
-        )}
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-muted-foreground uppercase">

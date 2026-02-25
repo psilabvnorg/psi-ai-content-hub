@@ -6,15 +6,9 @@ from collections.abc import Callable, Sequence
 from ..models import ImageResult
 from .artvee import search_artvee_images
 from .bing import search_bing_images
-from .civitai import search_civitai_images
 from .google import search_google_images
-from .kling_ai import search_kling_ai_images
 from .lexica import search_lexica_images
-from .pexels import search_pexels_images
-from .public_domain_archive import search_public_domain_archive_images
-from .stocksnap import search_stocksnap_images
 from .unsplash import search_unsplash_images
-from .wga import search_wga_images
 
 
 LOGGER = logging.getLogger(__name__)
@@ -25,14 +19,8 @@ ALL_SOURCE_IDS: tuple[str, ...] = (
     "google",
     "bing",
     "unsplash",
-    "pexels",
     "lexica",
-    "civitai",
-    "kling_ai",
-    "public_domain_archive",
-    "stocksnap",
     "artvee",
-    "wga",
 )
 
 
@@ -51,17 +39,8 @@ def run_all_sources(
         ("google", lambda: search_google_images(query, per_source_limit, timeout_seconds)),
         ("bing", lambda: search_bing_images(query, per_source_limit, timeout_seconds)),
         ("unsplash", lambda: search_unsplash_images(query, per_source_limit, timeout_seconds)),
-        ("pexels", lambda: search_pexels_images(query, per_source_limit, timeout_seconds)),
         ("lexica", lambda: search_lexica_images(query, per_source_limit, timeout_seconds)),
-        ("civitai", lambda: search_civitai_images(query, per_source_limit, timeout_seconds)),
-        ("kling_ai", lambda: search_kling_ai_images(query, per_source_limit, timeout_seconds)),
-        (
-            "public_domain_archive",
-            lambda: search_public_domain_archive_images(query, per_source_limit, timeout_seconds),
-        ),
-        ("stocksnap", lambda: search_stocksnap_images(query, per_source_limit, timeout_seconds)),
         ("artvee", lambda: search_artvee_images(query, per_source_limit, timeout_seconds)),
-        ("wga", lambda: search_wga_images(query, per_source_limit, timeout_seconds)),
     )
 
     if enabled_sources is not None:

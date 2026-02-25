@@ -186,6 +186,30 @@ def video_speed(
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}", "speed": speed}
 
 
+@router.post("/image/upscale")
+def image_upscale(
+    file: UploadFile = File(...),
+    scale: int = Form(2),
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    if scale not in (2, 3, 4):
+        raise HTTPException(status_code=400, detail="scale must be 2, 3, or 4")
+    try:
+        from super_image import DrlnModel, ImageLoader
+        from PIL import Image as PILImage
+    except ImportError:
+        raise HTTPException(status_code=500, detail="super-image library not installed. Run: pip install super-image")
+    input_path = _save_upload(file)
+    output_path = input_path.with_suffix(f".upscaled_{scale}x.png")
+    pil_image = PILImage.open(str(input_path))
+    model = DrlnModel.from_pretrained("eugenesiow/drln", scale=scale)
+    inputs = ImageLoader.load_image(pil_image)
+    preds = model(inputs)
+    ImageLoader.save_image(preds, str(output_path))
+    file_record = job_store.add_file(output_path, output_path.name)
+    return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
+
+
 @router.get("/video/download/status/{job_id}")
 def video_download_status(job_id: str, job_store: JobStore = Depends(get_job_store)) -> dict:
     record = get_download_status(job_store, job_id)

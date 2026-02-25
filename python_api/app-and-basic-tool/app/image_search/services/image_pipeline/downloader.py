@@ -60,6 +60,7 @@ def _guess_ext(url: str, content_type: str | None, data: bytes) -> str:
 _REFERER_CHAIN = (
     "https://www.google.com/",
     "https://www.bing.com/",
+    "https://artvee.com/",
     None,  # fallback: no Referer at all
 )
 
