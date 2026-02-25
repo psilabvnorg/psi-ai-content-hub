@@ -186,26 +186,58 @@ def video_speed(
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}", "speed": speed}
 
 
+UPSCAYL_MODELS = [
+    "ultrasharp-4x",
+    "remacri-4x",
+    "ultramix-balanced-4x",
+    "high-fidelity-4x",
+    "digital-art-4x",
+    "upscayl-standard-4x",
+    "upscayl-lite-4x",
+]
+
+_UPSCAYL_DIR = Path(__file__).resolve().parent.parent / "upscale_image" / "resources"
+_UPSCAYL_BIN = _UPSCAYL_DIR / "win" / "bin" / "upscayl-bin.exe"
+_UPSCAYL_MODELS_DIR = _UPSCAYL_DIR / "models"
+
+
+@router.get("/image/upscale/models")
+def image_upscale_models() -> dict:
+    """Return available upscaling models and whether the binary is found."""
+    return {"models": UPSCAYL_MODELS, "binary_found": _UPSCAYL_BIN.exists()}
+
+
 @router.post("/image/upscale")
 def image_upscale(
     file: UploadFile = File(...),
-    scale: int = Form(2),
+    scale: int = Form(4),
+    model_name: str = Form("ultrasharp-4x"),
     job_store: JobStore = Depends(get_job_store),
 ) -> dict:
     if scale not in (2, 3, 4):
         raise HTTPException(status_code=400, detail="scale must be 2, 3, or 4")
-    try:
-        from super_image import DrlnModel, ImageLoader
-        from PIL import Image as PILImage
-    except ImportError:
-        raise HTTPException(status_code=500, detail="super-image library not installed. Run: pip install super-image")
+    if model_name not in UPSCAYL_MODELS:
+        raise HTTPException(status_code=400, detail=f"Unknown model. Choose from: {', '.join(UPSCAYL_MODELS)}")
+    if not _UPSCAYL_BIN.exists():
+        raise HTTPException(status_code=500, detail="upscayl-bin not found. Check installation.")
     input_path = _save_upload(file)
     output_path = input_path.with_suffix(f".upscaled_{scale}x.png")
-    pil_image = PILImage.open(str(input_path))
-    model = DrlnModel.from_pretrained("eugenesiow/drln", scale=scale)
-    inputs = ImageLoader.load_image(pil_image)
-    preds = model(inputs)
-    ImageLoader.save_image(preds, str(output_path))
+    cmd = [
+        str(_UPSCAYL_BIN),
+        "-i", str(input_path),
+        "-o", str(output_path),
+        "-m", str(_UPSCAYL_MODELS_DIR),
+        "-n", model_name,
+        "-s", str(scale),
+        "-f", "png",
+        "-c", "0",
+    ]
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as exc:
+        raise HTTPException(status_code=500, detail=f"Upscaling failed (exit code {exc.returncode})")
+    if not output_path.exists():
+        raise HTTPException(status_code=500, detail="Upscaling produced no output file")
     file_record = job_store.add_file(output_path, output_path.name)
     return {"status": "success", "filename": output_path.name, "download_url": f"/api/v1/files/{file_record.file_id}"}
 

@@ -1,0 +1,1 @@
+upscayl-bin -i input.jpg -o output.png -m /path/to/models -n ultrasharp-4x -s 4 -f png -c 0

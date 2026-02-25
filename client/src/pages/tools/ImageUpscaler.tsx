@@ -11,15 +11,25 @@ import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
-type ProfileStatus = { installed: boolean; missing_modules: string[] };
-type ProfileEnvelope = { profile_status?: ProfileStatus };
+const UPSCALE_MODELS = [
+  "ultrasharp-4x",
+  "remacri-4x",
+  "ultramix-balanced-4x",
+  "high-fidelity-4x",
+  "digital-art-4x",
+  "upscayl-standard-4x",
+  "upscayl-lite-4x",
+] as const;
+
+type UpscaleModel = (typeof UPSCALE_MODELS)[number];
 
 export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
   type UpscaleResult = { download_url?: string; filename?: string };
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [scale, setScale] = useState<2 | 3 | 4>(2);
+  const [scale, setScale] = useState<2 | 3 | 4>(4);
+  const [modelName, setModelName] = useState<UpscaleModel>("ultrasharp-4x");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UpscaleResult | null>(null);
@@ -27,26 +37,26 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
   const { toast } = useToast();
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [profileStatus, setProfileStatus] = useState<ProfileStatus | null>(null);
+  const [binaryFound, setBinaryFound] = useState(false);
   const { servicesById } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
   const serviceStatus = servicesById.app;
 
   const fetchStatus = async () => {
     try {
-      const [statusRes, envRes] = await Promise.all([
+      const [statusRes, modelsRes] = await Promise.all([
         fetch(`${APP_API_URL}/api/v1/status`),
-        fetch(`${APP_API_URL}/api/v1/env/profiles/image-upscaler/status`),
+        fetch(`${APP_API_URL}/api/v1/image/upscale/models`),
       ]);
       if (!statusRes.ok) throw new Error("status");
       setServerUnreachable(false);
-      if (envRes.ok) {
-        const data = await envRes.json() as ProfileEnvelope;
-        setProfileStatus(data.profile_status ?? null);
+      if (modelsRes.ok) {
+        const data = (await modelsRes.json()) as { models: string[]; binary_found: boolean };
+        setBinaryFound(data.binary_found);
       }
     } catch {
       setServerUnreachable(true);
-      setProfileStatus(null);
+      setBinaryFound(false);
     }
   };
 
@@ -61,8 +71,6 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
     }
   }, [serviceStatus?.status]);
 
-  const depsInstalled = profileStatus?.installed === true;
-
   const statusRows: StatusRowConfig[] = [
     {
       id: "server",
@@ -74,17 +82,11 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
       onSecondaryAction: onOpenSettings,
     },
     {
-      id: "deps",
-      label: "super-image",
-      isReady: depsInstalled,
-      path: profileStatus
-        ? depsInstalled
-          ? "super-image, Pillow"
-          : `Missing: ${profileStatus.missing_modules.join(", ")}. Install from Settings.`
-        : "--",
-      showSecondaryAction: !depsInstalled && Boolean(onOpenSettings),
-      secondaryActionLabel: t("tool.common.open_settings"),
-      onSecondaryAction: onOpenSettings,
+      id: "binary",
+      label: "upscayl-bin",
+      isReady: binaryFound,
+      path: binaryFound ? "upscayl-bin.exe" : t("tool.image_upscaler.binary_missing"),
+      showSecondaryAction: false,
     },
   ];
 
@@ -129,6 +131,7 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("scale", String(scale));
+      formData.append("model_name", modelName);
 
       const response = await fetch(`${APP_API_URL}/api/v1/image/upscale`, {
         method: "POST",
@@ -218,6 +221,24 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
           </div>
 
           <div className="space-y-2">
+            <label className="text-sm font-medium">{t("tool.image_upscaler.model")}</label>
+            <div className="flex flex-wrap gap-2">
+              {UPSCALE_MODELS.map((m) => (
+                <Button
+                  key={m}
+                  type="button"
+                  variant={modelName === m ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setModelName(m)}
+                  disabled={loading}
+                >
+                  {m.replace(/-4x$/, "")}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <label className="text-sm font-medium">{t("tool.image_upscaler.scale_factor")}</label>
             <div className="flex gap-3">
               {([2, 3, 4] as const).map((s) => (
@@ -246,7 +267,7 @@ export default function ImageUpscaler({ onOpenSettings }: { onOpenSettings?: () 
             </div>
           )}
 
-          <Button onClick={handleUpscale} disabled={loading || !selectedFile || !depsInstalled} className="w-full">
+          <Button onClick={handleUpscale} disabled={loading || !selectedFile || !binaryFound} className="w-full">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

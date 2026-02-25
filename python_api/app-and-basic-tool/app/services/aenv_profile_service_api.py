@@ -71,10 +71,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "einops": "einops",
         "cv2": "opencv-python",
     },
-    "image-upscaler": {
-        "super_image": "super-image",
-        "PIL": "pillow",
-    },
+
 }
 
 
