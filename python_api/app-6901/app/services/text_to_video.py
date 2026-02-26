@@ -38,6 +38,11 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 REMOTION_ROOT = REPO_ROOT / "remotion"
 REMOTION_PUBLIC_MAIN = REMOTION_ROOT / "public" / "main"
 DEFAULT_INTRO_CONFIG_PATH = REMOTION_PUBLIC_MAIN / "news" / "config" / "intro-config.json"
+TEMPLATE_2_ROOT = REMOTION_ROOT / "public" / "templates" / "template_2"
+VIDEO_CONFIG_PATH = REMOTION_PUBLIC_MAIN / "news" / "config" / "video-config.json"
+
+ALLOWED_TEMPLATE_SUBFOLDERS = {"elements", "sound", "logo"}
+ALLOWED_ASSET_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".mp3", ".wav", ".ogg"}
 
 PREVIEW_DIR_NAME = "preview"
 PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / PREVIEW_DIR_NAME
@@ -95,6 +100,86 @@ class UploadedArtifactData:
     filename: str
     content_type: str | None
     data: bytes
+
+
+def generate_new_template(source_template_id: str = "template_2") -> dict:
+    """Kept for backward-compatibility. Delegates to update_template."""
+    return update_template(source_template_id)
+
+
+def update_template(template_id: str = "template_2") -> dict:
+    """Ensure all required subfolders exist inside the given template directory.
+
+    Updates (overwrites) the template in-place by making sure the folder and
+    all standard subfolders (elements, sound, logo, icons) are present.
+    Any files previously uploaded into those subfolders are preserved.
+
+    Returns a dict with ``{"template_id": template_id, "path": "..."}``
+    """
+    templates_root = REMOTION_ROOT / "public" / "templates"
+    template_dir = templates_root / template_id
+    if not template_dir.is_dir():
+        raise ValueError(f"Template '{template_id}' not found at {template_dir}")
+
+    # Ensure all standard subfolders exist (creates any that are missing)
+    for subfolder in (*ALLOWED_TEMPLATE_SUBFOLDERS, "icons"):
+        (template_dir / subfolder).mkdir(parents=True, exist_ok=True)
+
+    return {"template_id": template_id, "path": str(template_dir)}
+
+
+SLOT_TARGET_FILENAMES: dict[str, list[str]] = {
+    "elements": ["element1.png", "element2.png"],
+    "logo": ["logo_mid.png", "logo_top.png"],
+    "sound": ["background_music.mp3"],
+}
+
+
+def upload_template_asset(subfolder: str, filename: str, data: bytes, target_filename: str | None = None) -> str:
+    """Save an uploaded file into the template_2 subfolder with a fixed target filename.
+
+    If *target_filename* is provided it must be one of the allowed slot names for that
+    subfolder (see SLOT_TARGET_FILENAMES).  The uploaded file is always written to
+    ``template_2/{subfolder}/{target_filename}``, overwriting whatever was there before.
+    """
+    if subfolder not in ALLOWED_TEMPLATE_SUBFOLDERS:
+        raise ValueError(f"Invalid subfolder '{subfolder}'. Must be one of: {ALLOWED_TEMPLATE_SUBFOLDERS}")
+
+    # Determine the name to write on disk
+    save_as = target_filename if target_filename else filename
+
+    # Validate that the target is an allowed slot for this subfolder
+    allowed_slots = SLOT_TARGET_FILENAMES.get(subfolder, [])
+    if allowed_slots and save_as not in allowed_slots:
+        raise ValueError(
+            f"'{save_as}' is not an allowed filename for '{subfolder}'. "
+            f"Allowed: {allowed_slots}"
+        )
+
+    suffix = Path(save_as).suffix.lower()
+    if suffix not in ALLOWED_ASSET_SUFFIXES:
+        raise ValueError(f"File type '{suffix}' is not allowed")
+
+    dest_dir = TEMPLATE_2_ROOT / subfolder
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = dest_dir / save_as
+    dest_path.write_bytes(data)
+    return save_as
+
+
+def get_video_config() -> dict:
+    """Read video-config.json and return its contents."""
+    if VIDEO_CONFIG_PATH.exists():
+        return json.loads(VIDEO_CONFIG_PATH.read_text(encoding="utf-8"))
+    return {}
+
+
+def update_video_config(updates: dict) -> dict:
+    """Merge updates into video-config.json and persist it."""
+    config = get_video_config()
+    config.update(updates)
+    VIDEO_CONFIG_PATH.write_text(json.dumps(config, indent=2), encoding="utf-8")
+    return config
 
 
 @dataclass

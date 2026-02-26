@@ -18,6 +18,7 @@ from ..services.text_to_video import (
     get_render_result,
     get_remotion_setup_status,
     get_studio_status,
+    get_video_config,
     render_progress_store,
     setup_progress_store,
     stage_preview,
@@ -26,6 +27,10 @@ from ..services.text_to_video import (
     start_remotion_deps_install,
     start_studio,
     stop_studio,
+    generate_new_template,
+    update_template,
+    update_video_config,
+    upload_template_asset,
 )
 
 
@@ -184,6 +189,48 @@ def create_preview(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return result
+
+
+@router.post("/template/upload-asset")
+def upload_template_asset_endpoint(
+    subfolder: str = Form(...),
+    target_filename: str = Form(...),
+    file: UploadFile = File(...),
+) -> dict:
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="file is required")
+    data = file.file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="file is empty")
+    try:
+        saved_name = upload_template_asset(subfolder, file.filename, data, target_filename)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"subfolder": subfolder, "filename": saved_name}
+
+
+@router.get("/video-config")
+def get_video_config_endpoint() -> dict:
+    return get_video_config()
+
+
+@router.patch("/video-config")
+def update_video_config_endpoint(payload: dict = Body(...)) -> dict:
+    try:
+        return update_video_config(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post("/template/update")
+def update_template_endpoint(payload: dict = Body(default={})) -> dict:
+    template_id = str(payload.get("template_id", "template_2"))
+    try:
+        return update_template(template_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.post("/preview/studio/start")

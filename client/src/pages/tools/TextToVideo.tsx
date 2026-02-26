@@ -171,6 +171,11 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [introConfig, setIntroConfig] = useState<IntroConfigPayload>(defaultIntroConfig);
 
+  const [backgroundMode, setBackgroundMode] = useState(false);
+  const [assetUploading, setAssetUploading] = useState<Record<string, boolean>>({});
+  const [assetStatus, setAssetStatus] = useState<Record<string, { ok: boolean; name?: string }>>({});
+  const assetInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const [orientation, setOrientation] = useState<"vertical" | "horizontal">("vertical");
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState<ProgressData | null>(null);
@@ -257,6 +262,55 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
+  const fetchVideoConfig = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/video-config`);
+      const data = (await res.json()) as { backgroundMode?: boolean };
+      setBackgroundMode(Boolean(data.backgroundMode));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleBackgroundModeToggle = async (value: boolean) => {
+    setBackgroundMode(value);
+    try {
+      await fetch(`${APP_API_URL}/api/v1/text-to-video/video-config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundMode: value }),
+      });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleAssetUpload = async (subfolder: string, targetFilename: string, file: File) => {
+    const key = `${subfolder}/${targetFilename}`;
+    setAssetUploading((prev) => ({ ...prev, [key]: true }));
+    setAssetStatus((prev) => ({ ...prev, [key]: { ok: false } }));
+    try {
+      const form = new FormData();
+      form.append("subfolder", subfolder);
+      form.append("target_filename", targetFilename);
+      form.append("file", file);
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/template/upload-asset`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(err.detail || "Upload failed");
+      }
+      setAssetStatus((prev) => ({ ...prev, [key]: { ok: true, name: targetFilename } }));
+    } catch {
+      setAssetStatus((prev) => ({ ...prev, [key]: { ok: false, name: file.name } }));
+    } finally {
+      setAssetUploading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+
   const fetchVoices = async () => {
     try {
       const response = await fetch(`${VOICE_CLONE_URL}/api/v1/voices`);
@@ -270,6 +324,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   useEffect(() => {
     fetchStatus();
     fetchVoices();
+    fetchVideoConfig();
   }, []);
 
   useEffect(() => {
@@ -810,6 +865,89 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
                 </label>
               ))}
             </div>
+
+            {/* Background Mode */}
+            <div className="pt-1">
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={backgroundMode}
+                  onChange={(e) => void handleBackgroundModeToggle(e.target.checked)}
+                />
+                {t("tool.t2v.background_mode")}
+                <span className="text-muted-foreground font-normal">(video-config.json)</span>
+              </label>
+            </div>
+
+            {/* Template Assets — fixed named slots */}
+            <div className="space-y-3 pt-1">
+              <div className="text-xs font-bold uppercase text-muted-foreground">{t("tool.t2v.template_assets")}</div>
+              {(
+                [
+                  {
+                    subfolder: "elements" as const,
+                    label: t("tool.t2v.assets_elements"),
+                    accept: "image/*",
+                    slots: ["element1.png", "element2.png"],
+                  },
+                  {
+                    subfolder: "logo" as const,
+                    label: t("tool.t2v.assets_logo"),
+                    accept: "image/*",
+                    slots: ["logo_mid.png", "logo_top.png"],
+                  },
+                  {
+                    subfolder: "sound" as const,
+                    label: t("tool.t2v.assets_sound"),
+                    accept: "audio/*,.mp3",
+                    slots: ["background_music.mp3"],
+                  },
+                ]
+              ).map(({ subfolder, label, accept, slots }) => (
+                <div key={subfolder} className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">{label}</div>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {slots.map((targetFilename) => {
+                      const key = `${subfolder}/${targetFilename}`;
+                      const status = assetStatus[key];
+                      const uploading = !!assetUploading[key];
+                      return (
+                        <div key={key} className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept={accept}
+                            className="hidden"
+                            ref={(el) => { assetInputRefs.current[key] = el; }}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) await handleAssetUpload(subfolder, targetFilename, file);
+                              if (assetInputRefs.current[key]) assetInputRefs.current[key]!.value = "";
+                            }}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => assetInputRefs.current[key]?.click()}
+                            disabled={uploading}
+                            className="h-7 text-xs px-2 shrink-0"
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            {uploading ? t("tool.t2v.asset_uploading") : t("tool.t2v.asset_upload_btn")}
+                          </Button>
+                          <code className="text-xs text-muted-foreground/80 font-mono truncate">{targetFilename}</code>
+                          {status && (
+                            <span className={`text-xs shrink-0 ${status.ok ? "text-emerald-400" : "text-red-400"}`}>
+                              {status.ok ? "✓" : "✗"}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
 
           <div className="flex gap-2">

@@ -138,8 +138,8 @@ const useTemplateAssets = (props: IntroProps) => {
     midLogo: getAssetByPattern(logos, 'mid') || logos[1] || logos[0] || templatePath('logo/logo_mid.png'),
     backgroundPattern: getAssetByPattern(backgrounds, 'background') || backgrounds[0] || templatePath('tiktok_background.png'),
     backgroundMusic: sounds[0] || templatePath('sound/background_music.mp3'),
-    moneyElement: getAssetByPattern(elements, 'money') || elements[0] || templatePath('elements/money.png'),
-    profitElement: getAssetByPattern(elements, 'profit') || elements[1] || elements[0] || templatePath('elements/Profit-PNG-Image.png'),
+    moneyElement: getAssetByPattern(elements, 'money') || elements[0] || templatePath('elements/element1.png'),
+    profitElement: getAssetByPattern(elements, 'profit') || elements[1] || elements[0] || templatePath('elements/element2.png'),
   };
 };
 
