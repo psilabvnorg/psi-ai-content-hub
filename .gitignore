@@ -1,6 +1,7 @@
 .claude
 .kiro
 .vscode
+remotion/public/main/
 
 # Dependencies
 **/node_modules/

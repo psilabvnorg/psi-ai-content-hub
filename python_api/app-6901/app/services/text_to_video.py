@@ -358,11 +358,13 @@ def _save_intro_config(
 
 
 def _write_video_config(staging_config_dir: Path, orientation: str) -> None:
+    # Read the user-edited video-config.json (backgroundMode toggle writes here)
+    base = get_video_config()
     config = {
-        "orientation": orientation,
-        "backgroundMode": False,
         "introDurationInFrames": 150,
         "imageDurationInFrames": 170,
+        **base,              # carries backgroundMode + any other persisted settings
+        "orientation": orientation,  # always honour the UI selection
     }
     target_path = staging_config_dir / "video-config.json"
     target_path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
