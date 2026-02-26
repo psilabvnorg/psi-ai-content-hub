@@ -19,7 +19,7 @@ def get_temp_stats() -> dict:
     total = 0
     file_count = 0
     try:
-        for item in TEMP_DIR.iterdir():
+        for item in TEMP_DIR.rglob("*"):
             if item.is_file():
                 file_count += 1
                 total += item.stat().st_size
@@ -56,11 +56,21 @@ def create_log_stream(log_name: str = LOG_NAME) -> Generator[str, None, None]:
 
 def clear_temp_cache() -> dict:
     removed = 0
-    for item in TEMP_DIR.iterdir():
-        if item.is_file():
-            try:
-                item.unlink()
-                removed += 1
-            except Exception:
-                pass
+    try:
+        for item in TEMP_DIR.rglob("*"):
+            if item.is_file():
+                try:
+                    item.unlink()
+                    removed += 1
+                except Exception:
+                    pass
+        # Remove empty subdirectories bottom-up
+        for item in sorted(TEMP_DIR.rglob("*"), reverse=True):
+            if item.is_dir():
+                try:
+                    item.rmdir()
+                except Exception:
+                    pass
+    except Exception:
+        pass
     return {"status": "success", "removed": removed}
