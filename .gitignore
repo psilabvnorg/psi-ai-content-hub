@@ -1,3 +1,7 @@
+.claude
+.kiro
+.vscode
+
 # Dependencies
 **/node_modules/
 **/venv/

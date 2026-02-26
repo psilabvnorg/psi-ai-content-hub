@@ -150,3 +150,5 @@ This project must maintain exceptionally high type standards. The `any` type mus
 1. Consider running `yarn test:e2e` for UI changes
 
 This is a sophisticated Electron application with comprehensive testing, automated CI/CD, cross-platform support, and professional development practices.
+---
+psi-ai-content-hub\python_api\app-6901\test-script: this is unit test folder, skip it in context for most of the time, if needed I will ask you to edit

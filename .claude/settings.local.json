@@ -15,7 +15,21 @@
       "Bash(npm run:*)",
       "Bash(head:*)",
       "Bash(find D:/AI/psi-ai-content-hub/python_api -name \"*.py\" | xargs grep -l \"bg.remove\\\\|bg_remove\" 2>/dev/null)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(D:AIpsi-ai-content-hubpython_apiapp-6901venvScriptspython.exe -c \"import torch; print\\(''torch:'', torch.__version__\\)\")",
+      "Bash(D:AIpsi-ai-content-hubpython_apiapp-6901venvScriptspython.exe -c \"import whisper, transformers, cv2, numpy; print\\(''all ok''\\)\")",
+      "Bash(\"/mnt/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/python.exe\" -c \"import torch; print\\(''torch:'', torch.__version__\\)\")",
+      "Bash(\"/mnt/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/python.exe\" -c \"import whisper; import transformers; import cv2; print\\(''all ok''\\)\")",
+      "Bash(/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe test-script/ -v --tb=short)",
+      "Bash(cmd.exe /c \"cd /d D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901 && D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901\\\\venv\\\\Scripts\\\\pytest.exe test-script\\\\ -v --tb=short 2>&1\")",
+      "Bash(powershell.exe -NoProfile -Command \"Set-Location ''D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901''; & ''D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901\\\\venv\\\\Scripts\\\\pytest.exe'' ''test-script'' -v --tb=short 2>&1 | Out-String -Width 300\")",
+      "Bash(/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/python.exe -m pytest --version)",
+      "Bash(cmd.exe /c \"D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901\\\\venv\\\\Scripts\\\\pip.exe install pytest pytest-asyncio 2>&1\")",
+      "Bash(cmd.exe /c \"D:\\\\AI\\\\psi-ai-content-hub\\\\python_api\\\\app-6901\\\\venv\\\\Scripts\\\\pip.exe install pytest pytest-asyncio\")",
+      "Bash(\"/mnt/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pip.exe\" install pytest pytest-asyncio)",
+      "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pip.exe\" install pytest pytest-asyncio)",
+      "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe\" test-script/ -v --tb=short)",
+      "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe\" test-script/test_media.py::test_get_ffmpeg_cmd_with_binary_path test-script/test_media.py::test_upscale_image_no_output_raises test-script/test_translation.py::test_detect_runtime_device_exception_returns_cpu -v --tb=short)"
     ]
   }
 }
