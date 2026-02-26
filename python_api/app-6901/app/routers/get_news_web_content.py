@@ -3,9 +3,9 @@
 Supported sources
 -----------------
 - vnexpress  (live)
+- cnn        (live)
 - kenh14     (planned)
 - cafef      (planned)
-- cnn        (planned)
 
 Endpoints
 ---------
@@ -33,7 +33,28 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import StreamingResponse
 
-from ..services.get_news_web_content.vnexpress import fetch_article_urls, scrape_article
+from ..services.get_news_web_content.vnexpress import (
+    fetch_article_urls as _vne_fetch_urls,
+    scrape_article as _vne_scrape,
+)
+from ..services.get_news_web_content.cnn import (
+    fetch_article_urls as _cnn_fetch_urls,
+    scrape_article as _cnn_scrape,
+)
+
+
+def _fetch_urls_for(source: str, category_url: str, limit: int) -> list[str]:
+    """Dispatch fetch-URL call to the correct scraper module."""
+    if source == "cnn":
+        return _cnn_fetch_urls(category_url=category_url, limit=limit)
+    return _vne_fetch_urls(category_url=category_url, limit=limit)
+
+
+def _scrape_for(source: str, url: str, prefix: str, out_dir: str) -> tuple[str, str]:
+    """Dispatch scrape call to the correct scraper module."""
+    if source == "cnn":
+        return _cnn_scrape(url=url, out_prefix=prefix, out_dir=out_dir)
+    return _vne_scrape(url=url, out_prefix=prefix, out_dir=out_dir)
 
 router = APIRouter(prefix="/api/v1/news-scraper", tags=["news-scraper"])
 
@@ -62,9 +83,24 @@ SOURCES: list[dict[str, Any]] = [
             {"label": "Du lịch", "url": "https://vnexpress.net/du-lich"},
         ],
     },
+    {
+        "id": "cnn",
+        "label": "CNN",
+        "available": True,
+        "default_category_url": "https://edition.cnn.com/business",
+        "categories": [
+            {"label": "Business", "url": "https://edition.cnn.com/business"},
+            {"label": "Politics", "url": "https://edition.cnn.com/politics"},
+            {"label": "Entertainment", "url": "https://edition.cnn.com/entertainment"},
+            {"label": "Sport", "url": "https://edition.cnn.com/sport"},
+            {"label": "Health", "url": "https://edition.cnn.com/health"},
+            {"label": "Tech", "url": "https://edition.cnn.com/tech"},
+            {"label": "Travel", "url": "https://edition.cnn.com/travel"},
+            {"label": "World", "url": "https://edition.cnn.com/world"},
+        ],
+    },
     {"id": "kenh14", "label": "Kênh 14", "available": False, "default_category_url": "https://kenh14.vn", "categories": []},
     {"id": "cafef", "label": "CafeF", "available": False, "default_category_url": "https://cafef.vn", "categories": []},
-    {"id": "cnn", "label": "CNN", "available": False, "default_category_url": "https://edition.cnn.com", "categories": []},
 ]
 
 _SOURCE_MAP = {s["id"]: s for s in SOURCES}
@@ -129,7 +165,7 @@ def fetch_urls_route(payload: dict = Body(...)) -> dict:
     limit = max(1, min(limit, 100))
 
     try:
-        urls = fetch_article_urls(category_url=category_url, limit=limit)
+        urls = _fetch_urls_for(source, category_url=category_url, limit=limit)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to fetch URLs: {exc}") from exc
 
@@ -147,9 +183,14 @@ def scrape_single_route(payload: dict = Body(...)) -> dict:
     if not url:
         raise HTTPException(status_code=400, detail="url is required")
 
+    # Detect source from URL when not provided in payload
+    source = str(payload.get("source") or "").strip().lower()
+    if not source:
+        source = "cnn" if "cnn.com" in url else "vnexpress"
+
     tmp_dir = tempfile.mkdtemp(prefix="news_scrape_")
     try:
-        json_path, _ = scrape_article(url=url, out_prefix="article", out_dir=tmp_dir)
+        json_path, _ = _scrape_for(source, url=url, prefix="article", out_dir=tmp_dir)
         with open(json_path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
     except RuntimeError as exc:
@@ -181,7 +222,7 @@ def _run_crawl(
 
         # Fetch candidate URLs
         fetch_limit = max(limit * 3, 50)
-        urls = fetch_article_urls(category_url=category_url, limit=fetch_limit)
+        urls = _fetch_urls_for(source, category_url=category_url, limit=fetch_limit)
         to_scrape = urls[:limit]
 
         _push_event(
@@ -214,7 +255,7 @@ def _run_crawl(
             )
 
             try:
-                json_path, _ = scrape_article(url, prefix, out_dir)
+                json_path, _ = _scrape_for(source, url=url, prefix=prefix, out_dir=out_dir)
                 processed += 1
                 saved_files.append(json_path)
             except Exception as exc:

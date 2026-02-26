@@ -88,11 +88,22 @@ const VNEXPRESS_CATEGORIES = [
   { label: "Du lịch", url: "https://vnexpress.net/du-lich" },
 ];
 
+const CNN_CATEGORIES = [
+  { label: "Business", url: "https://edition.cnn.com/business" },
+  { label: "Politics", url: "https://edition.cnn.com/politics" },
+  { label: "Entertainment", url: "https://edition.cnn.com/entertainment" },
+  { label: "Sport", url: "https://edition.cnn.com/sport" },
+  { label: "Health", url: "https://edition.cnn.com/health" },
+  { label: "Tech", url: "https://edition.cnn.com/tech" },
+  { label: "Travel", url: "https://edition.cnn.com/travel" },
+  { label: "World", url: "https://edition.cnn.com/world" },
+];
+
 const SOURCES_FALLBACK: Source[] = [
   { id: "vnexpress", label: "VNExpress", available: true, categories: VNEXPRESS_CATEGORIES, default_category_url: "https://vnexpress.net/kinh-doanh" },
+  { id: "cnn", label: "CNN", available: true, categories: CNN_CATEGORIES, default_category_url: "https://edition.cnn.com/business" },
   { id: "kenh14", label: "Kênh 14", available: false },
   { id: "cafef", label: "CafeF", available: false },
-  { id: "cnn", label: "CNN", available: false },
 ];
 
 // ---------------------------------------------------------------------------
@@ -366,6 +377,8 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
                   disabled={!src.available || loading}
                   onClick={() => {
                     setSelectedSource(src.id);
+                    if (src.default_category_url) setCategoryUrl(src.default_category_url);
+                    else if (src.categories?.[0]) setCategoryUrl(src.categories[0].url);
                     resetResults();
                   }}
                   className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-semibold transition-all
