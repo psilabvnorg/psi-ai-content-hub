@@ -5,7 +5,7 @@ import {
   Music, FileAudio,
   Mic, Languages,
   Play, Download,
-  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings
+  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/i18n";
@@ -102,6 +102,12 @@ const features = {
       titleKey: "feature.tool.stt.title" as I18nKey,
       icon: Languages,
       descriptionKey: "feature.tool.stt.desc" as I18nKey,
+    },
+    {
+      id: "news-scraper",
+      titleKey: "feature.tool.news_scraper.title" as I18nKey,
+      icon: Newspaper,
+      descriptionKey: "feature.tool.news_scraper.desc" as I18nKey,
     },
   ],
   advancedTool: [

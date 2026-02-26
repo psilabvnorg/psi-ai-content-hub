@@ -25,6 +25,7 @@ import LLM from "./tools/LLM";
 import Translator from "./tools/Translator";
 import ImageFinder from "./tools/ImageFinder";
 import ImageUpscaler from "./tools/ImageUpscaler";
+import NewsScraper from "./tools/NewsScraper";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -72,6 +73,7 @@ export default function FeaturePlaceholder({
       translator: "feature.tool.translator.title",
       "image-finder": "feature.tool.image_finder.title",
       "image-upscaler": "feature.tool.image_upscaler.title",
+      "news-scraper": "feature.tool.news_scraper.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -133,6 +135,8 @@ export default function FeaturePlaceholder({
         return <ImageFinder onOpenSettings={() => onSelectFeature("settings")} />;
       case "image-upscaler":
         return <ImageUpscaler onOpenSettings={() => onSelectFeature("settings")} />;
+      case "news-scraper":
+        return <NewsScraper onOpenSettings={() => onSelectFeature("settings")} />;
       case "settings":
         return <Settings />;
       default:
