@@ -180,6 +180,7 @@ export default function TextToVideo({ onOpenSettings }: { onOpenSettings?: () =>
 
   const [isStaging, setIsStaging] = useState(false);
   const [studioRunning, setStudioRunning] = useState(false);
+  const studioWindowRef = useRef<Window | null>(null);
 
   const stopStudio = useCallback(() => {
     fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`, { method: "POST" }).catch(() => {});

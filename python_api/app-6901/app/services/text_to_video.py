@@ -29,9 +29,9 @@ SSE_TIMEOUT = 60 * 60
 RENDER_CONCURRENCY = 4
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-REMOTION_ROOT = REPO_ROOT / "remotion" / "news"
+REMOTION_ROOT = REPO_ROOT / "remotion"
 REMOTION_PUBLIC_MAIN = REMOTION_ROOT / "public" / "main"
-DEFAULT_INTRO_CONFIG_PATH = REMOTION_PUBLIC_MAIN / "video_4" / "config" / "intro-config.json"
+DEFAULT_INTRO_CONFIG_PATH = REMOTION_PUBLIC_MAIN / "news" / "config" / "intro-config.json"
 
 PREVIEW_DIR_NAME = "preview"
 PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / PREVIEW_DIR_NAME

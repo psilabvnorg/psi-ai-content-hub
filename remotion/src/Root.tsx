@@ -18,7 +18,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calculateMainVideoMetadata}
         schema={mainVideoSchema}
         defaultProps={{
-          contentDirectory: "main/news",
+          contentDirectory: "main/preview",
           orientation: "vertical",
           introProps: {
             templateId: "template_1",

@@ -29,7 +29,9 @@
       "Bash(\"/mnt/d/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pip.exe\" install pytest pytest-asyncio)",
       "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pip.exe\" install pytest pytest-asyncio)",
       "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe\" test-script/ -v --tb=short)",
-      "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe\" test-script/test_media.py::test_get_ffmpeg_cmd_with_binary_path test-script/test_media.py::test_upscale_image_no_output_raises test-script/test_translation.py::test_detect_runtime_device_exception_returns_cpu -v --tb=short)"
+      "Bash(\"D:/AI/psi-ai-content-hub/python_api/app-6901/venv/Scripts/pytest.exe\" test-script/test_media.py::test_get_ffmpeg_cmd_with_binary_path test-script/test_media.py::test_upscale_image_no_output_raises test-script/test_translation.py::test_detect_runtime_device_exception_returns_cpu -v --tb=short)",
+      "Bash(__NEW_LINE_d1a7ea08a629d66f__ echo \"\")",
+      "Bash(xargs cat)"
     ]
   }
 }

@@ -163,7 +163,7 @@ const props = {
 // Write props to a temp JSON file to avoid Windows shell escaping issues
 const propsFile = path.join(os.tmpdir(), `remotion-props-${Date.now()}.json`);
 fs.writeFileSync(propsFile, JSON.stringify(props, null, 2), 'utf-8');
-const cmd = `npx remotion render MainVideo "${params.output}" --props="${propsFile}" --concurrency=${params.concurrency} --bundle-cache=false`;
+const cmd = `npx remotion render News "${params.output}" --props="${propsFile}" --concurrency=${params.concurrency} --bundle-cache=false`;
 
 // Derive expected caption JSON path from content directory
 const contentDir = params.contentDirectory;

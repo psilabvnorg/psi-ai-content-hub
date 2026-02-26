@@ -52,9 +52,9 @@ export const translations = {
     "feature.workflow.reup_youtube.title": "Reup YouTube Video",
     "feature.workflow.reup_youtube.desc":
       "Paste a YouTube URL, choose target language, and generate a translated video with new audio and visuals.",
-    "feature.workflow.news_to_video.title": "News Link to Video",
+    "feature.workflow.news_to_video.title": "News to Video",
     "feature.workflow.news_to_video.desc":
-      "Paste a news article URL (VnExpress, etc.) and instantly generate short or long-form videos. Ideal for news channels, educational content, and knowledge sharing across all major platforms.",
+      "Create short or long-form videos from news articles (VnExpress, CNN, Kenh14, CafeF, etc.). Ideal for news channels, educational content, and knowledge sharing across all major platforms.",
     "feature.workflow.book_to_video.title": "Book to Video",
     "feature.workflow.book_to_video.desc":
       "Upload PDF or EPUB files to create video summaries. Generate chapter-by-chapter breakdowns or full book explanations for educational and review content.",
@@ -859,9 +859,9 @@ export const translations = {
     "feature.workflow.reup_youtube.title": "Reup Video YouTube",
     "feature.workflow.reup_youtube.desc":
       "Dán URL YouTube, chọn ngôn ngữ đích và tạo video dịch với âm thanh và hình ảnh mới.",
-    "feature.workflow.news_to_video.title": "Link Tin Tức thành Video",
+    "feature.workflow.news_to_video.title": "Tin Tức thành Video",
     "feature.workflow.news_to_video.desc":
-      "Dán URL bài báo (VnExpress, v.v.) và tạo video ngắn hoặc dài ngay lập tức. Lý tưởng cho kênh tin tức, nội dung giáo dục và chia sẻ kiến thức.",
+      "Tạo video ngắn hoặc dài từ VnExpress, CNN, Kenh14, CafeF.... Lý tưởng cho kênh tin tức, nội dung giáo dục và chia sẻ kiến thức.",
     "feature.workflow.book_to_video.title": "Sách thành Video",
     "feature.workflow.book_to_video.desc":
       "Tải PDF hoặc EPUB để tạo video tóm tắt. Có thể tạo theo chương hoặc toàn bộ sách cho nội dung giáo dục và review.",
