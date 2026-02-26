@@ -3,10 +3,20 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
+import threading
+import uuid
 from pathlib import Path
-from typing import Dict
+from typing import Callable, Dict
+
+from python_api.common.logging import log
+from python_api.common.progress import ProgressStore
+
+# parents: [0]=services, [1]=app, [2]=app-6901, [3]=python_api, [4]=repo root
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+REMOTION_ROOT = _REPO_ROOT / "remotion"
 
 
 # parents: [0]=services, [1]=app, [2]=app-6901 → venv lives here
@@ -146,3 +156,121 @@ def aenv_install_profile_data(profile_id: str, packages: list[str] | None = None
         "installed_packages": packages_to_install,
         "venv_path": str(aenv_venv_dir_path),
     }
+
+
+_remotion_deps_lock = threading.Lock()
+_remotion_deps_ready = False
+
+setup_progress_store = ProgressStore()
+
+
+def get_remotion_setup_status() -> dict[str, object]:
+    """Return Node.js, npm, and remotion node_modules installation status.
+
+    Uses shell=True on Windows so cmd.exe's full system PATH is searched,
+    which fixes detection when the Electron service process inherits a
+    restricted PATH that excludes the Node.js installation directory.
+    """
+    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+    _shell = os.name == "nt"
+
+    # Prefer shutil.which for the canonical path, but always try subprocess
+    # so that node is detected even when shutil.which misses it (restricted PATH).
+    node_path: str | None = shutil.which("node")
+    npm_path: str | None = shutil.which(npm_cmd)
+
+    node_version: str | None = None
+    npm_version: str | None = None
+
+    try:
+        r = subprocess.run(
+            ["node", "--version"], capture_output=True, text=True, timeout=5, shell=_shell
+        )
+        if r.returncode == 0:
+            node_version = r.stdout.strip() or None
+            if node_path is None:
+                node_path = "node"  # reachable via shell PATH, not shutil.which
+    except Exception:
+        pass
+
+    try:
+        r = subprocess.run(
+            [npm_cmd, "--version"], capture_output=True, text=True, timeout=5, shell=_shell
+        )
+        if r.returncode == 0:
+            npm_version = r.stdout.strip() or None
+            if npm_path is None:
+                npm_path = npm_cmd
+    except Exception:
+        pass
+
+    # Accept node_modules as installed if @remotion/ exists OR if the
+    # directory is non-empty (covers partial installs / different layouts).
+    node_modules_dir = REMOTION_ROOT / "node_modules"
+    remotion_deps = (node_modules_dir / "@remotion").exists() or (
+        node_modules_dir.is_dir() and next(node_modules_dir.iterdir(), None) is not None
+    )
+
+    return {
+        "node_installed": node_path is not None,
+        "node_version": node_version,
+        "node_path": node_path,
+        "npm_installed": npm_path is not None,
+        "npm_version": npm_version,
+        "remotion_deps_installed": remotion_deps,
+        "remotion_root": str(REMOTION_ROOT),
+    }
+
+
+def start_remotion_deps_install() -> str:
+    """Run `npm install` in REMOTION_ROOT and stream progress via setup_progress_store."""
+    task_id = f"remotion_setup_{uuid.uuid4().hex}"
+    setup_progress_store.set_progress(task_id, "starting", 0, "Starting npm install...")
+
+    def runner() -> None:
+        global _remotion_deps_ready
+        try:
+            npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+
+            if not (REMOTION_ROOT / "package.json").exists():
+                raise RuntimeError(f"remotion/package.json not found at {REMOTION_ROOT}")
+
+            try:
+                process = subprocess.Popen(
+                    [npm_cmd, "install"],
+                    cwd=str(REMOTION_ROOT),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    shell=(os.name == "nt"),
+                )
+            except FileNotFoundError:
+                raise RuntimeError("npm not found. Please install Node.js from https://nodejs.org/ and restart.")
+
+            setup_progress_store.set_progress(task_id, "processing", 10, "Running npm install...")
+
+            if process.stdout:
+                for raw_line in process.stdout:
+                    line = raw_line.strip()
+                    if line:
+                        setup_progress_store.add_log(task_id, line)
+
+            return_code = process.wait()
+            if return_code != 0:
+                raise RuntimeError(f"npm install failed with exit code {return_code}")
+
+            _remotion_deps_ready = True
+            setup_progress_store.set_progress(task_id, "complete", 100, "Remotion dependencies installed successfully.")
+            log("Remotion npm dependencies installed.", "info", log_name="app-service.log")
+        except Exception as exc:
+            setup_progress_store.add_log(task_id, f"[ERROR] {exc}")
+            setup_progress_store.set_progress(task_id, "error", 0, str(exc))
+            log(f"Remotion deps install failed: {exc}", "error", log_name="app-service.log")
+
+    threading.Thread(target=runner, daemon=True).start()
+    return task_id
+
+
+

@@ -370,6 +370,18 @@ export default function Settings() {
 
   const [toolsStatus, setToolsStatus] = useState<ToolsStatus | null>(null);
   const [toolsProgress, setToolsProgress] = useState<Record<string, ProgressData>>({});
+
+  type RemotionSetupStatus = {
+    node_installed: boolean;
+    node_version: string | null;
+    node_path: string | null;
+    npm_installed: boolean;
+    npm_version: string | null;
+    remotion_deps_installed: boolean;
+    remotion_root: string;
+  };
+  const [remotionSetup, setRemotionSetup] = useState<RemotionSetupStatus | null>(null);
+  const [remotionDepsProgress, setRemotionDepsProgress] = useState<ProgressData | null>(null);
   const [envInstallAllActive, setEnvInstallAllActive] = useState(false);
   const [envInstallStep, setEnvInstallStep] = useState("");
   const [envInstallDoneCount, setEnvInstallDoneCount] = useState(0);
@@ -558,6 +570,30 @@ export default function Settings() {
       setToolsProgress((prev) => ({ ...prev, [toolId]: { status: "error", percent: 0, message } }));
     } finally {
       void fetchToolsStatus();
+    }
+  };
+
+  const fetchRemotionSetup = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/setup/status`);
+      if (!res.ok) throw new Error("failed");
+      setRemotionSetup((await res.json()) as RemotionSetupStatus);
+    } catch {
+      setRemotionSetup(null);
+    }
+  };
+
+  const handleRemotionNpmInstall = async () => {
+    setRemotionDepsProgress({ status: "starting", percent: 0, message: "Starting npm install..." });
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/setup/install-deps`, { method: "POST" });
+      if (!res.ok) throw new Error("Install request failed");
+      await consumeSseStream(res, (data) => setRemotionDepsProgress(data));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "npm install failed";
+      setRemotionDepsProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchRemotionSetup();
     }
   };
 
@@ -865,6 +901,7 @@ export default function Settings() {
     fetchTranslationStatus();
     fetchImageFinderStatus();
     fetchToolsStatus();
+    fetchRemotionSetup();
     fetchF5Status();
     refreshServices();
     fetchLogTail();
@@ -912,6 +949,7 @@ export default function Settings() {
     fetchTranslationStatus();
     fetchImageFinderStatus();
     fetchToolsStatus();
+    fetchRemotionSetup();
     refreshServices();
   };
 
@@ -1212,6 +1250,81 @@ export default function Settings() {
                               <span>{toolsProgress["yt-dlp"].percent ?? 0}%</span>
                             </div>
                             <Progress value={toolsProgress["yt-dlp"].percent ?? 0} className="h-1.5" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell className="font-medium">Remotion (Text to Video)</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const ready = remotionSetup?.node_installed && remotionSetup?.remotion_deps_installed;
+                      return (
+                        <div className="flex items-center gap-2">
+                          {ready ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                          <span className="text-sm">{ready ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}</span>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    <div className="flex items-start gap-2">
+                      <div className="space-y-0.5">
+                        <div className={remotionSetup?.node_installed ? "" : "text-red-400"}>
+                          node: {remotionSetup?.node_installed ? (remotionSetup.node_version ?? "found") : "not found"}
+                        </div>
+                        <div className={remotionSetup?.remotion_deps_installed ? "" : "text-red-400"}>
+                          node_modules: {remotionSetup?.remotion_deps_installed ? "installed" : "missing"}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 shrink-0 mt-0.5"
+                        onClick={() => { void fetchRemotionSetup(); }}
+                        title="Refresh Remotion status"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {appServiceRunning && (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {!remotionSetup?.node_installed && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open("https://nodejs.org/", "_blank")}
+                            >
+                              Install Node.js
+                            </Button>
+                          )}
+                          {remotionSetup?.node_installed && !remotionSetup?.remotion_deps_installed && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { void handleRemotionNpmInstall(); }}
+                              disabled={remotionDepsProgress?.status === "starting" || remotionDepsProgress?.status === "processing"}
+                            >
+                              {(remotionDepsProgress?.status === "starting" || remotionDepsProgress?.status === "processing") ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                              ) : null}
+                              npm install
+                            </Button>
+                          )}
+                        </div>
+                        {remotionDepsProgress && (
+                          <div className="space-y-1 min-w-[200px]">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span className="truncate max-w-[160px]">{remotionDepsProgress.message}</span>
+                              <span>{remotionDepsProgress.percent ?? 0}%</span>
+                            </div>
+                            <Progress value={remotionDepsProgress.percent ?? 0} className="h-1.5" />
                           </div>
                         )}
                       </div>

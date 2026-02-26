@@ -20,6 +20,12 @@ from python_api.common.logging import log
 from python_api.common.paths import TEMP_DIR
 from python_api.common.progress import ProgressStore
 
+from .aenv_profile_service_api import (
+    get_remotion_setup_status,
+    setup_progress_store,
+    start_remotion_deps_install,
+)
+
 
 F5_API_URL = "http://127.0.0.1:6902"
 WHISPER_API_URL = "http://127.0.0.1:6901"
@@ -76,7 +82,6 @@ _state_lock = threading.Lock()
 
 _studio_process: subprocess.Popen | None = None
 _studio_lock = threading.Lock()
-
 
 @dataclass(frozen=True)
 class UploadedImageData:
@@ -614,6 +619,12 @@ def start_studio() -> dict[str, object]:
         if _studio_process is not None and _studio_process.poll() is None:
             return {"status": "already_running", "port": STUDIO_PORT}
 
+        if not (REMOTION_ROOT / "node_modules" / "@remotion").exists():
+            raise RuntimeError(
+                "Remotion npm dependencies not installed. "
+                "Please go to Settings → Remotion Setup and click 'npm install'."
+            )
+
         cmd = [
             "npx",
             "remotion",
@@ -740,6 +751,11 @@ def start_render_pipeline(
     def runner() -> None:
         staging_root = REMOTION_PUBLIC_MAIN / f"t2v_{task_id}"
         try:
+            if not (REMOTION_ROOT / "node_modules" / "@remotion").exists():
+                raise RuntimeError(
+                    "Remotion npm dependencies not installed. "
+                    "Please go to Settings → Remotion Setup and click 'npm install'."
+                )
             render_progress_store.set_progress(task_id, "processing", 5, "Preparing Remotion staging assets...")
             content_dir_name = f"t2v_{task_id}"
             _stage_assets(

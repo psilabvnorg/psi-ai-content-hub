@@ -16,11 +16,14 @@ from ..services.text_to_video import (
     create_audio_session_from_upload,
     get_audio_result,
     get_render_result,
+    get_remotion_setup_status,
     get_studio_status,
     render_progress_store,
+    setup_progress_store,
     stage_preview,
     start_audio_pipeline,
     start_render_pipeline,
+    start_remotion_deps_install,
     start_studio,
     stop_studio,
 )
@@ -199,3 +202,14 @@ def preview_studio_status() -> dict:
 @router.post("/preview/studio/stop")
 def stop_preview_studio() -> dict:
     return stop_studio()
+
+
+@router.get("/setup/status")
+def remotion_setup_status() -> dict:
+    return get_remotion_setup_status()
+
+
+@router.post("/setup/install-deps")
+def remotion_install_deps() -> StreamingResponse:
+    task_id = start_remotion_deps_install()
+    return StreamingResponse(setup_progress_store.sse_stream(task_id), media_type="text/event-stream")
