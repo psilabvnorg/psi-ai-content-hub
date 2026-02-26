@@ -1,5 +1,5 @@
 import { Sequence } from 'remotion';
-import { ImageSlide } from './ImageSlide';
+import { ImageSlide } from './KenBurnsEffect';
 
 interface LoopingImageSliderProps {
   images: string[];
