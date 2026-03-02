@@ -26,6 +26,7 @@ import Translator from "./tools/Translator";
 import ImageFinder from "./tools/ImageFinder";
 import ImageUpscaler from "./tools/ImageUpscaler";
 import NewsScraper from "./tools/NewsScraper";
+import ColorPickerTool from "./tools/ColorPicker";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -74,6 +75,7 @@ export default function FeaturePlaceholder({
       "image-finder": "feature.tool.image_finder.title",
       "image-upscaler": "feature.tool.image_upscaler.title",
       "news-scraper": "feature.tool.news_scraper.title",
+      "color-picker": "feature.tool.color_picker.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -137,6 +139,8 @@ export default function FeaturePlaceholder({
         return <ImageUpscaler onOpenSettings={() => onSelectFeature("settings")} />;
       case "news-scraper":
         return <NewsScraper onOpenSettings={() => onSelectFeature("settings")} />;
+      case "color-picker":
+        return <ColorPickerTool />;
       case "settings":
         return <Settings />;
       default:

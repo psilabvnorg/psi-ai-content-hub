@@ -13,16 +13,16 @@ export default function BrandLogo({
   labelClassName,
   label,
 }: BrandLogoProps) {
-  // Split label into two parts: "AI" and "Hub"
+  // Split label into two parts: "Content" and "Hub"
   const parts = label ? label.split(' ') : [];
-  const firstPart = parts[0] || 'AI';
+  const firstPart = parts[0] || 'Content';
   const secondPart = parts.slice(1).join(' ') || 'Hub';
 
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <img
         src="./logo.png"
-        alt="AI Hub logo"
+        alt="Content Hub logo"
         className={cn(
           "h-10 w-auto object-contain",
           imageClassName,
