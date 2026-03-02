@@ -27,6 +27,8 @@ import ImageFinder from "./tools/ImageFinder";
 import ImageUpscaler from "./tools/ImageUpscaler";
 import NewsScraper from "./tools/NewsScraper";
 import ColorPickerTool from "./tools/ColorPicker";
+import LogoGeneratorPrompt from "./tools/LogoGeneratorPrompt";
+import TextGenerator from "./tools/TextGenerator";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -76,6 +78,8 @@ export default function FeaturePlaceholder({
       "image-upscaler": "feature.tool.image_upscaler.title",
       "news-scraper": "feature.tool.news_scraper.title",
       "color-picker": "feature.tool.color_picker.title",
+      "logo-generator-prompt": "feature.tool.logo_generator_prompt.title",
+      "text-generator": "feature.tool.text_generator.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -141,6 +145,10 @@ export default function FeaturePlaceholder({
         return <NewsScraper onOpenSettings={() => onSelectFeature("settings")} />;
       case "color-picker":
         return <ColorPickerTool />;
+      case "logo-generator-prompt":
+        return <LogoGeneratorPrompt />;
+      case "text-generator":
+        return <TextGenerator />;
       case "settings":
         return <Settings />;
       default:

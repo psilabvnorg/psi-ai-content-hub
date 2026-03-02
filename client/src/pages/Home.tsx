@@ -5,7 +5,7 @@ import {
   Music, FileAudio,
   Mic, Languages,
   Play, Download,
-  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette
+  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/i18n";
@@ -115,6 +115,24 @@ const features = {
       icon: Palette,
       descriptionKey: "feature.tool.color_picker.desc" as I18nKey,
     },
+    {
+      id: "thumbnail",
+      titleKey: "feature.tool.thumbnail.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
+    },
+    {
+      id: "logo-generator-prompt",
+      titleKey: "feature.tool.logo_generator_prompt.title" as I18nKey,
+      icon: Wand2,
+      descriptionKey: "feature.tool.logo_generator_prompt.desc" as I18nKey,
+    },
+    {
+      id: "text-generator",
+      titleKey: "feature.tool.text_generator.title" as I18nKey,
+      icon: Type,
+      descriptionKey: "feature.tool.text_generator.desc" as I18nKey,
+    },
   ],
   advancedTool: [
     {
@@ -122,12 +140,6 @@ const features = {
       titleKey: "feature.tool.voice_clone_custom.title" as I18nKey,
       icon: Mic,
       descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey,
-    },
-    {
-      id: "thumbnail",
-      titleKey: "feature.tool.thumbnail.title" as I18nKey,
-      icon: ImageIcon,
-      descriptionKey: "feature.tool.thumbnail.desc" as I18nKey,
     },
     {
       id: "reup-youtube",
