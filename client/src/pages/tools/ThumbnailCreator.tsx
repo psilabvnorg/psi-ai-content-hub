@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Maximize2 } from "lucide-react";
 
 const PAGE_SIZES = {
   youtube: { label: "YouTube — Horizontal (16:9)", aspectRatio: "16 / 9", maxWidth: "100%" },
@@ -351,16 +351,18 @@ export default function ThumbnailCreator() {
                   className="w-full h-full object-contain pointer-events-none"
                 />
                 <div
-                  className="absolute bottom-0 right-0 w-4 h-4 bg-white border border-black cursor-se-resize"
+                  className="absolute -bottom-3 -right-3 w-6 h-6 flex items-center justify-center bg-white border border-border rounded-full cursor-se-resize shadow-md hover:bg-gray-100"
                   onMouseDown={(e) => startResize(el.id, e)}
-                />
+                >
+                  <Maximize2 className="w-3 h-3 text-gray-600 rotate-90" />
+                </div>
                 <button
-                  className="absolute -top-3 -right-3 bg-white border border-border rounded-full p-1 opacity-0 group-hover:opacity-100"
+                  className="absolute -top-3 -right-3 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-colors shadow-md"
                   onClick={() =>
                     setElements((p) => p.filter((x) => x.id !== el.id))
                   }
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" strokeWidth={3} />
                 </button>
               </div>
             ))}

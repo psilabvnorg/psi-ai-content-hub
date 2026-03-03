@@ -133,6 +133,12 @@ const features = {
       icon: Type,
       descriptionKey: "feature.tool.text_generator.desc" as I18nKey,
     },
+    {
+      id: "image-editor",
+      titleKey: "feature.tool.image_editor.title" as I18nKey,
+      icon: ImageIcon,
+      descriptionKey: "feature.tool.image_editor.desc" as I18nKey,
+    },
   ],
   advancedTool: [
     {

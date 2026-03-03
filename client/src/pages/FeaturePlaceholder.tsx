@@ -29,6 +29,7 @@ import NewsScraper from "./tools/NewsScraper";
 import ColorPickerTool from "./tools/ColorPicker";
 import LogoGeneratorPrompt from "./tools/LogoGeneratorPrompt";
 import TextGenerator from "./tools/TextGenerator";
+import ImageEditor from "./tools/ImageEditor";
 import Settings from "./Settings";
 import { useI18n } from "@/i18n/i18n";
 import type { I18nKey } from "@/i18n/translations";
@@ -80,6 +81,7 @@ export default function FeaturePlaceholder({
       "color-picker": "feature.tool.color_picker.title",
       "logo-generator-prompt": "feature.tool.logo_generator_prompt.title",
       "text-generator": "feature.tool.text_generator.title",
+      "image-editor": "feature.tool.image_editor.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -149,6 +151,8 @@ export default function FeaturePlaceholder({
         return <LogoGeneratorPrompt />;
       case "text-generator":
         return <TextGenerator />;
+      case "image-editor":
+        return <ImageEditor />;
       case "settings":
         return <Settings />;
       default:
