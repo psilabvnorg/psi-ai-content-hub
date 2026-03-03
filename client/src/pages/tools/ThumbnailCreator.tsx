@@ -14,7 +14,7 @@ type PageSize = keyof typeof PAGE_SIZES;
 export default function ThumbnailCreator() {
   const [pageSize, setPageSize] = useState<PageSize>("youtube");
   const [mode, setMode] = useState<"gradient-split" | "normal-gradient">("gradient-split");
-  const [split, setSplit] = useState("30");
+  const [split, setSplit] = useState(50);
   const [color1, setColor1] = useState("#00ff88");
   const [opacity1, setOpacity1] = useState(100);
   const [transparent1, setTransparent1] = useState(false);
@@ -126,13 +126,13 @@ export default function ThumbnailCreator() {
         : ctx.createLinearGradient(0, 0, 0, outH);
 
       if (mode === "gradient-split") {
-        const p = parseInt(split) / 100;
+        const p = split / 100;
         grad.addColorStop(0, c1);
         grad.addColorStop(Math.max(0, p - 0.001), c1);
         grad.addColorStop(Math.min(1, p + 0.001), c2);
         grad.addColorStop(1, c2);
       } else {
-        const p = parseInt(split) / 100;
+        const p = split / 100;
         grad.addColorStop(0, c1);
         grad.addColorStop(Math.max(0, p - 0.05), c1);
         grad.addColorStop(Math.min(1, p + 0.05), c2);
@@ -189,34 +189,35 @@ export default function ThumbnailCreator() {
             <label className="text-xs font-bold uppercase text-muted-foreground">
               Mode
             </label>
-            <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gradient-split">Normal Split</SelectItem>
-                <SelectItem value="normal-gradient">Gradient Split</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              {(["gradient-split", "normal-gradient"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`flex-1 h-10 rounded-md border text-xs font-semibold transition-colors ${
+                    mode === m
+                      ? "bg-accent text-accent-foreground border-accent"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m === "gradient-split" ? "Normal Split" : "Gradient Split"}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold uppercase text-muted-foreground">
-              Split %
-            </label>
-            <Select value={split} onValueChange={setSplit}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pick split" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="20">20%</SelectItem>
-                <SelectItem value="30">30%</SelectItem>
-                <SelectItem value="40">40%</SelectItem>
-                <SelectItem value="50">50%</SelectItem>
-                <SelectItem value="60">60%</SelectItem>
-                <SelectItem value="69">69%</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase text-muted-foreground">
+                Split %
+              </label>
+              <span className="text-xs text-muted-foreground">{split}%</span>
+            </div>
+            <input
+              type="range" min={0} max={100} value={split}
+              onChange={(e) => setSplit(Number(e.target.value))}
+              className="w-full accent-accent mt-2"
+            />
           </div>
         </div>
 
@@ -305,30 +306,6 @@ export default function ThumbnailCreator() {
           </div>
         </div>
 
-        {/* Upload Overlay */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase text-muted-foreground">
-            Add overlay element (logo / icon)
-          </label>
-          <div
-            className="border-2 border-dashed border-border p-10 rounded-xl text-center cursor-pointer hover:border-accent"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleAddOverlay(f);
-              }}
-            />
-            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Click to upload</p>
-          </div>
-        </div>
-
         {/* Design Canvas */}
         {/* Outer wrapper: handles sizing + checkerboard (visual only, not exported) */}
         <div
@@ -387,6 +364,30 @@ export default function ThumbnailCreator() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Upload Overlay */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase text-muted-foreground">
+            Add overlay element (logo / icon)
+          </label>
+          <div
+            className="border-2 border-dashed border-border p-10 rounded-xl text-center cursor-pointer hover:border-accent"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleAddOverlay(f);
+              }}
+            />
+            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Click to upload</p>
           </div>
         </div>
 
