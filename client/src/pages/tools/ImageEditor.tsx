@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Download, RotateCcw, X } from "lucide-react";
+import { Upload, Download, RotateCcw, ImageUp } from "lucide-react";
 
 const FILTERS = [
-  { id: "none",      label: "Original",   css: "",                                             fillWhite: false },
-  { id: "bw",        label: "B&W",        css: "grayscale(100%)",                              fillWhite: false },
-  { id: "vivid",     label: "Vivid",      css: "saturate(200%) contrast(110%)",                fillWhite: false },
-  { id: "warm",      label: "Warm",       css: "sepia(40%) saturate(150%)",                    fillWhite: false },
-  { id: "classic",   label: "Classic",    css: "sepia(20%) contrast(90%) brightness(95%)",     fillWhite: false },
-  { id: "cool",      label: "Cool",       css: "hue-rotate(20deg) saturate(120%)",             fillWhite: false },
-  { id: "fade",      label: "Fade",       css: "brightness(115%) contrast(75%) saturate(60%)", fillWhite: false },
-  { id: "fillwhite", label: "Fill White", css: "",                                             fillWhite: true  },
+  { id: "none",      label: "Original",   css: "",                                             fillColor: false },
+  { id: "bw",        label: "B&W",        css: "grayscale(100%)",                              fillColor: false },
+  { id: "vivid",     label: "Vivid",      css: "saturate(200%) contrast(110%)",                fillColor: false },
+  { id: "warm",      label: "Warm",       css: "sepia(40%) saturate(150%)",                    fillColor: false },
+  { id: "classic",   label: "Classic",    css: "sepia(20%) contrast(90%) brightness(95%)",     fillColor: false },
+  { id: "cool",      label: "Cool",       css: "hue-rotate(20deg) saturate(120%)",             fillColor: false },
+  { id: "fade",      label: "Fade",       css: "brightness(115%) contrast(75%) saturate(60%)", fillColor: false },
+  { id: "fillcolor", label: "Fill Color", css: "",                                             fillColor: true  },
 ] as const;
 
 type FilterId = (typeof FILTERS)[number]["id"];
@@ -32,16 +32,86 @@ export default function ImageEditor() {
   const [opacity, setOpacity]       = useState(100);
   const [brightness, setBrightness] = useState(100);
   const [filter, setFilter]         = useState<FilterId>("none");
+  const [pickedColor, setPickedColor] = useState("#ffffff");
   const [cropRect, setCropRect]     = useState<CropRect | null>(null);
   const [activeDrag, setActiveDrag] = useState<DragState | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef       = useRef<HTMLImageElement>(null);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
 
   const isPng        = imageFile?.type === "image/png";
   const activeFilter = FILTERS.find((f) => f.id === filter)!;
-  const cssFilter    = [activeFilter.css, brightness !== 100 ? `brightness(${brightness}%)` : ""]
-                         .filter(Boolean).join(" ") || undefined;
+
+  /* ── Canvas preview rendering ── */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const img    = imgRef.current;
+    if (!canvas || !img || !imageSrc) return;
+
+    const render = () => {
+      const w = img.clientWidth;
+      const h = img.clientHeight;
+      if (!w || !h) return;
+
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.clearRect(0, 0, w, h);
+      ctx.filter     = "none";
+      ctx.globalAlpha = 1;
+
+      const filterStr = [activeFilter.css, brightness !== 100 ? `brightness(${brightness}%)` : ""]
+        .filter(Boolean).join(" ");
+
+      if (activeFilter.fillColor) {
+        // Fill Color: set every visible pixel to the picked color, preserve alpha (color silhouette)
+        const r = parseInt(pickedColor.slice(1, 3), 16);
+        const g = parseInt(pickedColor.slice(3, 5), 16);
+        const b = parseInt(pickedColor.slice(5, 7), 16);
+        ctx.drawImage(img, 0, 0, w, h);
+        const imageData = ctx.getImageData(0, 0, w, h);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          if (imageData.data[i + 3] > 0) {
+            imageData.data[i]     = r;
+            imageData.data[i + 1] = g;
+            imageData.data[i + 2] = b;
+          }
+          imageData.data[i + 3] = Math.round(imageData.data[i + 3] * opacity / 100);
+        }
+        ctx.clearRect(0, 0, w, h);
+        ctx.putImageData(imageData, 0, 0);
+      } else if (isPng) {
+        // PNG with filter: draw twice — once filtered for colour, once clean for alpha
+        if (filterStr) ctx.filter = filterStr;
+        ctx.drawImage(img, 0, 0, w, h);
+        const filtered = ctx.getImageData(0, 0, w, h);
+
+        ctx.filter = "none";
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const original = ctx.getImageData(0, 0, w, h);
+
+        for (let i = 3; i < filtered.data.length; i += 4) {
+          filtered.data[i] = Math.round(original.data[i] * opacity / 100);
+        }
+        ctx.clearRect(0, 0, w, h);
+        ctx.putImageData(filtered, 0, 0);
+      } else {
+        // Non-PNG: straightforward draw (no transparency to preserve)
+        if (filterStr) ctx.filter = filterStr;
+        ctx.globalAlpha = opacity / 100;
+        ctx.drawImage(img, 0, 0, w, h);
+      }
+    };
+
+    if (img.complete && img.clientWidth > 0) {
+      render();
+    } else {
+      img.addEventListener("load", render, { once: true });
+      return () => img.removeEventListener("load", render);
+    }
+  }, [imageSrc, filter, brightness, opacity, activeFilter, isPng, pickedColor]);
 
   /* ── Window-level drag ── */
   useEffect(() => {
@@ -107,17 +177,56 @@ export default function ImageEditor() {
     const srcX = Math.round(cr.x * sx), srcY = Math.round(cr.y * sy);
     const srcW = Math.round(cr.w * sx), srcH = Math.round(cr.h * sy);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = srcW; canvas.height = srcH;
-    const ctx = canvas.getContext("2d")!;
-    if (activeFilter.fillWhite) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, srcW, srcH); }
-    const filterStr = [activeFilter.css, brightness !== 100 ? `brightness(${brightness}%)` : ""].filter(Boolean).join(" ");
-    if (filterStr) ctx.filter = filterStr;
-    ctx.globalAlpha = opacity / 100;
     const source = new Image();
     source.src = imageSrc;
     await new Promise<void>((r) => { source.onload = () => r(); });
-    ctx.drawImage(source, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+
+    const filterStr = [activeFilter.css, brightness !== 100 ? `brightness(${brightness}%)` : ""].filter(Boolean).join(" ");
+
+    const canvas = document.createElement("canvas");
+    canvas.width = srcW; canvas.height = srcH;
+    const ctx = canvas.getContext("2d")!;
+
+    if (isPng && !activeFilter.fillColor) {
+      // Apply filter for colour only, then restore the original alpha channel
+      // so transparent areas are never affected by filter bleeding.
+      if (filterStr) ctx.filter = filterStr;
+      ctx.drawImage(source, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+      const filtered = ctx.getImageData(0, 0, srcW, srcH);
+
+      const alphaCanvas = document.createElement("canvas");
+      alphaCanvas.width = srcW; alphaCanvas.height = srcH;
+      const alphaCtx = alphaCanvas.getContext("2d")!;
+      alphaCtx.drawImage(source, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+      const original = alphaCtx.getImageData(0, 0, srcW, srcH);
+
+      // Replace alpha with original alpha scaled by opacity; RGB stays filtered
+      for (let i = 3; i < filtered.data.length; i += 4) {
+        filtered.data[i] = Math.round(original.data[i] * opacity / 100);
+      }
+      ctx.putImageData(filtered, 0, 0);
+    } else if (activeFilter.fillColor) {
+      // Fill Color: set every visible pixel to the picked color, preserve alpha (color silhouette)
+      const r = parseInt(pickedColor.slice(1, 3), 16);
+      const g = parseInt(pickedColor.slice(3, 5), 16);
+      const b = parseInt(pickedColor.slice(5, 7), 16);
+      ctx.drawImage(source, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+      const imageData = ctx.getImageData(0, 0, srcW, srcH);
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        if (imageData.data[i + 3] > 0) {
+          imageData.data[i]     = r;
+          imageData.data[i + 1] = g;
+          imageData.data[i + 2] = b;
+        }
+        imageData.data[i + 3] = Math.round(imageData.data[i + 3] * opacity / 100);
+      }
+      ctx.putImageData(imageData, 0, 0);
+    } else {
+      if (filterStr) ctx.filter = filterStr;
+      ctx.globalAlpha = opacity / 100;
+      ctx.drawImage(source, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+    }
+
     const ext = isPng ? "png" : "jpeg";
     const a = document.createElement("a");
     a.download = `edited.${ext}`; a.href = canvas.toDataURL(isPng ? "image/png" : "image/jpeg", 0.95); a.click();
@@ -164,6 +273,18 @@ export default function ImageEditor() {
               </button>
             ))}
           </div>
+          {filter === "fillcolor" && (
+            <div className="flex items-center gap-3 pt-1">
+              <label className="text-xs font-bold uppercase text-muted-foreground">Color</label>
+              <input
+                type="color"
+                value={pickedColor}
+                onChange={(e) => setPickedColor(e.target.value)}
+                className="w-10 h-8 rounded cursor-pointer border border-border"
+              />
+              <span className="text-xs text-muted-foreground font-mono">{pickedColor}</span>
+            </div>
+          )}
         </div>
 
         {/* Action buttons — always visible */}
@@ -171,33 +292,30 @@ export default function ImageEditor() {
           <Button variant="outline" onClick={reset} className="h-12 px-4 rounded-xl" title="Reset all adjustments">
             <RotateCcw className="w-4 h-4" />
           </Button>
+          {imageSrc && (
+            <Button onClick={() => fileInputRef.current?.click()} className="flex-1 h-12 rounded-xl gap-2">
+              <ImageUp className="w-4 h-4" />
+              Upload New Image
+            </Button>
+          )}
           <Button onClick={download} disabled={!imageSrc} className="flex-1 h-12 rounded-xl font-bold gap-2">
             <Download className="w-4 h-4" />
             Download {isPng ? "PNG" : "Image"}
           </Button>
         </div>
 
+        {/* Hidden file input — always present so the Change button works */}
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
+
         {/* Image / Upload zone */}
         {imageSrc ? (
           <>
-            {/* Change image link */}
-            <div className="flex items-center justify-between -mb-2">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Preview</label>
-              <button
-                onClick={() => { setImageSrc(null); setImageFile(null); setCropRect(null); }}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-              >
-                <X className="w-3 h-3" /> Change image
-              </button>
-            </div>
-
             {/* Image canvas with always-on crop handles */}
             <div
               className="relative rounded-xl overflow-hidden border border-border select-none"
               style={{
-                background: activeFilter.fillWhite
-                  ? "#ffffff"
-                  : isPng
+                background: isPng
                   ? "repeating-conic-gradient(#aaa 0% 25%,#fff 0% 50%) 0 0/16px 16px"
                   : "#000",
               }}
@@ -208,9 +326,10 @@ export default function ImageEditor() {
                 alt="preview"
                 draggable={false}
                 className="w-full h-auto block"
-                style={{ filter: cssFilter, opacity: opacity / 100, userSelect: "none" }}
+                style={{ visibility: "hidden", userSelect: "none" }}
                 onLoad={onImageLoad}
               />
+              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
               {cr && (
                 <>
@@ -280,8 +399,6 @@ export default function ImageEditor() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith("image/")) handleUpload(f); }}
           >
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
             <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm font-semibold text-foreground">Click or drag to upload image</p>
             <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WEBP · PNG transparency preserved</p>

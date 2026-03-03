@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X, Maximize2 } from "lucide-react";
+import { Upload, X, Maximize2, Save, Trash2 } from "lucide-react";
 
 const PAGE_SIZES = {
   youtube: { label: "YouTube — Horizontal (16:9)", aspectRatio: "16 / 9", maxWidth: "100%" },
@@ -11,9 +12,22 @@ const PAGE_SIZES = {
 
 type PageSize = keyof typeof PAGE_SIZES;
 
+type TemplateData = {
+  slug: string;
+  name: string;
+  pageSize: PageSize;
+  mode: "gradient-split" | "normal-gradient";
+  split: number;
+  color1: string; opacity1: number; transparent1: boolean;
+  color2: string; opacity2: number; transparent2: boolean;
+  elements: any[];
+};
+
+const electronAPI = (window as any).electronAPI as any;
+
 export default function ThumbnailCreator() {
-  const [pageSize, setPageSize] = useState<PageSize>("youtube");
-  const [mode, setMode] = useState<"gradient-split" | "normal-gradient">("gradient-split");
+  const [pageSize, setPageSize] = useState<PageSize>("tiktok");
+  const [mode, setMode] = useState<"gradient-split" | "normal-gradient">("normal-gradient");
   const [split, setSplit] = useState(50);
   const [color1, setColor1] = useState("#00ff88");
   const [opacity1, setOpacity1] = useState(100);
@@ -22,6 +36,120 @@ export default function ThumbnailCreator() {
   const [opacity2, setOpacity2] = useState(100);
   const [transparent2, setTransparent2] = useState(false);
   const [elements, setElements] = useState<any[]>([]);
+
+  // Template state
+  const [prebuiltTemplates, setPrebuiltTemplates] = useState<TemplateData[]>([]);
+  const [userTemplates, setUserTemplates]         = useState<TemplateData[]>([]);
+  const [selectedTemplate, setSelectedTemplate]   = useState("");
+  const [savingTemplate, setSavingTemplate]       = useState(false);
+  const [templateName, setTemplateName]           = useState("");
+
+  // Load templates on mount
+  useEffect(() => {
+    // Load prebuilt via Electron IPC (auto-discovers all subfolders in client/public/templates/)
+    if (electronAPI?.templates) {
+      electronAPI.templates.listPrebuilt()
+        .then(async (list: { slug: string; name: string }[]) => {
+          const loaded = await Promise.all(
+            list.map(({ slug, name }) =>
+              fetch(`/templates/${slug}/template.json`)
+                .then(r => r.json())
+                .then(data => ({ ...data, slug, name } as TemplateData))
+                .catch(() => null)
+            )
+          );
+          setPrebuiltTemplates(loaded.filter(Boolean) as TemplateData[]);
+        })
+        .catch(() => {});
+
+      electronAPI.templates.listUser()
+        .then((list: TemplateData[]) => setUserTemplates(list))
+        .catch(() => {});
+    }
+  }, []);
+
+  // Convert a blob URL to base64 data URL
+  const blobToBase64 = async (src: string): Promise<string> => {
+    if (src.startsWith("data:")) return src;
+    const blob = await fetch(src).then(r => r.blob());
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Apply a loaded template object to state
+  const applyTemplate = (t: TemplateData) => {
+    setPageSize(t.pageSize);
+    setMode(t.mode);
+    setSplit(t.split);
+    setColor1(t.color1);     setOpacity1(t.opacity1);     setTransparent1(t.transparent1);
+    setColor2(t.color2);     setOpacity2(t.opacity2);     setTransparent2(t.transparent2);
+    setElements(t.elements.map(el => ({ ...el, id: Date.now() + Math.random() })));
+  };
+
+  // Load and apply selected template
+  const handleLoadTemplate = async (value: string) => {
+    setSelectedTemplate(value);
+    if (!value) return;
+    const [source, slug] = value.split(":");
+    try {
+      if (source === "prebuilt") {
+        const data = await fetch(`/templates/${slug}/template.json`).then(r => r.json());
+        const elements = (data.elements || []).map((el: any) =>
+          el.file ? { ...el, src: `/templates/${slug}/${el.file}`, file: undefined } : el
+        );
+        applyTemplate({ ...data, slug, elements });
+      } else if (source === "user" && electronAPI?.templates) {
+        const data: TemplateData = await electronAPI.templates.get(slug);
+        applyTemplate(data);
+      }
+    } catch (e) {
+      console.error("Failed to load template", e);
+    }
+  };
+
+  // Save current canvas state as a user template
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) return;
+    if (!electronAPI?.templates) {
+      alert("Template saving is only available in the desktop app.");
+      setSavingTemplate(false);
+      return;
+    }
+    const template = {
+      pageSize, mode, split,
+      color1, opacity1, transparent1,
+      color2, opacity2, transparent2,
+      elements: await Promise.all(
+        elements.map(async el => ({
+          ...el,
+          src: el.src ? await blobToBase64(el.src) : undefined,
+        }))
+      ),
+    };
+    try {
+      await electronAPI.templates.save(templateName.trim(), template);
+      const list: TemplateData[] = await electronAPI.templates.listUser();
+      setUserTemplates(list);
+      setTemplateName("");
+      setSavingTemplate(false);
+    } catch (e) {
+      console.error("Failed to save template", e);
+    }
+  };
+
+  // Delete a user template
+  const handleDeleteTemplate = async (slug: string) => {
+    try {
+      await electronAPI.templates.delete(slug);
+      setUserTemplates(prev => prev.filter(t => t.slug !== slug));
+      if (selectedTemplate === `user:${slug}`) setSelectedTemplate("");
+    } catch (e) {
+      console.error("Failed to delete template", e);
+    }
+  };
 
   const toRgba = (hex: string, opacity: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -43,6 +171,7 @@ export default function ThumbnailCreator() {
         y: 100,
         w: 120,
         h: 120,
+        opacity: 100,
         src: url,
       },
     ]);
@@ -149,7 +278,12 @@ export default function ThumbnailCreator() {
     for (const el of elements) {
       await new Promise<void>((resolve) => {
         const img = new Image();
-        img.onload = () => { ctx.drawImage(img, el.x * sx, el.y * sy, el.w * sx, el.h * sy); resolve(); };
+        img.onload = () => {
+          ctx.globalAlpha = (el.opacity ?? 100) / 100;
+          ctx.drawImage(img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
+          ctx.globalAlpha = 1;
+          resolve();
+        };
         img.onerror = () => resolve();
         img.src = el.src;
       });
@@ -164,6 +298,50 @@ export default function ThumbnailCreator() {
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-8">
+        {/* Templates */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase text-muted-foreground">Templates</label>
+
+          {/* Template dropdown */}
+          <Select value={selectedTemplate} onValueChange={handleLoadTemplate}>
+            <SelectTrigger className="rounded-xl">
+              <SelectValue placeholder="Load a template…" />
+            </SelectTrigger>
+            <SelectContent>
+              {prebuiltTemplates.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Prebuilt</SelectLabel>
+                  {prebuiltTemplates.map(t => (
+                    <SelectItem key={t.slug} value={`prebuilt:${t.slug}`}>{t.name}</SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              {userTemplates.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>My Templates</SelectLabel>
+                  {userTemplates.map(t => (
+                    <SelectItem key={t.slug} value={`user:${t.slug}`}>
+                      <span className="flex items-center justify-between w-full gap-4">
+                        <span>{t.name}</span>
+                        <button
+                          className="text-muted-foreground hover:text-red-500 transition-colors"
+                          onClick={e => { e.stopPropagation(); handleDeleteTemplate(t.slug); }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              {prebuiltTemplates.length === 0 && userTemplates.length === 0 && (
+                <SelectItem value="__empty" disabled>No templates yet</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+
+        </div>
+
         {/* Page Size */}
         <div className="space-y-1">
           <label className="text-xs font-bold uppercase text-muted-foreground">
@@ -234,6 +412,27 @@ export default function ThumbnailCreator() {
               disabled={transparent1}
               className="w-full h-12 rounded-md border border-border cursor-pointer disabled:opacity-30"
             />
+            <input
+              type="text"
+              value={color1}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor1(v);
+                else if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColor1(v as any);
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData("text").trim();
+                const hex = pasted.startsWith("#") ? pasted : `#${pasted}`;
+                if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+                  e.preventDefault();
+                  setColor1(hex);
+                }
+              }}
+              disabled={transparent1}
+              placeholder="#000000"
+              maxLength={7}
+              className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm font-mono disabled:opacity-30 focus:outline-none focus:ring-1 focus:ring-accent"
+            />
             <div className="flex items-center gap-2">
               <input
                 id="transparent1"
@@ -274,6 +473,27 @@ export default function ThumbnailCreator() {
               onChange={(e) => setColor2(e.target.value)}
               disabled={transparent2}
               className="w-full h-12 rounded-md border border-border cursor-pointer disabled:opacity-30"
+            />
+            <input
+              type="text"
+              value={color2}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor2(v);
+                else if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColor2(v as any);
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData("text").trim();
+                const hex = pasted.startsWith("#") ? pasted : `#${pasted}`;
+                if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+                  e.preventDefault();
+                  setColor2(hex);
+                }
+              }}
+              disabled={transparent2}
+              placeholder="#000000"
+              maxLength={7}
+              className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm font-mono disabled:opacity-30 focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <div className="flex items-center gap-2">
               <input
@@ -346,12 +566,34 @@ export default function ThumbnailCreator() {
                 }}
                 onMouseDown={(e) => startDrag(el.id, e)}
               >
+                {/* Opacity slider — visible on hover, sits above the element */}
+                <div
+                  className="absolute -top-7 left-0 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="range" min={0} max={100} value={el.opacity ?? 100}
+                    onChange={(e) =>
+                      setElements((prev) =>
+                        prev.map((item) =>
+                          item.id === el.id ? { ...item, opacity: Number(e.target.value) } : item
+                        )
+                      )
+                    }
+                    className="w-full h-1 accent-white cursor-pointer"
+                    style={{ accentColor: "white" }}
+                  />
+                  <span className="text-white text-[9px] font-bold leading-none w-7 shrink-0 drop-shadow">
+                    {el.opacity ?? 100}%
+                  </span>
+                </div>
                 <img
                   src={el.src}
                   className="w-full h-full object-contain pointer-events-none"
+                  style={{ opacity: (el.opacity ?? 100) / 100 }}
                 />
                 <div
-                  className="absolute -bottom-3 -right-3 w-6 h-6 flex items-center justify-center bg-white border border-border rounded-full cursor-se-resize shadow-md hover:bg-gray-100"
+                  className="absolute -bottom-3 -right-3 w-6 h-6 flex items-center justify-center bg-white border border-border rounded-full cursor-se-resize shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
                   onMouseDown={(e) => startResize(el.id, e)}
                 >
                   <Maximize2 className="w-3 h-3 text-gray-600 rotate-90" />
@@ -400,6 +642,30 @@ export default function ThumbnailCreator() {
         >
           Export PNG
         </Button>
+
+        {/* Save template */}
+        {savingTemplate ? (
+          <div className="flex gap-2">
+            <Input
+              autoFocus
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSaveTemplate(); if (e.key === "Escape") setSavingTemplate(false); }}
+              placeholder="Template name…"
+              className="h-9 rounded-xl text-sm"
+            />
+            <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim()} className="rounded-xl">Save</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setSavingTemplate(false); setTemplateName(""); }} className="rounded-xl">Cancel</Button>
+          </div>
+        ) : (
+          <Button
+            className="w-full h-12 rounded-xl font-bold gap-2"
+            onClick={() => setSavingTemplate(true)}
+          >
+            <Save className="w-4 h-4" />
+            Save Current as Template
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

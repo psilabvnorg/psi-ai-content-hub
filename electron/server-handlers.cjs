@@ -15,6 +15,22 @@ const execAsync = promisify(exec);
 // Temp directory for downloads
 const TEMP_DIR = path.join(os.tmpdir(), 'psi_ai_content_hub');
 
+// User templates directory (persists in APPDATA)
+const USER_TEMPLATES_DIR = path.join(
+  process.env.APPDATA || path.join(os.homedir(), '.config'),
+  'psi-ai-content-hub', 'templates', 'user'
+);
+if (!fs.existsSync(USER_TEMPLATES_DIR)) {
+  fs.mkdirSync(USER_TEMPLATES_DIR, { recursive: true });
+}
+
+// Prebuilt templates directory (shipped with the app in client/public/templates/)
+const PREBUILT_TEMPLATES_DIR = (() => {
+  const devPath = path.join(__dirname, '..', 'client', 'public', 'templates');
+  const prodPath = path.join(__dirname, '..', 'dist', 'public', 'templates');
+  return fs.existsSync(devPath) ? devPath : prodPath;
+})();
+
 // Ensure temp directory exists
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -255,6 +271,109 @@ const handlers = {
       filePath: outputFile,
       filename: path.basename(outputFile),
     };
+  },
+
+  // ---------- Thumbnail Templates ----------
+
+  // List all prebuilt templates (auto-discovers subfolders in client/public/templates/)
+  'template:list-prebuilt': async () => {
+    if (!fs.existsSync(PREBUILT_TEMPLATES_DIR)) return [];
+    const entries = fs.readdirSync(PREBUILT_TEMPLATES_DIR, { withFileTypes: true });
+    const templates = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const jsonPath = path.join(PREBUILT_TEMPLATES_DIR, entry.name, 'template.json');
+      if (!fs.existsSync(jsonPath)) continue;
+      try {
+        const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        templates.push({ slug: entry.name, name: data.name || entry.name });
+      } catch (e) {}
+    }
+    return templates;
+  },
+
+  // List all user-saved templates (metadata only, no images)
+  'template:list-user': async () => {
+    if (!fs.existsSync(USER_TEMPLATES_DIR)) return [];
+    const entries = fs.readdirSync(USER_TEMPLATES_DIR, { withFileTypes: true });
+    const templates = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const jsonPath = path.join(USER_TEMPLATES_DIR, entry.name, 'template.json');
+      if (!fs.existsSync(jsonPath)) continue;
+      try {
+        const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        templates.push({ slug: entry.name, ...data, elements: [] }); // strip images from list
+      } catch (e) {}
+    }
+    return templates;
+  },
+
+  // Save current canvas state as a named template
+  'template:save': async ({ name, template }) => {
+    if (!name || !template) throw new Error('name and template are required');
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+    const elementsDir = path.join(templateDir, 'elements');
+    fs.mkdirSync(templateDir, { recursive: true });
+    fs.mkdirSync(elementsDir, { recursive: true });
+
+    // Save element images; replace base64 src with file reference
+    const savedElements = [];
+    for (let i = 0; i < (template.elements || []).length; i++) {
+      const { src, ...rest } = template.elements[i];
+      if (src && src.startsWith('data:')) {
+        const match = src.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          const ext = match[1].split('/')[1] || 'png';
+          const filename = `el_${i}.${ext}`;
+          fs.writeFileSync(path.join(elementsDir, filename), Buffer.from(match[2], 'base64'));
+          savedElements.push({ ...rest, file: `elements/${filename}` });
+        }
+      } else {
+        savedElements.push(rest);
+      }
+    }
+
+    fs.writeFileSync(
+      path.join(templateDir, 'template.json'),
+      JSON.stringify({ name, ...template, elements: savedElements }, null, 2)
+    );
+    return { success: true, slug };
+  },
+
+  // Get full template with element images as base64 data URLs
+  'template:get': async ({ slug }) => {
+    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+    const jsonPath = path.join(templateDir, 'template.json');
+    if (!fs.existsSync(jsonPath)) throw new Error('Template not found');
+    const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+    const elements = [];
+    for (const el of (data.elements || [])) {
+      if (el.file) {
+        const imgPath = path.join(templateDir, el.file);
+        if (fs.existsSync(imgPath)) {
+          const ext = path.extname(imgPath).slice(1);
+          const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
+          const b64 = fs.readFileSync(imgPath).toString('base64');
+          const { file, ...rest } = el;
+          elements.push({ ...rest, src: `data:${mime};base64,${b64}` });
+        }
+      } else {
+        elements.push(el);
+      }
+    }
+    return { ...data, elements };
+  },
+
+  // Delete a user template
+  'template:delete': async ({ slug }) => {
+    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+    if (fs.existsSync(templateDir)) {
+      fs.rmSync(templateDir, { recursive: true, force: true });
+    }
+    return { success: true };
   },
 
   // Check yt-dlp status

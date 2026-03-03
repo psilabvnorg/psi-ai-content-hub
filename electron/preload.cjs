@@ -43,6 +43,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ttsFastStartServer: () => ipcRenderer.invoke('tts-fast:start-server'),
   ttsFastStopServer: () => ipcRenderer.invoke('tts-fast:stop-server'),
 
+  // Thumbnail templates
+  templates: {
+    listPrebuilt: ()           => ipcRenderer.invoke('server:send', 'template:list-prebuilt', {}),
+    listUser:     ()           => ipcRenderer.invoke('server:send', 'template:list-user', {}),
+    save:         (name, tmpl) => ipcRenderer.invoke('server:send', 'template:save',      { name, template: tmpl }),
+    get:          (slug)       => ipcRenderer.invoke('server:send', 'template:get',       { slug }),
+    delete:       (slug)       => ipcRenderer.invoke('server:send', 'template:delete',    { slug }),
+  },
+
   services: {
     list: () => ipcRenderer.invoke('services:list'),
     start: (serviceId) => ipcRenderer.invoke('services:start', serviceId),
