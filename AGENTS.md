@@ -1,154 +1,115 @@
-# PSI AI CONTENT HUB Desktop - Claude Code Instructions
+# PSI AI CONTENT HUB - Claude Code Instructions
 
 ## Project Overview
 
-**PSI AI CONTENT HUB Desktop** (@comfyorg/PSI AI CONTENT HUB-electron) is an Electron-based desktop application that packages PSI AI CONTENT HUB with a user-friendly interface. It's "the best modular GUI to run AI diffusion models" and automatically handles Python environment setup, dependency management, and provides a seamless desktop experience for running AI models.
+**PSI AI CONTENT HUB** (`psi-ai-content-hub`) is an Electron-based desktop application for video/audio downloading, media processing, and AI-powered content tools. It bundles a React frontend with a Python FastAPI backend.
 
-- **Homepage**: https://comfy.org
+## Architecture
+
+```
+psi-ai-content-hub/
+├── client/               # React frontend (Vite root)
+│   └── src/
+│       ├── pages/tools/  # Feature pages (one per tool)
+│       ├── components/   # Shared UI components (shadcn/ui)
+│       ├── hooks/        # Custom React hooks
+│       └── context/      # React context providers
+├── python_api/
+│   └── app-6901/         # FastAPI backend (port 6901)
+│       └── app/
+│           ├── routers/  # API route handlers
+│           └── services/ # Business logic
+├── electron/             # Electron main/preload scripts (CJS)
+├── shared/               # Shared TypeScript types/schema
+├── script/               # Build scripts
+└── remotion/             # Remotion video rendering (if used)
+```
 
 ## Key Technologies
 
-- **Electron**: Desktop app framework
-- **TypeScript**: Primary language
-- **Vite**: Build tool and bundler
-- **Node.js**: Runtime (use nvm)
-- **Yarn**: Package manager
-- **Vitest**: Unit testing
-- **Playwright**: E2E testing
-- **ESLint**: Linting
-- **Prettier**: Formatting
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui (Radix UI), wouter, TanStack Query
+- **Backend**: Python 3.10, FastAPI, uvicorn (port 6901)
+- **Desktop**: Electron 28, electron-builder
+- **Database**: PostgreSQL + Drizzle ORM (optional features)
+- **Testing**: Vitest (unit)
+- **Package manager**: npm
+
+## Available Tools / Pages
+
+Audio: AudioConverter, AudioExtractor, AudioTrimmer, SpeedAdjuster
+Video: VideoDownloader (yt-dlp), VideoTrimmer, TextToVideo, ReupYoutube, MergeOverlay
+Image: BackgroundRemoval, ImageFinder, ImageUpscaler, ColorPicker, LogoGeneratorPrompt, ThumbnailCreator
+AI/Speech: TTSFast (edge-tts), VoiceClone, VoiceCloneCustom, SpeechToText, Translator, LLM, TextGenerator
+Other: NewsScraper, BackendConsole
 
 ## Development Commands
 
-### Code Quality (ALWAYS RUN AFTER CHANGES)
+### Frontend
 
 ```bash
-yarn lint              # Check & auto-fix ESLint issues
-yarn format            # Auto-format code
-yarn typecheck         # TypeScript type checking (all)
+npm run dev                # Vite dev server on port 5000
+npm run electron:dev       # Full Electron dev (frontend + Electron, concurrently)
+npm run build              # Production build (tsx script/build.ts)
+npm run electron:build     # Build Electron distributable
+npm run electron:pack      # Pack Electron (no installer)
 ```
 
-### Development
+### Code Quality (run after changes)
 
 ```bash
-yarn start             # Build and launch app with file watching
-yarn make:assets       # Download PSI AI CONTENT HUB dependencies
-yarn clean             # Remove build artifacts
+npm run check              # tsc + naming convention check
+npm run check:naming       # Naming convention check only (axxx_bbb_ccc_dd format)
+npm run test:unit          # Vitest unit tests
 ```
 
-### Testing
+### Database
 
 ```bash
-yarn test:unit         # Run unit tests (Vitest)
-yarn test:e2e          # Run E2E tests (Playwright)
-yarn test:e2e:update   # Update Playwright snapshots
+npm run db:push            # Push Drizzle schema to PostgreSQL (requires DATABASE_URL)
 ```
 
-### Building
+## Python Backend Setup
+
+**Requires Python 3.10** — use a venv from the repo root.
 
 ```bash
-yarn make              # Build platform package
-yarn make:nvidia       # Build with NVIDIA GPU support
-yarn vite:compile      # Compile with Vite
+# Create and activate venv
+python -m venv venv
+venv\Scripts\activate          # Windows
+
+# Install dependencies
+pip install -r python_api\app-6901\requirements.txt
+
+# Run the API (port 6901)
+python -m python_api.app-6901.app.main
 ```
 
-### Troubleshooting
+Key Python dependencies: `fastapi`, `uvicorn`, `yt-dlp`, `openai-whisper`, `torch`, `transformers`, `edge-tts`, `selenium`, `beautifulsoup4`, `opencv-python`
 
-- If you encounter errors regarding `NODE_MODULE_VERSION`, try running `npx electron-rebuild` before other troubleshooting steps.
-  - If that still fails, try `yarn rebuild`
+## Storage Paths (Windows)
 
-## Custom testing
+- **Models**: `%APPDATA%\psi-ai-content-hub\models`
+- **Logs**: `%APPDATA%\psi-ai-content-hub`
+- **Temp media output**: `%LOCALAPPDATA%\Temp\psi_ai_content_hub\`
+- **Tools/model download links**: `python_api/app-6901/app/services/tools_manager.py`
 
-We have testing configured with Vitest. Use vitest to create any tests you need. Do not attempt to custom code your own testing infrastructure, as that is pointless and will do nothing but derail you.
+## Path Aliases
 
-## Project Structure
-
-### Source Code (`/src/`)
-
-- **`main.ts`**: Main Electron process entry point
-- **`desktopApp.ts`**: Core application logic
-- **`preload.ts`**: Electron preload script
-- **`main-process/`**: Main process modules
-  - `comfyDesktopApp.ts` - PSI AI CONTENT HUB server management
-  - `appWindow.ts` - Window management
-  - `comfyServer.ts` - Server lifecycle
-- **`install/`**: Installation & setup logic
-- **`handlers/`**: IPC message handlers
-- **`services/`**: Core services (telemetry, Sentry)
-- **`config/`**: Configuration management
-- **`store/`**: Persistent storage
-- **`utils.ts`**: Utility functions
-
-### Tests (`/tests/`)
-
-- **`unit/`**: Vitest-based component tests
-- **`integration/`**: Playwright E2E tests
-  - `install/` - Fresh installation testing
-  - `post-install/` - Tests after app setup
-  - `shared/` - Common test functionality
-
-## Development Setup
-
-- **Python 3.12+** with virtual environment support required
-- **Node.js v20.x** (use nvm for version management)
-- **Visual Studio 2019+** with C++ workload (Windows)
-- **Spectre-mitigated libraries** for node-gyp compilation
-
-## Important Files & Configuration
-
-- **`package.json`**: Defines PSI AI CONTENT HUB versions and dependencies
-- **`assets/requirements/`**: Pre-compiled Python requirements by platform
-- **`todesktop.json`**: Cloud build and distribution config
-- **`builder-debug.config.ts`**: Local development build settings
-- **Multi-config Vite setup** with separate configs for main, preload, and types
-
-## Bundled Components
-
-The app packages these components:
-
-- **PSI AI CONTENT HUB**: AI diffusion model GUI
-- **PSI AI CONTENT HUB_frontend**: Modern web frontend
-- **PSI AI CONTENT HUB-Manager**: Plugin/extension manager
-- **uv**: Fast Python package manager
-
-## Development Environment Variables
-
-- **`--dev-mode`**: Flag for packaged apps in development
-- **`COMFY_HOST`/`COMFY_PORT`**: External server for development
-- **`VUE_DEVTOOLS_PATH`**: Frontend debugging support
-
-## Platform-Specific Paths
-
-- **Windows**: `%APPDATA%\PSI AI CONTENT HUB` (config), `%LOCALAPPDATA%\Programs\PSI AI CONTENT HUB` (app)
-- **macOS**: `~/Library/Application Support/PSI AI CONTENT HUB`
-- **Linux**: `~/.config/PSI AI CONTENT HUB`
+| Alias | Resolves to |
+|-------|-------------|
+| `@/*` | `client/src/*` |
+| `@shared/*` | `shared/*` |
 
 ## Code Style & Conventions
 
-- Follow existing TypeScript patterns in the codebase
-- Use ESLint and Prettier for code formatting
-- Maintain clean separation between main process, renderer, and preload scripts
-- Follow Electron security best practices
-- Use the existing store patterns for configuration management
-- Test changes with both unit tests (Vitest) and E2E tests (Playwright)
-- Use JSDoc format to write documentation for methods
-  - Common tags are `@param`, and `@return` (do not use for `void` return type)
-  - Use `{@link }` to reference symbols
+- Follow existing TypeScript patterns; `strict: true` is enforced
+- Do not use `any` — use `unknown` when the type is truly unknown
+- File naming uses `axxx_bbb_ccc_dd` naming convention (enforced by `check:naming` script)
+- Use shadcn/ui components (`client/src/components/ui/`) for all new UI
 
-### Type constraints
+## Important Notes
 
-This project must maintain exceptionally high type standards. The `any` type must not be used. `unknown` can be used when the type is unknown.
-
-- `unknown` means "I do not know what the type is".
-- `any` means "I do not **care** what the type is".
-
-## Before Committing
-
-1. Use `yarn format` to ensure consistent formatting
-1. Run `yarn lint` and `yarn typecheck` to check code quality
-1. Run `yarn test:unit` to ensure unit tests pass
-1. Consider running `yarn test:e2e` for UI changes
-
-This is a sophisticated Electron application with comprehensive testing, automated CI/CD, cross-platform support, and professional development practices.
----
-psi-ai-content-hub\python_api\app-6901\test-script: this is unit test folder, skip it in context for most of the time, if needed I will ask you to edit
+- `python_api/app-6901/test-script/` is a unit test folder — skip it in context unless explicitly asked about it
+- The Electron entry point is `electron/main.cjs`
+- Frontend talks to the Python API at `http://127.0.0.1:6901`
+- `shared/schema.ts` defines the Drizzle/PostgreSQL schema

@@ -1,39 +1,102 @@
-Model download :
-C:\Users\ADMIN\AppData\Roaming\psi-ai-content-hub\models
+# PSI AI CONTENT HUB
 
-temp video media output:
-C:\Users\ADMIN\AppData\Local\Temp\psi_ai_content_hub\
--------
-front end
+A desktop application for video/audio downloading, media processing, and AI-powered content tools. Built with Electron, React, and a Python FastAPI backend.
 
-npm run electron:dev
+## Features
+
+| Category | Tools |
+|----------|-------|
+| **Video** | Downloader (yt-dlp), Trimmer, Text-to-Video, Reup YouTube, Merge Overlay |
+| **Audio** | Converter, Extractor, Trimmer, Speed Adjuster |
+| **Image** | Background Removal, Upscaler, Finder, Color Picker, Logo Generator, Thumbnail Creator |
+| **AI / Speech** | TTS (edge-tts), Voice Clone, Speech-to-Text, Translator, LLM, Text Generator |
+| **Other** | News Scraper, Backend Console |
+
+## Tech Stack
+
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, wouter, TanStack Query
+- **Backend**: Python 3.10, FastAPI, uvicorn
+- **Desktop**: Electron 28, electron-builder
+- **Database**: PostgreSQL + Drizzle ORM (optional)
+
+## Getting Started
+
+### Frontend
+
+```bash
+npm install
+
+# Web dev server (port 5000)
 npm run dev
 
-----
-back end (Python 3.10, debug dev mode)
+# Full Electron dev (frontend + Electron together)
+npm run electron:dev
+```
 
-Create venv with Python 3.10 (from repo root):
+### Backend (Python 3.10)
 
-# Remove old venv if present
-Remove-Item -Recurse -Force .venv
+The backend consists of up to 3 services. For most tools, only `app-6901` is needed.
 
-# Create venv with Python 3.10 (ensure py -3.10 or python3.10 is on PATH)
+**app-6901** (port 6901) — main merged API:
+
+```bash
+cd python_api/app-6901
 python -m venv venv
-
-# Activate and install
 venv\Scripts\activate
-pip install -r python_api\requirements.txt
-pip install -e python_api\VieNeu-TTS
+pip install -r requirements.txt
+python -m app.main
+```
 
-# Run API
-python -m python_api.main
+**F5-TTS** (port 6902) — runs in its own isolated venv:
 
-Use the venv's pip and python so neucodec and other deps are in the same env.
----
+```bash
+cd python_api/F5-TTS
+# follow its own setup instructions
+python -m app.main
+```
 
-storage location config in python_api\settings.py
-temp media file: C:\Users\ADMIN\AppData\Local\Temp\psi_ai_content_hub
-logs, model: C:\Users\ADMIN\AppData\Roaming\psi-ai-content-hub
---
+**VieNeu-TTS** (port 6903):
 
-download link for tools/models dependency in python_api\services\tools_manager.py
+```bash
+cd python_api/VieNeu-TTS
+python -m app.main
+```
+
+> Use each service's own venv so model dependencies stay isolated.
+
+## Building
+
+```bash
+npm run build              # Production frontend build
+npm run electron:build     # Build Electron installer (output: release/)
+npm run electron:pack      # Pack without creating installer
+```
+
+## API Endpoints (port 6901)
+
+| Prefix | Description |
+|--------|-------------|
+| `/whisper/api/v1` | Speech-to-text |
+| `/bg-remove-overlay/api/v1` | Background / overlay removal |
+| `/translation/api/v1` | Translation |
+| `/image-search/api/v1` | Image search / finder |
+
+All routes are versioned under `/api/v1`.
+
+## Storage Paths (Windows)
+
+| Purpose | Path |
+|---------|------|
+| Models | `%APPDATA%\psi-ai-content-hub\models` |
+| Logs | `%APPDATA%\psi-ai-content-hub` |
+| Temp media | `%LOCALAPPDATA%\Temp\psi_ai_content_hub\` |
+
+Tool/model download links are managed in `python_api/app-6901/app/services/tools_manager.py`.
+
+## Code Quality
+
+```bash
+npm run check              # TypeScript check + naming convention lint
+npm run test:unit          # Vitest unit tests
+npm run db:push            # Push DB schema (requires DATABASE_URL)
+```
