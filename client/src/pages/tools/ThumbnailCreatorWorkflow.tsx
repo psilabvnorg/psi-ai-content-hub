@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, Download, CheckCircle2, AlertCircle, Loader2, FileJson } from "lucide-react";
 import { renderThumbnail } from "@/lib/thumbnail_renderer";
 import type { TemplateData, PlaceholderElement } from "./ThumbnailCreator";
 
@@ -25,6 +24,14 @@ const a_normalize_template_element_list_data = (a_element_list_data: TemplateDat
     return a_normalize_placeholder_settings_data(a_element_data as PlaceholderElement);
   });
 
+const parseConfigJson = (config: Record<string, Record<string, string>>) => {
+  const keys = Object.keys(config);
+  if (keys.length === 0) return { rows: [], headers: ["name"] };
+  const placeholderKeys = Array.from(new Set(keys.flatMap(k => Object.keys(config[k]))));
+  const rows = keys.map(key => ({ name: key, ...config[key] }));
+  return { rows, headers: ["name", ...placeholderKeys] };
+};
+
 // ─── component ────────────────────────────────────────────────────────────────
 
 type Row = Record<string, string>;
@@ -42,16 +49,17 @@ export default function ThumbnailCreatorWorkflow() {
   const [selectedTemplateKey, setSelectedTemplateKey] = useState("");
   const [template, setTemplate] = useState<TemplateData | null>(null);
 
-  // Excel
-  const [excelRows, setExcelRows]     = useState<Row[]>([]);
-  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
-  const excelInputRef = useRef<HTMLInputElement>(null);
+  // JSON file rows
+  const [configRows, setConfigRows]       = useState<Row[]>([]);
+  const [configHeaders, setConfigHeaders] = useState<string[]>([]);
+  const [configFileName, setConfigFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Generation
-  const [generating, setGenerating]   = useState(false);
-  const [progress, setProgress]       = useState(0);
-  const [generated, setGenerated]     = useState<GeneratedItem[]>([]);
-  const [error, setError]             = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress]     = useState(0);
+  const [generated, setGenerated]   = useState<GeneratedItem[]>([]);
+  const [error, setError]           = useState("");
 
   // Load templates on mount
   useEffect(() => {
@@ -86,7 +94,6 @@ export default function ThumbnailCreatorWorkflow() {
     try {
       if (source === "prebuilt") {
         const data = await fetch(`/templates/${encodeURIComponent(name)}/template.json`).then(r => r.json());
-        // resolve file refs for image elements
         const elements = (data.elements || []).map((el: any) =>
           el.type === "placeholder"
             ? a_normalize_placeholder_settings_data(el as PlaceholderElement)
@@ -102,66 +109,60 @@ export default function ThumbnailCreatorWorkflow() {
     }
   };
 
-  // Parse Excel
-  const handleExcelFile = (file: File) => {
+  // Parse uploaded JSON file
+  const handleJsonFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const wb = XLSX.read(e.target!.result, { type: "binary" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: Row[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-        if (rows.length === 0) { setError("Excel file has no data rows."); return; }
-        setExcelHeaders(Object.keys(rows[0]));
-        setExcelRows(rows);
+        const config = JSON.parse(e.target!.result as string) as Record<string, Record<string, string>>;
+        const { rows, headers } = parseConfigJson(config);
+        if (rows.length === 0) { setError("JSON file has no entries."); return; }
+        setConfigRows(rows);
+        setConfigHeaders(headers);
+        setConfigFileName(file.name);
         setGenerated([]);
         setError("");
       } catch {
-        setError("Failed to parse Excel file.");
+        setError("Failed to parse JSON file. Make sure it matches the expected format.");
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
   };
 
   // Placeholders in selected template
   const placeholders = (template?.elements ?? []).filter(el => el.type === "placeholder") as PlaceholderElement[];
   const a_normalized_placeholder_list_data = placeholders.map(a_normalize_placeholder_settings_data);
   const a_placeholder_type_lookup_map_data = new Map(
-    a_normalized_placeholder_list_data.map((a_placeholder_data) => [a_placeholder_data.name, a_placeholder_data.placeholderType])
+    a_normalized_placeholder_list_data.map((ph) => [ph.name, ph.placeholderType])
   );
 
-  // First column is the label/filename — skip it for placeholder matching
-  const labelColumn = excelHeaders[0] ?? "";
-  const dataHeaders = excelHeaders.slice(1);
-
-  const matchedKeys = dataHeaders.filter(h => a_normalized_placeholder_list_data.some(ph => ph.name === h));
-  const unmatchedKeys = dataHeaders.filter(h => !a_normalized_placeholder_list_data.some(ph => ph.name === h));
+  const dataHeaders = configHeaders.slice(1); // skip "name" label column
   const missingKeys = a_normalized_placeholder_list_data.map(ph => ph.name).filter(n => !dataHeaders.includes(n));
 
   // Generate all thumbnails
   const handleGenerate = async () => {
-    if (!template || excelRows.length === 0) return;
+    if (!template || configRows.length === 0) return;
     setGenerating(true);
     setProgress(0);
     setGenerated([]);
     setError("");
 
     const results: GeneratedItem[] = [];
-    for (let i = 0; i < excelRows.length; i++) {
-      const row = excelRows[i];
+    for (let i = 0; i < configRows.length; i++) {
+      const row = configRows[i];
       const placeholderMap: Record<string, string> = {};
       for (const ph of a_normalized_placeholder_list_data) {
-        if (row[ph.name]) placeholderMap[ph.name] = row[ph.name] as string;
+        if (row[ph.name]) placeholderMap[ph.name] = row[ph.name];
       }
       try {
         const dataUrl = await renderThumbnail(template, placeholderMap);
-        // label: value of first column (video name), fallback to row index
-        const label = (labelColumn && row[labelColumn]) ? String(row[labelColumn]) : `row_${i + 1}`;
+        const label = row["name"] || `row_${i + 1}`;
         results.push({ rowIndex: i, label, dataUrl });
       } catch (err) {
         console.error(`Row ${i + 1} render failed`, err);
         results.push({ rowIndex: i, label: `row_${i + 1}_error`, dataUrl: "" });
       }
-      setProgress(Math.round(((i + 1) / excelRows.length) * 100));
+      setProgress(Math.round(((i + 1) / configRows.length) * 100));
     }
 
     setGenerated(results);
@@ -182,8 +183,7 @@ export default function ThumbnailCreatorWorkflow() {
     for (const item of generated) {
       if (!item.dataUrl) continue;
       const base64 = item.dataUrl.split(",")[1];
-      const filename = `thumbnail_${item.label.replace(/[^a-zA-Z0-9_\-]/g, "_")}.png`;
-      zip.file(filename, base64, { base64: true });
+      zip.file(`thumbnail_${item.label.replace(/[^a-zA-Z0-9_\-]/g, "_")}.png`, base64, { base64: true });
     }
     const blob = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(blob);
@@ -258,31 +258,31 @@ export default function ThumbnailCreatorWorkflow() {
           )}
         </div>
 
-        {/* Step 2 — Upload Excel */}
+        {/* Step 2 — Upload JSON */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black uppercase tracking-widest text-accent">Step 2</span>
-            <label className="text-xs font-bold uppercase text-muted-foreground">Upload Excel File</label>
+            <label className="text-xs font-bold uppercase text-muted-foreground">Upload Config JSON</label>
           </div>
           <p className="text-xs text-muted-foreground">
-            Column names must match placeholder keys. Each row = one thumbnail. Image placeholders use image paths/URLs; text placeholders use plain text.
+            JSON format: <span className="font-mono">{`{ "video1": { "box1": "...", "box2": "..." }, ... }`}</span>. Each top-level key = one thumbnail.
           </p>
           <div
             className="border-2 border-dashed border-border p-8 rounded-xl text-center cursor-pointer hover:border-accent transition-colors"
-            onClick={() => excelInputRef.current?.click()}
+            onClick={() => fileInputRef.current?.click()}
           >
             <input
-              ref={excelInputRef}
+              ref={fileInputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".json"
               className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleExcelFile(f); }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleJsonFile(f); e.target.value = ""; }}
             />
-            <FileSpreadsheet className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+            <FileJson className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
-              {excelRows.length > 0
-                ? `${excelRows.length} rows loaded — click to replace`
-                : "Click to upload .xlsx / .xls / .csv"}
+              {configRows.length > 0
+                ? <><span className="font-semibold text-foreground">{configFileName}</span> — {configRows.length} entries loaded · click to replace</>
+                : "Click to upload .json config file"}
             </p>
           </div>
 
@@ -294,37 +294,34 @@ export default function ThumbnailCreatorWorkflow() {
         </div>
 
         {/* Column mapping preview */}
-        {excelRows.length > 0 && template && (
+        {configRows.length > 0 && template && (
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-muted-foreground">Column Mapping</label>
+            <label className="text-xs font-bold uppercase text-muted-foreground">Key Mapping</label>
             <div className="rounded-xl border border-border overflow-hidden">
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-3 py-2 font-bold text-muted-foreground">Excel Column</th>
+                    <th className="text-left px-3 py-2 font-bold text-muted-foreground">JSON Key</th>
                     <th className="text-left px-3 py-2 font-bold text-muted-foreground">Placeholder</th>
                     <th className="text-left px-3 py-2 font-bold text-muted-foreground">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* First column is always the label/filename — shown separately */}
-                  {labelColumn && (
-                    <tr className="border-t border-border bg-muted/20">
-                      <td className="px-3 py-2 font-mono">{labelColumn}</td>
-                      <td className="px-3 py-2 text-muted-foreground">—</td>
-                      <td className="px-3 py-2">
-                        <span className="text-blue-500 font-semibold">Row label (filename)</span>
-                      </td>
-                    </tr>
-                  )}
+                  <tr className="border-t border-border bg-muted/20">
+                    <td className="px-3 py-2 font-mono">name</td>
+                    <td className="px-3 py-2 text-muted-foreground">—</td>
+                    <td className="px-3 py-2">
+                      <span className="text-blue-500 font-semibold">Row label (filename)</span>
+                    </td>
+                  </tr>
                   {dataHeaders.map(header => {
-                    const matchedPlaceholderType = a_placeholder_type_lookup_map_data.get(header);
-                    const matched = Boolean(matchedPlaceholderType);
+                    const matchedType = a_placeholder_type_lookup_map_data.get(header);
+                    const matched = Boolean(matchedType);
                     return (
                       <tr key={header} className="border-t border-border">
                         <td className="px-3 py-2 font-mono">{header}</td>
                         <td className="px-3 py-2 font-mono text-muted-foreground">
-                          {matched ? `${header} (${matchedPlaceholderType})` : "—"}
+                          {matched ? `${header} (${matchedType})` : "—"}
                         </td>
                         <td className="px-3 py-2">
                           {matched ? (
@@ -344,7 +341,7 @@ export default function ThumbnailCreatorWorkflow() {
                       <td className="px-3 py-2 font-mono text-amber-600">{key}</td>
                       <td className="px-3 py-2">
                         <span className="flex items-center gap-1 text-amber-600 font-semibold">
-                          <AlertCircle className="w-3 h-3" /> No column in Excel
+                          <AlertCircle className="w-3 h-3" /> No key in JSON
                         </span>
                       </td>
                     </tr>
@@ -357,31 +354,31 @@ export default function ThumbnailCreatorWorkflow() {
             <details className="group">
               <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-semibold py-1 select-none list-none flex items-center gap-1">
                 <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                Preview rows ({excelRows.length})
+                Preview entries ({configRows.length})
               </summary>
               <div className="mt-2 overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left px-3 py-2 font-bold text-muted-foreground">#</th>
-                      {excelHeaders.map(h => (
+                      {configHeaders.map(h => (
                         <th key={h} className="text-left px-3 py-2 font-bold text-muted-foreground font-mono">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {excelRows.slice(0, 5).map((row, i) => (
+                    {configRows.slice(0, 5).map((row, i) => (
                       <tr key={i} className="border-t border-border">
                         <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                        {excelHeaders.map(h => (
+                        {configHeaders.map(h => (
                           <td key={h} className="px-3 py-2 font-mono truncate max-w-[180px]" title={row[h]}>{row[h] || "—"}</td>
                         ))}
                       </tr>
                     ))}
-                    {excelRows.length > 5 && (
+                    {configRows.length > 5 && (
                       <tr className="border-t border-border">
-                        <td colSpan={excelHeaders.length + 1} className="px-3 py-2 text-center text-muted-foreground">
-                          … {excelRows.length - 5} more rows
+                        <td colSpan={configHeaders.length + 1} className="px-3 py-2 text-center text-muted-foreground">
+                          … {configRows.length - 5} more entries
                         </td>
                       </tr>
                     )}
@@ -402,11 +399,11 @@ export default function ThumbnailCreatorWorkflow() {
           <Button
             className="w-full h-12 rounded-xl font-bold gap-2"
             onClick={handleGenerate}
-            disabled={!template || excelRows.length === 0 || generating}
+            disabled={!template || configRows.length === 0 || generating}
           >
             {generating
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating… {progress}%</>
-              : <><Upload className="w-4 h-4" /> Generate {excelRows.length > 0 ? `${excelRows.length} ` : ""}Thumbnails</>
+              : <><Upload className="w-4 h-4" /> Generate {configRows.length > 0 ? `${configRows.length} ` : ""}Thumbnails</>
             }
           </Button>
 
