@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import html2canvas from "html2canvas";
+import { autoFitText, strictWrap } from "@/lib/utils";
 
 export default function TextGenerator() {
   const [text, setText] = useState(
@@ -29,79 +30,23 @@ export default function TextGenerator() {
   const previewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // ---------- Line Wrapping Algorithm ----------
-  const strictWrap = (rawText: string, ctx: CanvasRenderingContext2D, maxWidth: number): string[] => {
-    const words = rawText.split(" ");
-    const lines: string[] = [];
-    let current = "";
-
-    words.forEach((word) => {
-      const testLine = current ? current + " " + word : word;
-      if (ctx.measureText(testLine).width > maxWidth && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = testLine;
-      }
-    });
-
-    if (current) lines.push(current);
-
-    // Pass 2: fix single-word orphans anywhere in the middle
-    for (let i = lines.length - 1; i >= 1; i--) {
-      if (lines[i].trim().split(" ").length === 1) {
-        const merged = lines[i - 1] + " " + lines[i];
-        if (ctx.measureText(merged).width <= maxWidth) {
-          // Pull the orphan up onto the previous line
-          lines.splice(i - 1, 2, merged);
-        } else {
-          // Redistribute: push last word of previous line down to this line
-          const prevWords = lines[i - 1].trim().split(" ");
-          if (prevWords.length > 1) {
-            const moved = prevWords[prevWords.length - 1];
-            lines[i - 1] = prevWords.slice(0, -1).join(" ");
-            lines[i] = moved + " " + lines[i];
-          }
-        }
-      }
-    }
-
-    // Pass 3: merge last line if it has <= 2 words and fits
-    if (lines.length > 1) {
-      const lastWords = lines[lines.length - 1].trim().split(" ");
-      if (lastWords.length <= 2) {
-        const merged = lines[lines.length - 2] + " " + lines[lines.length - 1];
-        if (ctx.measureText(merged).width <= maxWidth) {
-          lines.splice(lines.length - 2, 2, merged);
-        }
-      }
-    }
-
-    return lines;
-  };
-
   // ---------- Auto Fit Font Size ----------
   const autoFit = () => {
     if (!previewRef.current) return;
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
-    let newSize = 160;
-
     const maxWidth = previewRef.current.clientWidth - 56;
     const maxHeight = previewRef.current.clientHeight - 56;
+    const fitResult = autoFitText(text, ctx, {
+      maxWidth,
+      maxHeight,
+      fontFamily: font,
+      isBold,
+      isItalic,
+    });
 
-    while (newSize > 10) {
-      ctx.font = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}${newSize}px ${font}`;
-      let lines = strictWrap(text, ctx, maxWidth);
-      const lineHeight = newSize * 1.4;
-
-      if (lines.length * lineHeight <= maxHeight) break;
-
-      newSize -= 2;
-    }
-
-    setSize(newSize);
+    setSize(fitResult.fontSize);
   };
 
   // ---------- Recalculate wrapping whenever text or styles change ----------
@@ -111,10 +56,8 @@ export default function TextGenerator() {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
 
-    ctx.font = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}${size}px ${font}`;
-
     const maxWidth = previewRef.current.clientWidth - 56;
-
+    ctx.font = `${isItalic ? "italic " : ""}${isBold ? "bold " : ""}${size}px ${font}`;
     setWrapped(strictWrap(text, ctx, maxWidth));
   }, [text, size, font, isBold, isItalic]);
 

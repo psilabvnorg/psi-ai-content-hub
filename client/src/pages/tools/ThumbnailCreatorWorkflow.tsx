@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import type { TemplateData, ImageElement, PlaceholderElement, CanvasElement } from "./ThumbnailCreator";
+import { layoutTextToBox } from "@/lib/utils";
+import type { TemplateData, ImageElement, PlaceholderElement } from "./ThumbnailCreator";
 
 const electronAPI = (window as any).electronAPI as any;
 
@@ -42,6 +43,67 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
     img.src = src;
   });
 }
+
+const a_normalize_placeholder_settings_data = (a_placeholder_data: PlaceholderElement) => ({
+  ...a_placeholder_data,
+  placeholderType: a_placeholder_data.placeholderType ?? "image",
+  fontFamily: a_placeholder_data.fontFamily ?? "Impact",
+  textAlign: a_placeholder_data.textAlign ?? "left",
+});
+
+const a_draw_text_placeholder_data = (
+  a_canvas_context_data: CanvasRenderingContext2D,
+  a_placeholder_data: PlaceholderElement,
+  a_cell_value_data: string,
+  a_scale_x_data: number,
+  a_scale_y_data: number,
+) => {
+  const a_text_data = a_cell_value_data.trim();
+  if (!a_text_data) return;
+
+  const a_box_x_data = a_placeholder_data.x * a_scale_x_data;
+  const a_box_y_data = a_placeholder_data.y * a_scale_y_data;
+  const a_box_width_data = a_placeholder_data.w * a_scale_x_data;
+  const a_box_height_data = a_placeholder_data.h * a_scale_y_data;
+  const a_padding_data = Math.max(8, Math.round(Math.min(a_box_width_data, a_box_height_data) * 0.08));
+
+  const a_layout_data = layoutTextToBox(a_text_data, a_canvas_context_data, {
+    boxWidth: a_box_width_data,
+    boxHeight: a_box_height_data,
+    horizontalPadding: a_padding_data,
+    verticalPadding: a_padding_data,
+    fontFamily: a_placeholder_data.fontFamily ?? "Impact",
+    maxSize: 160,
+    minSize: 10,
+    step: 2,
+    lineHeightRatio: 1.4,
+  });
+
+  a_canvas_context_data.save();
+  a_canvas_context_data.fillStyle = "#000";
+  a_canvas_context_data.textBaseline = "top";
+  a_canvas_context_data.font = `${a_layout_data.fontSize}px ${a_placeholder_data.fontFamily ?? "Impact"}`;
+  a_canvas_context_data.textAlign = a_placeholder_data.textAlign ?? "left";
+
+  const a_draw_x_data =
+    (a_placeholder_data.textAlign ?? "left") === "center"
+      ? a_box_x_data + a_box_width_data / 2
+      : (a_placeholder_data.textAlign ?? "left") === "right"
+        ? a_box_x_data + a_box_width_data - a_padding_data
+        : a_box_x_data + a_padding_data;
+  const a_draw_y_data = a_box_y_data + a_padding_data;
+
+  a_layout_data.lines.forEach((a_line_data, a_index_data) => {
+    a_canvas_context_data.fillText(a_line_data, a_draw_x_data, a_draw_y_data + a_index_data * a_layout_data.lineHeight);
+  });
+  a_canvas_context_data.restore();
+};
+
+const a_normalize_template_element_list_data = (a_element_list_data: TemplateData["elements"]): TemplateData["elements"] =>
+  a_element_list_data.map((a_element_data) => {
+    if ((a_element_data as PlaceholderElement).type !== "placeholder") return a_element_data;
+    return a_normalize_placeholder_settings_data(a_element_data as PlaceholderElement);
+  });
 
 /** Render one thumbnail PNG for the given template + placeholder→imagePath map.
  *  Returns a data URL.
@@ -91,12 +153,18 @@ async function renderThumbnail(
 
   for (const el of template.elements) {
     if (el.type === "placeholder") {
-      const ph = el as PlaceholderElement;
-      const imgPath = placeholderMap[ph.name];
-      if (!imgPath) continue;
+      const ph = a_normalize_placeholder_settings_data(el as PlaceholderElement);
+      const cellValue = String(placeholderMap[ph.name] ?? "");
+      if (!cellValue.trim()) continue;
+
+      if (ph.placeholderType === "text") {
+        a_draw_text_placeholder_data(ctx, ph, cellValue, sx, sy);
+        continue;
+      }
+
       try {
-        const img = await loadImage(imgPath.trim());
-        ctx.drawImage(img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
+        const img = await loadImage(cellValue.trim());
+        ctx.drawImage(img, ph.x * sx, ph.y * sy, ph.w * sx, ph.h * sy);
       } catch {
         // skip failed images
       }
@@ -149,12 +217,12 @@ export default function ThumbnailCreatorWorkflow() {
   useEffect(() => {
     if (electronAPI?.templates) {
       electronAPI.templates.listPrebuilt()
-        .then(async (list: { slug: string; name: string }[]) => {
+        .then(async (list: { name: string }[]) => {
           const loaded = await Promise.all(
-            list.map(({ slug, name }) =>
-              fetch(`/templates/${slug}/template.json`)
+            list.map(({ name }) =>
+              fetch(`/templates/${encodeURIComponent(name)}/template.json`)
                 .then(r => r.json())
-                .then(data => ({ ...data, slug, name } as TemplateData))
+                .then(data => ({ ...data, name, elements: a_normalize_template_element_list_data(data.elements || []) } as TemplateData))
                 .catch(() => null)
             )
           );
@@ -174,20 +242,20 @@ export default function ThumbnailCreatorWorkflow() {
     setTemplate(null);
     setGenerated([]);
     if (!value) return;
-    const [source, slug] = value.split(":");
+    const [source, name] = value.split(":");
     try {
       if (source === "prebuilt") {
-        const data = await fetch(`/templates/${slug}/template.json`).then(r => r.json());
+        const data = await fetch(`/templates/${encodeURIComponent(name)}/template.json`).then(r => r.json());
         // resolve file refs for image elements
         const elements = (data.elements || []).map((el: any) =>
           el.type === "placeholder"
-            ? el
-            : el.file ? { ...el, src: `/templates/${slug}/${el.file}`, file: undefined } : el
+            ? a_normalize_placeholder_settings_data(el as PlaceholderElement)
+            : el.file ? { ...el, src: `/templates/${encodeURIComponent(name)}/${el.file}`, file: undefined } : el
         );
-        setTemplate({ ...data, slug, elements });
+        setTemplate({ ...data, name, elements });
       } else if (source === "user" && electronAPI?.templates) {
-        const data: TemplateData = await electronAPI.templates.get(slug);
-        setTemplate(data);
+        const data: TemplateData = await electronAPI.templates.get(name);
+        setTemplate({ ...data, elements: a_normalize_template_element_list_data(data.elements || []) });
       }
     } catch (e) {
       console.error("Failed to load template", e);
@@ -216,14 +284,18 @@ export default function ThumbnailCreatorWorkflow() {
 
   // Placeholders in selected template
   const placeholders = (template?.elements ?? []).filter(el => el.type === "placeholder") as PlaceholderElement[];
+  const a_normalized_placeholder_list_data = placeholders.map(a_normalize_placeholder_settings_data);
+  const a_placeholder_type_lookup_map_data = new Map(
+    a_normalized_placeholder_list_data.map((a_placeholder_data) => [a_placeholder_data.name, a_placeholder_data.placeholderType])
+  );
 
   // First column is the label/filename — skip it for placeholder matching
   const labelColumn = excelHeaders[0] ?? "";
   const dataHeaders = excelHeaders.slice(1);
 
-  const matchedKeys = dataHeaders.filter(h => placeholders.some(ph => ph.name === h));
-  const unmatchedKeys = dataHeaders.filter(h => !placeholders.some(ph => ph.name === h));
-  const missingKeys = placeholders.map(ph => ph.name).filter(n => !dataHeaders.includes(n));
+  const matchedKeys = dataHeaders.filter(h => a_normalized_placeholder_list_data.some(ph => ph.name === h));
+  const unmatchedKeys = dataHeaders.filter(h => !a_normalized_placeholder_list_data.some(ph => ph.name === h));
+  const missingKeys = a_normalized_placeholder_list_data.map(ph => ph.name).filter(n => !dataHeaders.includes(n));
 
   // Generate all thumbnails
   const handleGenerate = async () => {
@@ -242,7 +314,7 @@ export default function ThumbnailCreatorWorkflow() {
     for (let i = 0; i < excelRows.length; i++) {
       const row = excelRows[i];
       const placeholderMap: Record<string, string> = {};
-      for (const ph of placeholders) {
+      for (const ph of a_normalized_placeholder_list_data) {
         if (row[ph.name]) placeholderMap[ph.name] = row[ph.name] as string;
       }
       try {
@@ -308,7 +380,7 @@ export default function ThumbnailCreatorWorkflow() {
                 <SelectGroup>
                   <SelectLabel>Prebuilt</SelectLabel>
                   {prebuiltTemplates.map(t => (
-                    <SelectItem key={t.slug} value={`prebuilt:${t.slug}`}>{t.name}</SelectItem>
+                    <SelectItem key={t.name} value={`prebuilt:${t.name}`}>{t.name}</SelectItem>
                   ))}
                 </SelectGroup>
               )}
@@ -316,7 +388,7 @@ export default function ThumbnailCreatorWorkflow() {
                 <SelectGroup>
                   <SelectLabel>My Templates</SelectLabel>
                   {userTemplates.map(t => (
-                    <SelectItem key={t.slug} value={`user:${t.slug}`}>{t.name}</SelectItem>
+                    <SelectItem key={t.name} value={`user:${t.name}`}>{t.name}</SelectItem>
                   ))}
                 </SelectGroup>
               )}
@@ -330,9 +402,9 @@ export default function ThumbnailCreatorWorkflow() {
             <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Template placeholders</p>
               <div className="flex flex-wrap gap-2 mt-1">
-                {placeholders.map(ph => (
+                {a_normalized_placeholder_list_data.map(ph => (
                   <span key={ph.name} className="text-xs font-mono bg-accent/15 text-accent border border-accent/30 rounded-md px-2 py-0.5">
-                    {ph.name}
+                    {ph.name} ({ph.placeholderType})
                   </span>
                 ))}
               </div>
@@ -354,7 +426,7 @@ export default function ThumbnailCreatorWorkflow() {
             <label className="text-xs font-bold uppercase text-muted-foreground">Upload Excel File</label>
           </div>
           <p className="text-xs text-muted-foreground">
-            Column names must match placeholder keys. Each row = one thumbnail. Cells contain image file paths or URLs.
+            Column names must match placeholder keys. Each row = one thumbnail. Image placeholders use image paths/URLs; text placeholders use plain text.
           </p>
           <div
             className="border-2 border-dashed border-border p-8 rounded-xl text-center cursor-pointer hover:border-accent transition-colors"
@@ -407,11 +479,14 @@ export default function ThumbnailCreatorWorkflow() {
                     </tr>
                   )}
                   {dataHeaders.map(header => {
-                    const matched = placeholders.some(ph => ph.name === header);
+                    const matchedPlaceholderType = a_placeholder_type_lookup_map_data.get(header);
+                    const matched = Boolean(matchedPlaceholderType);
                     return (
                       <tr key={header} className="border-t border-border">
                         <td className="px-3 py-2 font-mono">{header}</td>
-                        <td className="px-3 py-2 font-mono text-muted-foreground">{matched ? header : "—"}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">
+                          {matched ? `${header} (${matchedPlaceholderType})` : "—"}
+                        </td>
                         <td className="px-3 py-2">
                           {matched ? (
                             <span className="flex items-center gap-1 text-green-600 font-semibold">

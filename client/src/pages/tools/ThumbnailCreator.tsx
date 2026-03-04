@@ -10,6 +10,8 @@ const PAGE_SIZES = {
   tiktok:  { label: "TikTok — Vertical (9:16)",   aspectRatio: "9 / 16",  maxWidth: "340px" },
 } as const;
 
+const a_thumbnail_text_font_option_list_data = ["Inter", "Roboto", "Georgia", "Impact", "Comic Sans MS"] as const;
+
 type PageSize = keyof typeof PAGE_SIZES;
 
 export type ImageElement = {
@@ -25,6 +27,9 @@ export type PlaceholderElement = {
   id: number;
   type: "placeholder";
   name: string;
+  placeholderType?: "image" | "text";
+  fontFamily?: string;
+  textAlign?: "left" | "center" | "right";
   x: number; y: number; w: number; h: number;
 };
 
@@ -96,13 +101,24 @@ export default function ThumbnailCreator() {
     });
   };
 
+  const a_normalize_placeholder_element_data = (a_element_data: CanvasElement): CanvasElement => {
+    if (a_element_data.type !== "placeholder") return a_element_data;
+    const a_placeholder_data = a_element_data as PlaceholderElement;
+    return {
+      ...a_placeholder_data,
+      placeholderType: a_placeholder_data.placeholderType ?? "image",
+      fontFamily: a_placeholder_data.fontFamily ?? "Impact",
+      textAlign: a_placeholder_data.textAlign ?? "left",
+    };
+  };
+
   const applyTemplate = (t: TemplateData) => {
     setPageSize(t.pageSize);
     setMode(t.mode);
     setSplit(t.split);
     setColor1(t.color1);     setOpacity1(t.opacity1);     setTransparent1(t.transparent1);
     setColor2(t.color2);     setOpacity2(t.opacity2);     setTransparent2(t.transparent2);
-    setElements(t.elements.map(el => ({ ...el, id: Date.now() + Math.random() })));
+    setElements(t.elements.map(el => ({ ...a_normalize_placeholder_element_data(el), id: Date.now() + Math.random() })));
   };
 
   const handleLoadTemplate = async (value: string) => {
@@ -478,6 +494,9 @@ export default function ThumbnailCreator() {
                     <span className="font-bold text-[11px] text-center px-2 break-all leading-tight" style={{ color: "rgba(255,255,255,0.85)" }}>
                       {(el as PlaceholderElement).name}
                     </span>
+                    <span className="text-[9px] mt-0.5 uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.7)" }}>
+                      {(el as PlaceholderElement).placeholderType ?? "image"}
+                    </span>
                   </div>
                 ) : (
                   <>
@@ -549,7 +568,7 @@ export default function ThumbnailCreator() {
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase text-muted-foreground">Placeholder Elements</label>
           <p className="text-xs text-muted-foreground">
-            Named slots the Workflow tool replaces with row-specific images from your Excel file.
+            Named slots the Workflow tool replaces with row-specific images or text values from your spreadsheet file.
           </p>
 
           <button
@@ -577,6 +596,9 @@ export default function ThumbnailCreator() {
                   id: now + i,
                   type: "placeholder" as const,
                   name,
+                  placeholderType: "image" as const,
+                  fontFamily: "Impact",
+                  textAlign: "left" as const,
                   ...(positions[name] ?? { x: 80 + i * 220, y: 80, w: 200, h: 150 }),
                 })),
               ]);
@@ -589,23 +611,84 @@ export default function ThumbnailCreator() {
           {placeholders.length > 0 && (
             <div className="space-y-1 mt-2">
               {placeholders.map(ph => (
-                <div key={ph.id} className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                  <input
-                    type="text"
-                    value={ph.name}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const duplicate = elements.some(el => el.type === "placeholder" && el.id !== ph.id && (el as PlaceholderElement).name === val);
-                      if (!duplicate) setElements(prev => prev.map(el => el.id === ph.id ? { ...el, name: val } : el));
-                    }}
-                    className="flex-1 bg-transparent text-sm font-bold font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent rounded px-1"
-                  />
-                  <button
-                    className="text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-                    onClick={() => setElements(p => p.filter(x => x.id !== ph.id))}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div key={ph.id} className="space-y-2 rounded-xl border border-border bg-muted/30 px-3 py-2">
+                  <div className="grid grid-cols-[1fr_140px_auto] items-center gap-2">
+                    <input
+                      type="text"
+                      value={ph.name}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const duplicate = elements.some(el => el.type === "placeholder" && el.id !== ph.id && (el as PlaceholderElement).name === val);
+                        if (!duplicate) setElements(prev => prev.map(el => el.id === ph.id ? { ...el, name: val } : el));
+                      }}
+                      className="bg-transparent text-sm font-bold font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-accent rounded px-1 h-9"
+                      aria-label="Placeholder name"
+                    />
+
+                    <Select
+                      value={ph.placeholderType ?? "image"}
+                      onValueChange={(value: "image" | "text") =>
+                        setElements(prev => prev.map(el => el.id === ph.id ? { ...el, placeholderType: value } : el))
+                      }
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="image">Image</SelectItem>
+                        <SelectItem value="text">Text</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <button
+                      className="text-muted-foreground hover:text-red-500 transition-colors shrink-0 h-9 w-9 inline-flex items-center justify-center"
+                      onClick={() => setElements(p => p.filter(x => x.id !== ph.id))}
+                      aria-label="Delete placeholder"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {(ph.placeholderType ?? "image") === "text" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select
+                        value={ph.fontFamily ?? "Impact"}
+                        onValueChange={(value) =>
+                          setElements(prev => prev.map(el => el.id === ph.id ? { ...el, fontFamily: value } : el))
+                        }
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Font style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {a_thumbnail_text_font_option_list_data.map(fontName => (
+                            <SelectItem key={fontName} value={fontName}>{fontName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+                        <button
+                          className={`flex-1 h-7 text-xs rounded ${ (ph.textAlign ?? "left") === "left" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground" }`}
+                          onClick={() => setElements(prev => prev.map(el => el.id === ph.id ? { ...el, textAlign: "left" as const } : el))}
+                        >
+                          Left
+                        </button>
+                        <button
+                          className={`flex-1 h-7 text-xs rounded ${ (ph.textAlign ?? "left") === "center" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground" }`}
+                          onClick={() => setElements(prev => prev.map(el => el.id === ph.id ? { ...el, textAlign: "center" as const } : el))}
+                        >
+                          Mid
+                        </button>
+                        <button
+                          className={`flex-1 h-7 text-xs rounded ${ (ph.textAlign ?? "left") === "right" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground" }`}
+                          onClick={() => setElements(prev => prev.map(el => el.id === ph.id ? { ...el, textAlign: "right" as const } : el))}
+                        >
+                          Right
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {/* Add more */}
@@ -615,7 +698,15 @@ export default function ThumbnailCreator() {
                   const existing = elements.filter(el => el.type === "placeholder").map(el => (el as PlaceholderElement).name);
                   let n = existing.length + 1;
                   while (existing.includes(`box${n}`)) n++;
-                  setElements(prev => [...prev, { id: Date.now(), type: "placeholder" as const, name: `box${n}`, x: 80, y: 80, w: 200, h: 150 }]);
+                  setElements(prev => [...prev, {
+                    id: Date.now(),
+                    type: "placeholder" as const,
+                    name: `box${n}`,
+                    placeholderType: "image" as const,
+                    fontFamily: "Impact",
+                    textAlign: "left" as const,
+                    x: 80, y: 80, w: 200, h: 150,
+                  }]);
                 }}
               >
                 <Plus className="w-3.5 h-3.5" />
