@@ -17,6 +17,7 @@ import VoiceClone from "./tools/VoiceClone";
 import VoiceCloneCustom from "./tools/VoiceCloneCustom";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
+import ThumbnailCreatorWorkflow from "./tools/ThumbnailCreatorWorkflow";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
 import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
@@ -67,6 +68,7 @@ export default function FeaturePlaceholder({
       "trim-audio": "feature.tool.trim_audio.title",
       "adjust-speed": "feature.tool.adjust_speed.title",
       "thumbnail": "feature.tool.thumbnail.title",
+      "thumbnail-workflow": "feature.tool.thumbnail.title",
       "background-removal": "feature.tool.background_removal.title",
       "merge-overlay": "feature.tool.merge_overlay.title",
       "tts-fast": "feature.tool.tts_fast.title",
@@ -127,6 +129,8 @@ export default function FeaturePlaceholder({
         return <SpeechToText onOpenSettings={() => onSelectFeature("settings")} />;
       case "thumbnail":
         return <ThumbnailCreator />;
+      case "thumbnail-workflow":
+        return <ThumbnailCreatorWorkflow />;
       case "background-removal":
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
       case "merge-overlay":

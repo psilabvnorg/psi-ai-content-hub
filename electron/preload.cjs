@@ -43,13 +43,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ttsFastStartServer: () => ipcRenderer.invoke('tts-fast:start-server'),
   ttsFastStopServer: () => ipcRenderer.invoke('tts-fast:stop-server'),
 
+  // Read a local file as a base64 data URI (used by Workflow page to load images from file paths)
+  readFileAsBase64: (filePath) => ipcRenderer.invoke('fs:readFileAsBase64', filePath),
+
   // Thumbnail templates
   templates: {
     listPrebuilt: ()           => ipcRenderer.invoke('server:send', 'template:list-prebuilt', {}),
     listUser:     ()           => ipcRenderer.invoke('server:send', 'template:list-user', {}),
     save:         (name, tmpl) => ipcRenderer.invoke('server:send', 'template:save',      { name, template: tmpl }),
-    get:          (slug)       => ipcRenderer.invoke('server:send', 'template:get',       { slug }),
-    delete:       (slug)       => ipcRenderer.invoke('server:send', 'template:delete',    { slug }),
+    get:          (name)       => ipcRenderer.invoke('server:send', 'template:get',       { name }),
+    delete:       (name)       => ipcRenderer.invoke('server:send', 'template:delete',    { name }),
   },
 
   services: {

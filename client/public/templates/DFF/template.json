@@ -1,0 +1,50 @@
+{
+  "name": "DFF",
+  "pageSize": "tiktok",
+  "mode": "normal-gradient",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#162140",
+  "opacity2": 100,
+  "transparent2": false,
+  "elements": [
+    {
+      "id": 1772556758085,
+      "x": 152,
+      "y": 441,
+      "w": 188,
+      "h": 188,
+      "opacity": 23,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772556776970,
+      "x": -103,
+      "y": 461,
+      "w": 285,
+      "h": 285,
+      "opacity": 16,
+      "file": "elements/el_1.png"
+    },
+    {
+      "id": 1772557077790,
+      "x": 245,
+      "y": -7,
+      "w": 78,
+      "h": 78,
+      "opacity": 100,
+      "file": "elements/el_2.png"
+    },
+    {
+      "id": 1772557108215,
+      "x": 2,
+      "y": 278,
+      "w": 78,
+      "h": 78,
+      "opacity": 100,
+      "file": "elements/el_3.png"
+    }
+  ]
+}

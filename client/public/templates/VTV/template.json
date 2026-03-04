@@ -1,0 +1,50 @@
+{
+  "name": "VTV",
+  "pageSize": "tiktok",
+  "mode": "gradient-split",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#fdfcff",
+  "opacity2": 100,
+  "transparent2": false,
+  "elements": [
+    {
+      "id": 1772555745274,
+      "x": 255,
+      "y": 5,
+      "w": 67,
+      "h": 67,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772555767877,
+      "x": 3,
+      "y": 289,
+      "w": 66,
+      "h": 66,
+      "opacity": 100,
+      "file": "elements/el_1.png"
+    },
+    {
+      "id": 1772555783257,
+      "x": 191,
+      "y": 155,
+      "w": 407,
+      "h": 407,
+      "opacity": 47,
+      "file": "elements/el_2.png"
+    },
+    {
+      "id": 1772555798046,
+      "x": -6,
+      "y": 390,
+      "w": 387,
+      "h": 387,
+      "opacity": 61,
+      "file": "elements/el_3.png"
+    }
+  ]
+}

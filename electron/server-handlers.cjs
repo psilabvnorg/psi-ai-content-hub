@@ -286,7 +286,7 @@ const handlers = {
       if (!fs.existsSync(jsonPath)) continue;
       try {
         const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        templates.push({ slug: entry.name, name: data.name || entry.name });
+        templates.push({ name: data.name || entry.name });
       } catch (e) {}
     }
     return templates;
@@ -303,7 +303,7 @@ const handlers = {
       if (!fs.existsSync(jsonPath)) continue;
       try {
         const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        templates.push({ slug: entry.name, ...data, elements: [] }); // strip images from list
+        templates.push({ ...data, elements: [] }); // strip images from list
       } catch (e) {}
     }
     return templates;
@@ -312,8 +312,9 @@ const handlers = {
   // Save current canvas state as a named template
   'template:save': async ({ name, template }) => {
     if (!name || !template) throw new Error('name and template are required');
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
-    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+    const prebuiltDir = path.join(PREBUILT_TEMPLATES_DIR, name);
+    const templateDir = fs.existsSync(prebuiltDir) ? prebuiltDir : path.join(USER_TEMPLATES_DIR, name);
+
     const elementsDir = path.join(templateDir, 'elements');
     fs.mkdirSync(templateDir, { recursive: true });
     fs.mkdirSync(elementsDir, { recursive: true });
@@ -339,12 +340,13 @@ const handlers = {
       path.join(templateDir, 'template.json'),
       JSON.stringify({ name, ...template, elements: savedElements }, null, 2)
     );
-    return { success: true, slug };
+    return { success: true };
   },
 
   // Get full template with element images as base64 data URLs
-  'template:get': async ({ slug }) => {
-    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+  'template:get': async ({ name }) => {
+    const prebuiltDir = path.join(PREBUILT_TEMPLATES_DIR, name);
+    const templateDir = fs.existsSync(path.join(prebuiltDir, 'template.json')) ? prebuiltDir : path.join(USER_TEMPLATES_DIR, name);
     const jsonPath = path.join(templateDir, 'template.json');
     if (!fs.existsSync(jsonPath)) throw new Error('Template not found');
     const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
@@ -368,8 +370,8 @@ const handlers = {
   },
 
   // Delete a user template
-  'template:delete': async ({ slug }) => {
-    const templateDir = path.join(USER_TEMPLATES_DIR, slug);
+  'template:delete': async ({ name }) => {
+    const templateDir = path.join(USER_TEMPLATES_DIR, name);
     if (fs.existsSync(templateDir)) {
       fs.rmSync(templateDir, { recursive: true, force: true });
     }

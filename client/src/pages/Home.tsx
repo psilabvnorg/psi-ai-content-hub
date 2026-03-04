@@ -5,7 +5,7 @@ import {
   Music, FileAudio,
   Mic, Languages,
   Play, Download,
-  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type
+  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type, TableProperties
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/i18n";
@@ -223,14 +223,34 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
               </div>
             </section>
 
-            {/* Section 3: Workflow (placeholder) */}
+            {/* Section 3: Workflow */}
             <section>
               <div className="mb-8">
                 <h2 className="mb-2 text-3xl font-black tracking-tight text-foreground">{t("home.section.workflow")}</h2>
-                <p className="text-muted-foreground">{t("home.section.workflow_desc")}</p>
+                <p className="text-muted-foreground">Batch automation sequences powered by templates.</p>
               </div>
-              <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-16">
-                <p className="text-sm text-muted-foreground">{t("home.section.workflow_desc")}</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card
+                  className="group cursor-pointer overflow-hidden border-card-border bg-card transition-all hover:-translate-y-0.5 hover:border-accent/70 hover:shadow-md"
+                  onClick={() => handleFeatureClick("thumbnail-workflow")}
+                  data-testid="card-workflow-thumbnail-workflow"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 transition-colors duration-300 group-hover:border-accent/70 group-hover:bg-accent group-hover:text-accent-foreground">
+                        <TableProperties className="w-4 h-4 text-muted-foreground group-hover:text-accent-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="mb-1 text-sm font-bold text-foreground transition-colors group-hover:text-accent">
+                          Thumbnail Batch
+                        </h3>
+                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          Upload Excel + template → export one PNG per row with placeholder images swapped in.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </section>
 

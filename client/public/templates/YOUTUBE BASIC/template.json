@@ -1,0 +1,32 @@
+{
+  "name": "YOUTUBE BASIC",
+  "pageSize": "youtube",
+  "mode": "gradient-split",
+  "split": 50,
+  "color1": "#000000",
+  "opacity1": 100,
+  "transparent1": false,
+  "color2": "#ffa31a",
+  "opacity2": 100,
+  "transparent2": false,
+  "elements": [
+    {
+      "id": 1772558301243,
+      "x": 339,
+      "y": 16,
+      "w": 375,
+      "h": 375,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772558387069,
+      "x": 607,
+      "y": 0,
+      "w": 81,
+      "h": 81,
+      "opacity": 100,
+      "file": "elements/el_1.png"
+    }
+  ]
+}

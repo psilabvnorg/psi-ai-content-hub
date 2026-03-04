@@ -682,6 +682,14 @@ function setupIpcHandlers() {
   ipcMain.handle('shell:openExternal', async (event, url) => {
     return shell.openExternal(url);
   });
+
+  // Read a local file and return as a base64 data URI (for workflow image loading)
+  ipcMain.handle('fs:readFileAsBase64', async (event, filePath) => {
+    const buf = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase().slice(1);
+    const mime = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml' }[ext] || 'image/png';
+    return `data:${mime};base64,${buf.toString('base64')}`;
+  });
   
   // Relay messages to server process
   ipcMain.handle('server:send', async (event, name, args) => {

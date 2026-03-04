@@ -1,0 +1,41 @@
+{
+  "name": "THE ANH 28",
+  "pageSize": "tiktok",
+  "mode": "normal-gradient",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#349863",
+  "opacity2": 100,
+  "transparent2": false,
+  "elements": [
+    {
+      "id": 1772550611913,
+      "x": 12,
+      "y": 304,
+      "w": 63,
+      "h": 63,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772550861441,
+      "x": -46,
+      "y": 377,
+      "w": 397,
+      "h": 397,
+      "opacity": 60,
+      "file": "elements/el_1.png"
+    },
+    {
+      "id": 1772550892728,
+      "x": 252,
+      "y": 12,
+      "w": 63,
+      "h": 63,
+      "opacity": 100,
+      "file": "elements/el_2.png"
+    }
+  ]
+}
