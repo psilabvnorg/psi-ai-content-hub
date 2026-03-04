@@ -10,7 +10,8 @@ const PAGE_SIZES = {
   tiktok:  { label: "TikTok — Vertical (9:16)",   aspectRatio: "9 / 16",  maxWidth: "340px" },
 } as const;
 
-const a_thumbnail_text_font_option_list_data = ["Inter", "Roboto", "Georgia", "Impact", "Comic Sans MS"] as const;
+const a_thumbnail_text_font_impact_style_list_data = ["Anton", "Barlow Condensed", "Oswald"] as const;
+const a_thumbnail_text_font_vietnamese_list_data = ["Be Vietnam Pro", "Noto Sans", "Open Sans", "Roboto", "Montserrat", "Nunito"] as const;
 
 type PageSize = keyof typeof PAGE_SIZES;
 
@@ -110,7 +111,7 @@ export default function ThumbnailCreator() {
     return {
       ...a_placeholder_data,
       placeholderType: a_placeholder_data.placeholderType ?? "image",
-      fontFamily: a_placeholder_data.fontFamily ?? "Impact",
+      fontFamily: a_placeholder_data.fontFamily ?? "Anton",
       textAlign: a_placeholder_data.textAlign ?? "left",
       textColor: a_placeholder_data.textColor ?? "#000000",
     };
@@ -634,7 +635,7 @@ export default function ThumbnailCreator() {
                   type: "placeholder" as const,
                   name,
                   placeholderType: "image" as const,
-                  fontFamily: "Impact",
+                  fontFamily: "Anton",
                   textAlign: "left" as const,
                   textColor: "#000000",
                   ...(positions[name] ?? { x: 80 + i * 220, y: 80, w: 200, h: 150 }),
@@ -690,7 +691,7 @@ export default function ThumbnailCreator() {
                   {(ph.placeholderType ?? "image") === "text" && (
                     <div className="grid grid-cols-3 gap-2">
                       <Select
-                        value={ph.fontFamily ?? "Impact"}
+                        value={ph.fontFamily ?? "Anton"}
                         onValueChange={(value) =>
                           setElements(prev => prev.map(el => el.id === ph.id ? { ...el, fontFamily: value } : el))
                         }
@@ -699,9 +700,18 @@ export default function ThumbnailCreator() {
                           <SelectValue placeholder="Font style" />
                         </SelectTrigger>
                         <SelectContent>
-                          {a_thumbnail_text_font_option_list_data.map(fontName => (
-                            <SelectItem key={fontName} value={fontName}>{fontName}</SelectItem>
-                          ))}
+                          <SelectGroup>
+                            <SelectLabel>Impact-style</SelectLabel>
+                            {a_thumbnail_text_font_impact_style_list_data.map(fontName => (
+                              <SelectItem key={fontName} value={fontName}>{fontName}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                          <SelectGroup>
+                            <SelectLabel>Vietnamese-friendly</SelectLabel>
+                            {a_thumbnail_text_font_vietnamese_list_data.map(fontName => (
+                              <SelectItem key={fontName} value={fontName}>{fontName}</SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
 
@@ -752,7 +762,7 @@ export default function ThumbnailCreator() {
                     type: "placeholder" as const,
                     name: `box${n}`,
                     placeholderType: "image" as const,
-                    fontFamily: "Impact",
+                    fontFamily: "Anton",
                     textAlign: "left" as const,
                     textColor: "#000000",
                     x: 80, y: 80, w: 200, h: 150,

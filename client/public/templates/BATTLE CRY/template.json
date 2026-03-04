@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772608564655.4175,
+      "id": 1772618130040.3105,
       "x": -20,
       "y": -150,
       "w": 370,
@@ -22,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772608564655.9167,
+      "id": 1772618130040.2988,
       "x": -49,
       "y": 261,
       "w": 425,
@@ -31,7 +31,7 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772608564655.6453,
+      "id": 1772618130040.3613,
       "type": "placeholder",
       "name": "box1",
       "x": 8,
@@ -39,7 +39,7 @@
       "w": 251,
       "h": 224.10714285714286,
       "placeholderType": "text",
-      "fontFamily": "Impact",
+      "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#ffffff"
     }

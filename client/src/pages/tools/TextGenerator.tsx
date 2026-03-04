@@ -4,7 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -16,7 +18,7 @@ export default function TextGenerator() {
     "Amazon WorkMail is a secure, managed business email and calendar service with support for existing desktop and mobile email client applications."
   );
 
-  const [font, setFont] = useState("Inter");
+  const [font, setFont] = useState("Be Vietnam Pro");
   const [size, setSize] = useState(64);
 
   const [align, setAlign] = useState<"left" | "center" | "right">("center");
@@ -98,11 +100,21 @@ export default function TextGenerator() {
                 <SelectValue placeholder="Select font" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Inter">Inter</SelectItem>
-                <SelectItem value="Roboto">Roboto</SelectItem>
-                <SelectItem value="Georgia">Georgia</SelectItem>
-                <SelectItem value="Impact">Impact</SelectItem>
-                <SelectItem value="Comic Sans MS">Comic Sans</SelectItem>
+                <SelectGroup>
+                  <SelectLabel>Impact-style (inherently bold)</SelectLabel>
+                  <SelectItem value="Anton">Anton</SelectItem>
+                  <SelectItem value="Barlow Condensed">Barlow Condensed</SelectItem>
+                  <SelectItem value="Oswald">Oswald</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Vietnamese-friendly</SelectLabel>
+                  <SelectItem value="Be Vietnam Pro">Be Vietnam Pro</SelectItem>
+                  <SelectItem value="Noto Sans">Noto Sans</SelectItem>
+                  <SelectItem value="Open Sans">Open Sans</SelectItem>
+                  <SelectItem value="Roboto">Roboto</SelectItem>
+                  <SelectItem value="Montserrat">Montserrat</SelectItem>
+                  <SelectItem value="Nunito">Nunito</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
