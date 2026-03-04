@@ -9,9 +9,11 @@
   "color2": "#349863",
   "opacity2": 100,
   "transparent2": false,
+  "canvasWidth": 338,
+  "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772550611913,
+      "id": 1772609639003.5415,
       "x": 12,
       "y": 304,
       "w": 63,
@@ -20,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772550861441,
+      "id": 1772609639003.0244,
       "x": -46,
       "y": 377,
       "w": 397,
@@ -29,13 +31,26 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772550892728,
+      "id": 1772609639003.756,
       "x": 252,
       "y": 12,
       "w": 63,
       "h": 63,
       "opacity": 100,
       "file": "elements/el_2.png"
+    },
+    {
+      "id": 1772609647049,
+      "type": "placeholder",
+      "name": "box1",
+      "placeholderType": "text",
+      "fontFamily": "Impact",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 15,
+      "y": 374,
+      "w": 242,
+      "h": 216.07142857142858
     }
   ]
 }

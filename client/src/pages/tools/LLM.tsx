@@ -2,85 +2,36 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink, Save } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
 import { ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { StatusRowConfig } from "@/components/common/tool-page-ui";
-import type { I18nKey } from "@/i18n/translations";
 import { useAppStatus } from "@/context/AppStatusContext";
 
-const TEMPLATES: { id: string; labelKey: I18nKey; prompt: string }[] = [
-  {
-    id: "lessons",
-    labelKey: "tool.llm.template_lessons",
-    prompt:
-      "Format the following text as structured lessons with clear headings, bullet points, and key takeaways.",
-  },
-  {
-    id: "news",
-    labelKey: "tool.llm.template_news",
-    prompt: "Rewrite the following text as a professional news article.",
-  },
-  {
-    id: "clean_json",
-    labelKey: "tool.llm.template_clean_json",
-    prompt:
-      "Clean and fix the following JSON. Return only valid JSON with no explanation.",
-  },
-  {
-    id: "fix_grammar",
-    labelKey: "tool.llm.template_fix_grammar",
-    prompt:
-      "Fix all grammar and spelling errors in the following text. Return only the corrected text.",
-  },
-  {
-    id: "summarize",
-    labelKey: "tool.llm.template_summarize",
-    prompt: "Summarize the following text concisely.",
-  },
-  {
-    id: "translate_en",
-    labelKey: "tool.llm.template_translate_en",
-    prompt: "Translate the following text to English. Return only the translation.",
-  },
-  {
-    id: "translate_vi",
-    labelKey: "tool.llm.template_translate_vi",
-    prompt:
-      "Translate the following text to Vietnamese. Return only the translation.",
-  },
-  {
-    id: "extract_keyword",
-    labelKey: "tool.llm.template_extract_keyword",
-    prompt:
-      "Extract the main keywords from the following text. Return only a comma-separated list of keywords, no explanation.",
-  },
-  {
-    id: "custom",
-    labelKey: "tool.llm.custom_prompt",
-    prompt: "",
-  },
-];
+import type { I18nKey } from "@/i18n/translations";
+
+type PromptTemplate = {
+  id: string;
+  labelKey: I18nKey;
+  prompt: { en: string; vi: string };
+};
 
 export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { toast } = useToast();
+
+  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [templateId, setTemplateId] = useState("fix_grammar");
-  const [customPrompt, setCustomPrompt] = useState("");
+  const [promptText, setPromptText] = useState("");
   const [inputText, setInputText] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const { hasMissingDeps } = useAppStatus();
@@ -95,10 +46,32 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
     }
   };
 
+  const fetchPrompts = async () => {
+    try {
+      const resp = await fetch(`${APP_API_URL}/api/v1/llm/prompts`);
+      if (!resp.ok) throw new Error("Failed to load prompts");
+      const data: PromptTemplate[] = await resp.json();
+      setTemplates(data);
+      const initial = data.find((t) => t.id === "fix_grammar") ?? data[0];
+      if (initial) {
+        setTemplateId(initial.id);
+        setPromptText(initial.prompt[language] ?? "");
+      }
+    } catch (err) {
+      toast({ title: "Error", description: String(err), variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
+    fetchPrompts();
   }, []);
 
+  // When language changes, refresh the displayed prompt for the active template
+  useEffect(() => {
+    const tmpl = templates.find((t) => t.id === templateId);
+    if (tmpl) setPromptText(tmpl.prompt[language] ?? "");
+  }, [language]);
 
   const statusRows: StatusRowConfig[] = [
     {
@@ -112,13 +85,39 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
     },
   ];
 
-  const selectedTemplate = TEMPLATES.find((t) => t.id === templateId);
-  const activePrompt =
-    templateId === "custom" ? customPrompt : selectedTemplate?.prompt || "";
+  const handleSelectTemplate = (tmpl: PromptTemplate) => {
+    setTemplateId(tmpl.id);
+    setPromptText(tmpl.prompt[language] ?? "");
+  };
+
+  const handleSavePrompt = async () => {
+    setSaving(true);
+    setSaved(false);
+    const updated = templates.map((t) =>
+      t.id === templateId
+        ? { ...t, prompt: { ...t.prompt, [language]: promptText } }
+        : t
+    );
+    try {
+      const resp = await fetch(`${APP_API_URL}/api/v1/llm/prompts`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      if (!resp.ok) throw new Error("Save failed");
+      setTemplates(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      toast({ title: "Error", description: String(err), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const finalPrompt =
-    activePrompt && inputText.trim()
-      ? `${activePrompt}\n\n${inputText.trim()}`
+    promptText && inputText.trim()
+      ? `${promptText}\n\n${inputText.trim()}`
       : "";
 
   const handleCopyPrompt = async () => {
@@ -137,7 +136,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: activePrompt,
+          prompt: promptText,
           input_text: inputText,
         }),
       });
@@ -165,37 +164,61 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
     <div className="space-y-6">
       <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
-      {/* Section 1: Prompt Template */}
+      {/* Section 1: Template Selection */}
       <Card>
         <CardHeader>
           <CardTitle>{t("tool.llm.template")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Select value={templateId} onValueChange={setTemplateId}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TEMPLATES.map((tmpl) => (
-                <SelectItem key={tmpl.id} value={tmpl.id}>
-                  {t(tmpl.labelKey)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {templateId === "custom" && (
-            <Textarea
-              placeholder={t("tool.llm.custom_prompt_placeholder")}
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              rows={3}
-            />
-          )}
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {templates.map((tmpl) => (
+              <Button
+                key={tmpl.id}
+                variant={templateId === tmpl.id ? "default" : "outline"}
+                size="sm"
+                className="rounded-xl"
+                onClick={() => handleSelectTemplate(tmpl)}
+              >
+                {t(tmpl.labelKey)}
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Section 2: Input Text */}
+      {/* Section 2: Prompt Editor */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>{t("tool.llm.prompt")}</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSavePrompt}
+            disabled={saving}
+            className="gap-1.5"
+          >
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : saved ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {saved ? "Saved!" : "Save"}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            rows={4}
+            placeholder={t("tool.llm.custom_prompt_placeholder")}
+            className="font-mono"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Section 3: Input Text */}
       <Card>
         <CardHeader>
           <CardTitle>{t("tool.llm.input")}</CardTitle>
@@ -210,7 +233,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
         </CardContent>
       </Card>
 
-      {/* Section 3: Final Prompt */}
+      {/* Section 4: Final Prompt Preview */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t("tool.llm.final_prompt")}</CardTitle>
@@ -236,7 +259,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
         </CardContent>
       </Card>
 
-      {/* Section 4: Use With */}
+      {/* Section 5: Use With */}
       <Card>
         <CardHeader>
           <CardTitle>{t("tool.llm.use_with")}</CardTitle>

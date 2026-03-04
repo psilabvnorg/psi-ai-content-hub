@@ -1,0 +1,82 @@
+[
+  {
+    "id": "fix_grammar",
+    "labelKey": "tool.llm.template_fix_grammar",
+    "prompt": {
+      "en": "Fix all grammar and spelling errors in the following text. Return only the corrected text.",
+      "vi": "Sửa tất cả lỗi ngữ pháp và chính tả trong đoạn văn sau. Chỉ trả về văn bản đã được sửa, không giải thích."
+    }
+  },
+  {
+    "id": "summarize",
+    "labelKey": "tool.llm.template_summarize",
+    "prompt": {
+      "en": "Summarize the following text concisely.",
+      "vi": "Tóm tắt đoạn văn sau một cách súc tích."
+    }
+  },
+  {
+    "id": "translate_en",
+    "labelKey": "tool.llm.template_translate_en",
+    "prompt": {
+      "en": "Translate the following text to English. Return only the translation.",
+      "vi": "Dịch đoạn văn sau sang tiếng Anh. Chỉ trả về bản dịch."
+    }
+  },
+  {
+    "id": "translate_vi",
+    "labelKey": "tool.llm.template_translate_vi",
+    "prompt": {
+      "en": "Translate the following text to Vietnamese. Return only the translation.",
+      "vi": "Dịch đoạn văn sau sang tiếng Việt. Chỉ trả về bản dịch."
+    }
+  },
+  {
+    "id": "lessons",
+    "labelKey": "tool.llm.template_lessons",
+    "prompt": {
+      "en": "Format the following text as structured lessons with clear headings, bullet points, and key takeaways.",
+      "vi": "Định dạng đoạn văn sau thành các bài học có cấu trúc rõ ràng với tiêu đề, gạch đầu dòng và điểm chính cần ghi nhớ."
+    }
+  },
+  {
+    "id": "news",
+    "labelKey": "tool.llm.template_news",
+    "prompt": {
+      "en": "Rewrite the following text as a professional news article.",
+      "vi": "Viết lại đoạn văn sau dưới dạng một bài báo chuyên nghiệp."
+    }
+  },
+  {
+    "id": "clean_json",
+    "labelKey": "tool.llm.template_clean_json",
+    "prompt": {
+      "en": "Clean and fix the following JSON. Return only valid JSON with no explanation.",
+      "vi": "Làm sạch và sửa JSON sau. Chỉ trả về JSON hợp lệ, không giải thích."
+    }
+  },
+  {
+    "id": "extract_keyword",
+    "labelKey": "tool.llm.template_extract_keyword",
+    "prompt": {
+      "en": "Extract the main keywords from the following text. Return only a comma-separated list of keywords, no explanation.",
+      "vi": "Trích xuất các từ khóa chính từ đoạn văn sau. Chỉ trả về danh sách từ khóa cách nhau bằng dấu phẩy, không giải thích."
+    }
+  },
+  {
+    "id": "hook_generator",
+    "labelKey": "tool.llm.template_hook_generator",
+    "prompt": {
+      "en": "Generate a catchy, attention-grabbing title for the following article. Rules: make it stunning and impactful, avoid generic or vague phrasing, no clickbait slop, aim for 10–20 words (up to 40 is acceptable), do not add quotes or punctuation at the start. Return only the title.",
+      "vi": "Tạo một tiêu đề hấp dẫn, gây chú ý cho bài viết sau. Quy tắc: tiêu đề phải ấn tượng và có sức tác động, tránh diễn đạt chung chung hoặc mơ hồ, không dùng kiểu giật tít rẻ tiền, cố gắng từ 10–20 từ (tối đa 40 từ vẫn chấp nhận được), không dùng dấu ngoặc kép hay dấu chấm câu ở đầu. Chỉ trả về tiêu đề."
+    }
+  },
+  {
+    "id": "custom",
+    "labelKey": "tool.llm.custom_prompt",
+    "prompt": {
+      "en": "",
+      "vi": ""
+    }
+  }
+]

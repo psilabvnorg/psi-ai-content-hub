@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
 from fastapi import APIRouter, Body, HTTPException
 
 from ..services.llm import generate, get_default_model, get_ollama_url, get_status, update_config
 
 router = APIRouter(prefix="/api/v1/llm", tags=["llm"])
+
+_PROMPT_FILE = Path(__file__).resolve().parent.parent.parent.parent.parent / "client" / "public" / "llm_prompt.json"
 
 
 @router.get("/status")
@@ -30,6 +36,34 @@ def llm_update_config(payload: dict = Body(...)) -> dict:
         raise HTTPException(status_code=400, detail="model must be a string")
     update_config(url=url, model=model)
     return {"status": "ok", "url": get_ollama_url(), "model": get_default_model()}
+
+
+@router.get("/prompts")
+def llm_get_prompts() -> list:
+    """Return the prompt templates from llm_prompt.json."""
+    if not _PROMPT_FILE.exists():
+        raise HTTPException(status_code=404, detail="llm_prompt.json not found")
+    try:
+        data = json.loads(_PROMPT_FILE.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            raise ValueError("Expected a JSON array")
+        return data
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.put("/prompts")
+def llm_save_prompts(payload: list[Any] = Body(...)) -> dict:
+    """Overwrite llm_prompt.json with the given prompt templates array."""
+    try:
+        _PROMPT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _PROMPT_FILE.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return {"status": "ok"}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.post("/generate")
