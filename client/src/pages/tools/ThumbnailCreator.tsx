@@ -593,13 +593,13 @@ export default function ThumbnailCreator() {
                   style={{ opacity: (el.opacity ?? 100) / 100 }}
                 />
                 <div
-                  className="absolute -bottom-3 -right-3 w-6 h-6 flex items-center justify-center bg-white border border-border rounded-full cursor-se-resize shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute bottom-0 right-0 w-6 h-6 flex items-center justify-center bg-white border border-border rounded-full cursor-se-resize shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
                   onMouseDown={(e) => startResize(el.id, e)}
                 >
                   <Maximize2 className="w-3 h-3 text-gray-600 rotate-90" />
                 </div>
                 <button
-                  className="absolute -top-3 -right-3 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-colors shadow-md"
+                  className="absolute top-0 right-0 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-colors shadow-md"
                   onClick={() =>
                     setElements((p) => p.filter((x) => x.id !== el.id))
                   }
