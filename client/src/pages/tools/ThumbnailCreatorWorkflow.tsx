@@ -11,6 +11,10 @@ import type { TemplateData, ImageElement, PlaceholderElement } from "./Thumbnail
 const electronAPI = (window as any).electronAPI as any;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+const a_template_fallback_canvas_space_map_data = {
+  youtube: { width: 720, height: 405 },
+  tiktok: { width: 340, height: Math.round((340 * 16) / 9) },
+} as const;
 
 const toRgba = (hex: string, opacity: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -44,12 +48,53 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+const a_draw_image_contain_in_box_data = (
+  a_canvas_context_data: CanvasRenderingContext2D,
+  a_image_data: HTMLImageElement,
+  a_box_x_data: number,
+  a_box_y_data: number,
+  a_box_width_data: number,
+  a_box_height_data: number,
+) => {
+  if (a_box_width_data <= 0 || a_box_height_data <= 0 || a_image_data.width <= 0 || a_image_data.height <= 0) return;
+  const a_image_aspect_data = a_image_data.width / a_image_data.height;
+  const a_box_aspect_data = a_box_width_data / a_box_height_data;
+
+  let a_draw_width_data = a_box_width_data;
+  let a_draw_height_data = a_box_height_data;
+  let a_draw_x_data = a_box_x_data;
+  let a_draw_y_data = a_box_y_data;
+
+  if (a_image_aspect_data > a_box_aspect_data) {
+    a_draw_height_data = a_box_width_data / a_image_aspect_data;
+    a_draw_y_data = a_box_y_data + (a_box_height_data - a_draw_height_data) / 2;
+  } else {
+    a_draw_width_data = a_box_height_data * a_image_aspect_data;
+    a_draw_x_data = a_box_x_data + (a_box_width_data - a_draw_width_data) / 2;
+  }
+
+  a_canvas_context_data.drawImage(a_image_data, a_draw_x_data, a_draw_y_data, a_draw_width_data, a_draw_height_data);
+};
+
 const a_normalize_placeholder_settings_data = (a_placeholder_data: PlaceholderElement) => ({
   ...a_placeholder_data,
   placeholderType: a_placeholder_data.placeholderType ?? "image",
   fontFamily: a_placeholder_data.fontFamily ?? "Impact",
   textAlign: a_placeholder_data.textAlign ?? "left",
+  textColor: a_placeholder_data.textColor ?? "#000000",
 });
+
+const a_get_template_canvas_space_data = (a_template_data: TemplateData) => {
+  const a_fallback_data = a_template_fallback_canvas_space_map_data[a_template_data.pageSize];
+  const a_width_data = a_template_data.canvasWidth && a_template_data.canvasWidth > 0
+    ? a_template_data.canvasWidth
+    : a_fallback_data.width;
+  const a_height_data = a_template_data.canvasHeight && a_template_data.canvasHeight > 0
+    ? a_template_data.canvasHeight
+    : a_fallback_data.height;
+
+  return { width: a_width_data, height: a_height_data };
+};
 
 const a_draw_text_placeholder_data = (
   a_canvas_context_data: CanvasRenderingContext2D,
@@ -80,7 +125,7 @@ const a_draw_text_placeholder_data = (
   });
 
   a_canvas_context_data.save();
-  a_canvas_context_data.fillStyle = "#000";
+  a_canvas_context_data.fillStyle = a_placeholder_data.textColor ?? "#000000";
   a_canvas_context_data.textBaseline = "top";
   a_canvas_context_data.font = `${a_layout_data.fontSize}px ${a_placeholder_data.fontFamily ?? "Impact"}`;
   a_canvas_context_data.textAlign = a_placeholder_data.textAlign ?? "left";
@@ -111,8 +156,6 @@ const a_normalize_template_element_list_data = (a_element_list_data: TemplateDat
 async function renderThumbnail(
   template: TemplateData,
   placeholderMap: Record<string, string>, // key → image path/URL
-  displayW: number,
-  displayH: number,
 ): Promise<string> {
   const outW = template.pageSize === "youtube" ? 1280 : 1080;
   const outH = template.pageSize === "youtube" ? 720  : 1920;
@@ -148,8 +191,9 @@ async function renderThumbnail(
     ctx.fillRect(0, 0, outW, outH);
   }
 
-  const sx = outW / displayW;
-  const sy = outH / displayH;
+  const a_template_canvas_space_data = a_get_template_canvas_space_data(template);
+  const sx = outW / a_template_canvas_space_data.width;
+  const sy = outH / a_template_canvas_space_data.height;
 
   for (const el of template.elements) {
     if (el.type === "placeholder") {
@@ -164,7 +208,7 @@ async function renderThumbnail(
 
       try {
         const img = await loadImage(cellValue.trim());
-        ctx.drawImage(img, ph.x * sx, ph.y * sy, ph.w * sx, ph.h * sy);
+        a_draw_image_contain_in_box_data(ctx, img, ph.x * sx, ph.y * sy, ph.w * sx, ph.h * sy);
       } catch {
         // skip failed images
       }
@@ -174,7 +218,7 @@ async function renderThumbnail(
       try {
         const img = await loadImage(imgEl.src);
         ctx.globalAlpha = (imgEl.opacity ?? 100) / 100;
-        ctx.drawImage(img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
+        a_draw_image_contain_in_box_data(ctx, img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
         ctx.globalAlpha = 1;
       } catch {
         // skip
@@ -305,11 +349,6 @@ export default function ThumbnailCreatorWorkflow() {
     setGenerated([]);
     setError("");
 
-    // Use a fixed display size for scaling (matches template canvas coordinate space)
-    // We use the actual template output dimensions as the "display" size to get 1:1 mapping
-    const displayW = template.pageSize === "youtube" ? 1280 : 1080;
-    const displayH = template.pageSize === "youtube" ? 720  : 1920;
-
     const results: GeneratedItem[] = [];
     for (let i = 0; i < excelRows.length; i++) {
       const row = excelRows[i];
@@ -318,7 +357,7 @@ export default function ThumbnailCreatorWorkflow() {
         if (row[ph.name]) placeholderMap[ph.name] = row[ph.name] as string;
       }
       try {
-        const dataUrl = await renderThumbnail(template, placeholderMap, displayW, displayH);
+        const dataUrl = await renderThumbnail(template, placeholderMap);
         // label: value of first column (video name), fallback to row index
         const label = (labelColumn && row[labelColumn]) ? String(row[labelColumn]) : `row_${i + 1}`;
         results.push({ rowIndex: i, label, dataUrl });
@@ -360,6 +399,10 @@ export default function ThumbnailCreatorWorkflow() {
   };
 
   const successCount = generated.filter(g => g.dataUrl).length;
+  const a_preview_aspect_ratio_data = template?.pageSize === "youtube" ? "16 / 9" : "9 / 16";
+  const a_result_grid_class_name_data = template?.pageSize === "tiktok"
+    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3"
+    : "grid grid-cols-2 sm:grid-cols-3 gap-3";
 
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
@@ -596,15 +639,18 @@ export default function ThumbnailCreatorWorkflow() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className={a_result_grid_class_name_data}>
               {generated.map(item => (
                 <div key={item.rowIndex} className="space-y-1">
                   {item.dataUrl ? (
                     <>
-                      <div className="rounded-lg overflow-hidden border border-border bg-muted/20 aspect-video flex items-center justify-center">
+                      <div
+                        className="rounded-lg overflow-hidden border border-border bg-muted/20 flex items-center justify-center"
+                        style={{ aspectRatio: a_preview_aspect_ratio_data }}
+                      >
                         <img
                           src={item.dataUrl}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                           alt={item.label}
                         />
                       </div>
@@ -618,7 +664,10 @@ export default function ThumbnailCreatorWorkflow() {
                       </button>
                     </>
                   ) : (
-                    <div className="rounded-lg border border-border bg-muted/20 aspect-video flex items-center justify-center">
+                    <div
+                      className="rounded-lg border border-border bg-muted/20 flex items-center justify-center"
+                      style={{ aspectRatio: a_preview_aspect_ratio_data }}
+                    >
                       <span className="text-xs text-red-500 flex items-center gap-1">
                         <AlertCircle className="w-3.5 h-3.5" /> Failed
                       </span>

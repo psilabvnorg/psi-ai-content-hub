@@ -30,6 +30,7 @@ export type PlaceholderElement = {
   placeholderType?: "image" | "text";
   fontFamily?: string;
   textAlign?: "left" | "center" | "right";
+  textColor?: string;
   x: number; y: number; w: number; h: number;
 };
 
@@ -42,6 +43,8 @@ export type TemplateData = {
   split: number;
   color1: string; opacity1: number; transparent1: boolean;
   color2: string; opacity2: number; transparent2: boolean;
+  canvasWidth?: number;
+  canvasHeight?: number;
   elements: CanvasElement[];
 };
 
@@ -109,6 +112,7 @@ export default function ThumbnailCreator() {
       placeholderType: a_placeholder_data.placeholderType ?? "image",
       fontFamily: a_placeholder_data.fontFamily ?? "Impact",
       textAlign: a_placeholder_data.textAlign ?? "left",
+      textColor: a_placeholder_data.textColor ?? "#000000",
     };
   };
 
@@ -143,18 +147,23 @@ export default function ThumbnailCreator() {
     }
   };
 
-  const buildTemplatePayload = async () => ({
-    pageSize, mode, split,
-    color1, opacity1, transparent1,
-    color2, opacity2, transparent2,
-    elements: await Promise.all(
-      elements.map(async el => {
-        if (el.type === "placeholder") return el;
-        const imgEl = el as ImageElement;
-        return { ...imgEl, src: imgEl.src ? await blobToBase64(imgEl.src) : undefined };
-      })
-    ),
-  });
+  const buildTemplatePayload = async () => {
+    const a_canvas_rect_data = canvasRef.current?.getBoundingClientRect();
+    return {
+      pageSize, mode, split,
+      color1, opacity1, transparent1,
+      color2, opacity2, transparent2,
+      canvasWidth: a_canvas_rect_data?.width ? Math.round(a_canvas_rect_data.width) : undefined,
+      canvasHeight: a_canvas_rect_data?.height ? Math.round(a_canvas_rect_data.height) : undefined,
+      elements: await Promise.all(
+        elements.map(async el => {
+          if (el.type === "placeholder") return el;
+          const imgEl = el as ImageElement;
+          return { ...imgEl, src: imgEl.src ? await blobToBase64(imgEl.src) : undefined };
+        })
+      ),
+    };
+  };
 
   const handleSaveChanges = async () => {
     if (!electronAPI?.templates) { alert("Template saving is only available in the desktop app."); return; }
@@ -206,6 +215,34 @@ export default function ThumbnailCreator() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  const a_draw_image_contain_in_box_data = (
+    a_canvas_context_data: CanvasRenderingContext2D,
+    a_image_data: HTMLImageElement,
+    a_box_x_data: number,
+    a_box_y_data: number,
+    a_box_width_data: number,
+    a_box_height_data: number,
+  ) => {
+    if (a_box_width_data <= 0 || a_box_height_data <= 0 || a_image_data.width <= 0 || a_image_data.height <= 0) return;
+    const a_image_aspect_data = a_image_data.width / a_image_data.height;
+    const a_box_aspect_data = a_box_width_data / a_box_height_data;
+
+    let a_draw_width_data = a_box_width_data;
+    let a_draw_height_data = a_box_height_data;
+    let a_draw_x_data = a_box_x_data;
+    let a_draw_y_data = a_box_y_data;
+
+    if (a_image_aspect_data > a_box_aspect_data) {
+      a_draw_height_data = a_box_width_data / a_image_aspect_data;
+      a_draw_y_data = a_box_y_data + (a_box_height_data - a_draw_height_data) / 2;
+    } else {
+      a_draw_width_data = a_box_height_data * a_image_aspect_data;
+      a_draw_x_data = a_box_x_data + (a_box_width_data - a_draw_width_data) / 2;
+    }
+
+    a_canvas_context_data.drawImage(a_image_data, a_draw_x_data, a_draw_y_data, a_draw_width_data, a_draw_height_data);
+  };
 
   const handleAddOverlay = (file: File) => {
     const url = URL.createObjectURL(file);
@@ -291,7 +328,7 @@ export default function ThumbnailCreator() {
         const img = new Image();
         img.onload = () => {
           ctx.globalAlpha = (imgEl.opacity ?? 100) / 100;
-          ctx.drawImage(img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
+          a_draw_image_contain_in_box_data(ctx, img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
           ctx.globalAlpha = 1;
           resolve();
         };
@@ -599,6 +636,7 @@ export default function ThumbnailCreator() {
                   placeholderType: "image" as const,
                   fontFamily: "Impact",
                   textAlign: "left" as const,
+                  textColor: "#000000",
                   ...(positions[name] ?? { x: 80 + i * 220, y: 80, w: 200, h: 150 }),
                 })),
               ]);
@@ -650,7 +688,7 @@ export default function ThumbnailCreator() {
                   </div>
 
                   {(ph.placeholderType ?? "image") === "text" && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <Select
                         value={ph.fontFamily ?? "Impact"}
                         onValueChange={(value) =>
@@ -687,6 +725,17 @@ export default function ThumbnailCreator() {
                           Right
                         </button>
                       </div>
+
+                      <div className="h-9 rounded-md border border-border bg-background px-2 flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={ph.textColor ?? "#000000"}
+                          onChange={e => setElements(prev => prev.map(el => el.id === ph.id ? { ...el, textColor: e.target.value } : el))}
+                          className="h-6 w-8 rounded border border-border cursor-pointer"
+                          aria-label="Text color"
+                        />
+                        <span className="text-xs font-mono text-muted-foreground">{ph.textColor ?? "#000000"}</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -705,6 +754,7 @@ export default function ThumbnailCreator() {
                     placeholderType: "image" as const,
                     fontFamily: "Impact",
                     textAlign: "left" as const,
+                    textColor: "#000000",
                     x: 80, y: 80, w: 200, h: 150,
                   }]);
                 }}

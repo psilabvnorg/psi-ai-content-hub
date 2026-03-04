@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
@@ -80,6 +80,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const { hasMissingDeps } = useAppStatus();
@@ -114,6 +115,18 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
   const selectedTemplate = TEMPLATES.find((t) => t.id === templateId);
   const activePrompt =
     templateId === "custom" ? customPrompt : selectedTemplate?.prompt || "";
+
+  const finalPrompt =
+    activePrompt && inputText.trim()
+      ? `${activePrompt}\n\n${inputText.trim()}`
+      : "";
+
+  const handleCopyPrompt = async () => {
+    if (!finalPrompt) return;
+    await navigator.clipboard.writeText(finalPrompt);
+    setPromptCopied(true);
+    setTimeout(() => setPromptCopied(false), 2000);
+  };
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -197,33 +210,90 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
         </CardContent>
       </Card>
 
-      {/* Section 3: Generate & Output */}
+      {/* Section 3: Final Prompt */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t("tool.llm.output")}</CardTitle>
-          {output && (
-            <Button variant="ghost" size="sm" onClick={handleCopy}>
-              {copied ? (
+          <CardTitle>{t("tool.llm.final_prompt")}</CardTitle>
+          {finalPrompt && (
+            <Button variant="ghost" size="sm" onClick={handleCopyPrompt}>
+              {promptCopied ? (
                 <Check className="w-4 h-4 mr-1" />
               ) : (
                 <Copy className="w-4 h-4 mr-1" />
               )}
-              {copied ? t("tool.llm.copied") : t("tool.llm.copy")}
+              {promptCopied ? t("tool.llm.copied") : t("tool.llm.copy")}
             </Button>
           )}
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            onClick={handleGenerate}
-            disabled={loading || !inputText.trim()}
-            className="w-full"
-          >
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {loading ? t("tool.llm.generating") : t("tool.llm.generate")}
-          </Button>
+        <CardContent>
+          <Textarea
+            value={finalPrompt}
+            readOnly
+            rows={6}
+            placeholder={t("tool.llm.final_prompt_placeholder")}
+            className="font-mono"
+          />
+        </CardContent>
+      </Card>
 
+      {/* Section 4: Use With */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("tool.llm.use_with")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* ChatGPT option */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t("tool.llm.chatgpt_hint")}
+            </p>
+            <a
+              href="https://chatgpt.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 h-11 rounded-xl border border-border bg-background hover:bg-muted transition-colors text-sm font-semibold"
+            >
+              <img
+                src="https://cdn.oaistatic.com/assets/favicon-o20kmmos.svg"
+                alt="ChatGPT"
+                className="w-5 h-5"
+              />
+              ChatGPT
+              <ExternalLink className="w-3 h-3 text-muted-foreground" />
+            </a>
+          </div>
+
+          {/* Local LLM option */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {t("tool.llm.or_local_llm")}
+            </p>
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || !inputText.trim()}
+              className="w-full"
+            >
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {loading ? t("tool.llm.generating") : t("tool.llm.generate")}
+            </Button>
+          </div>
+
+          {/* Output */}
           {output && (
-            <Textarea value={output} readOnly rows={12} className="font-mono" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{t("tool.llm.output")}</span>
+                <Button variant="ghost" size="sm" onClick={handleCopy}>
+                  {copied ? (
+                    <Check className="w-4 h-4 mr-1" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-1" />
+                  )}
+                  {copied ? t("tool.llm.copied") : t("tool.llm.copy")}
+                </Button>
+              </div>
+              <Textarea value={output} readOnly rows={12} className="font-mono" />
+            </div>
           )}
         </CardContent>
       </Card>
