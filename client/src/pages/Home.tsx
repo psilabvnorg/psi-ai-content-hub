@@ -5,7 +5,7 @@ import {
   Music, FileAudio,
   Mic, Languages,
   Play, Download,
-  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type, TableProperties
+  Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type, TableProperties, ListChecks
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/i18n";
@@ -246,6 +246,28 @@ export default function Home({ onSelectFeature }: { onSelectFeature: (id: string
                         </h3>
                         <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                           Upload Excel + template → export one PNG per row with placeholder images swapped in.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="group cursor-pointer overflow-hidden border-card-border bg-card transition-all hover:-translate-y-0.5 hover:border-accent/70 hover:shadow-md"
+                  onClick={() => handleFeatureClick("llm-batch")}
+                  data-testid="card-workflow-llm-batch"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 transition-colors duration-300 group-hover:border-accent/70 group-hover:bg-accent group-hover:text-accent-foreground">
+                        <ListChecks className="w-4 h-4 text-muted-foreground group-hover:text-accent-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="mb-1 text-sm font-bold text-foreground transition-colors group-hover:text-accent">
+                          {t("feature.workflow.llm_batch.title")}
+                        </h3>
+                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          {t("feature.workflow.llm_batch.desc")}
                         </p>
                       </div>
                     </div>

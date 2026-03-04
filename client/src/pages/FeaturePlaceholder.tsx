@@ -23,6 +23,7 @@ import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
 import LLM from "./tools/LLM";
+import LLMBatch from "./tools/LLMBatch";
 import Translator from "./tools/Translator";
 import ImageFinder from "./tools/ImageFinder";
 import ImageUpscaler from "./tools/ImageUpscaler";
@@ -76,6 +77,7 @@ export default function FeaturePlaceholder({
       "voice-clone-custom": "feature.tool.voice_clone_custom.title",
       "stt": "feature.tool.stt.title",
       "llm": "feature.tool.llm.title",
+      "llm-batch": "feature.workflow.llm_batch.title",
       translator: "feature.tool.translator.title",
       "image-finder": "feature.tool.image_finder.title",
       "image-upscaler": "feature.tool.image_upscaler.title",
@@ -141,6 +143,8 @@ export default function FeaturePlaceholder({
         return <ReupYoutube onOpenSettings={() => onSelectFeature("settings")} />;
       case "llm":
         return <LLM onOpenSettings={() => onSelectFeature("settings")} />;
+      case "llm-batch":
+        return <LLMBatch />;
       case "translator":
         return <Translator onOpenSettings={() => onSelectFeature("settings")} />;
       case "image-finder":

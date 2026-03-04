@@ -12,6 +12,7 @@ from .routers import edge_tts as edge_tts_router
 from .routers import files as files_router
 from .routers import llm as llm_router
 from .routers import media as media_router
+from .routers import thumbnail as thumbnail_router
 from .routers import system as system_router
 from .routers import text_to_video as text_to_video_router
 from .routers import tools as tools_router
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     app.include_router(files_router.router)
     app.include_router(llm_router.router)
     app.include_router(tools_router.router)
+    app.include_router(thumbnail_router.router)
     app.include_router(env_router.router)
     app.include_router(aenv_profile_router.router)
     app.include_router(edge_tts_router.router)

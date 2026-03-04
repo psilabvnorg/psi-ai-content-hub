@@ -5,77 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { layoutTextToBox } from "@/lib/utils";
-import type { TemplateData, ImageElement, PlaceholderElement } from "./ThumbnailCreator";
+import { renderThumbnail } from "@/lib/thumbnail_renderer";
+import type { TemplateData, PlaceholderElement } from "./ThumbnailCreator";
 
 const electronAPI = (window as any).electronAPI as any;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-const a_template_fallback_canvas_space_map_data = {
-  youtube: { width: 720, height: 405 },
-  tiktok: { width: 340, height: Math.round((340 * 16) / 9) },
-} as const;
-
-const toRgba = (hex: string, opacity: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${opacity / 100})`;
-};
-
-/** Load an image src (URL, data URI, or local file path) and return HTMLImageElement. */
-async function loadImage(src: string): Promise<HTMLImageElement> {
-  // If it's a local file path, convert via Electron IPC
-  if (
-    electronAPI?.readFileAsBase64 &&
-    !src.startsWith("http") &&
-    !src.startsWith("data:") &&
-    !src.startsWith("blob:")
-  ) {
-    try {
-      const b64 = await electronAPI.readFileAsBase64(src);
-      src = b64;
-    } catch {
-      // fall through and try loading directly
-    }
-  }
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-const a_draw_image_contain_in_box_data = (
-  a_canvas_context_data: CanvasRenderingContext2D,
-  a_image_data: HTMLImageElement,
-  a_box_x_data: number,
-  a_box_y_data: number,
-  a_box_width_data: number,
-  a_box_height_data: number,
-) => {
-  if (a_box_width_data <= 0 || a_box_height_data <= 0 || a_image_data.width <= 0 || a_image_data.height <= 0) return;
-  const a_image_aspect_data = a_image_data.width / a_image_data.height;
-  const a_box_aspect_data = a_box_width_data / a_box_height_data;
-
-  let a_draw_width_data = a_box_width_data;
-  let a_draw_height_data = a_box_height_data;
-  let a_draw_x_data = a_box_x_data;
-  let a_draw_y_data = a_box_y_data;
-
-  if (a_image_aspect_data > a_box_aspect_data) {
-    a_draw_height_data = a_box_width_data / a_image_aspect_data;
-    a_draw_y_data = a_box_y_data + (a_box_height_data - a_draw_height_data) / 2;
-  } else {
-    a_draw_width_data = a_box_height_data * a_image_aspect_data;
-    a_draw_x_data = a_box_x_data + (a_box_width_data - a_draw_width_data) / 2;
-  }
-
-  a_canvas_context_data.drawImage(a_image_data, a_draw_x_data, a_draw_y_data, a_draw_width_data, a_draw_height_data);
-};
-
 const a_normalize_placeholder_settings_data = (a_placeholder_data: PlaceholderElement) => ({
   ...a_placeholder_data,
   placeholderType: a_placeholder_data.placeholderType ?? "image",
@@ -84,150 +19,11 @@ const a_normalize_placeholder_settings_data = (a_placeholder_data: PlaceholderEl
   textColor: a_placeholder_data.textColor ?? "#000000",
 });
 
-const a_get_template_canvas_space_data = (a_template_data: TemplateData) => {
-  const a_fallback_data = a_template_fallback_canvas_space_map_data[a_template_data.pageSize];
-  const a_width_data = a_template_data.canvasWidth && a_template_data.canvasWidth > 0
-    ? a_template_data.canvasWidth
-    : a_fallback_data.width;
-  const a_height_data = a_template_data.canvasHeight && a_template_data.canvasHeight > 0
-    ? a_template_data.canvasHeight
-    : a_fallback_data.height;
-
-  return { width: a_width_data, height: a_height_data };
-};
-
-const a_draw_text_placeholder_data = (
-  a_canvas_context_data: CanvasRenderingContext2D,
-  a_placeholder_data: PlaceholderElement,
-  a_cell_value_data: string,
-  a_scale_x_data: number,
-  a_scale_y_data: number,
-) => {
-  const a_text_data = a_cell_value_data.trim();
-  if (!a_text_data) return;
-
-  const a_box_x_data = a_placeholder_data.x * a_scale_x_data;
-  const a_box_y_data = a_placeholder_data.y * a_scale_y_data;
-  const a_box_width_data = a_placeholder_data.w * a_scale_x_data;
-  const a_box_height_data = a_placeholder_data.h * a_scale_y_data;
-  const a_padding_data = Math.max(8, Math.round(Math.min(a_box_width_data, a_box_height_data) * 0.08));
-
-  const a_layout_data = layoutTextToBox(a_text_data, a_canvas_context_data, {
-    boxWidth: a_box_width_data,
-    boxHeight: a_box_height_data,
-    horizontalPadding: a_padding_data,
-    verticalPadding: a_padding_data,
-    fontFamily: a_placeholder_data.fontFamily ?? "Impact",
-    maxSize: 160,
-    minSize: 10,
-    step: 2,
-    lineHeightRatio: 1.4,
-  });
-
-  a_canvas_context_data.save();
-  a_canvas_context_data.fillStyle = a_placeholder_data.textColor ?? "#000000";
-  a_canvas_context_data.textBaseline = "top";
-  a_canvas_context_data.font = `${a_layout_data.fontSize}px ${a_placeholder_data.fontFamily ?? "Impact"}`;
-  a_canvas_context_data.textAlign = a_placeholder_data.textAlign ?? "left";
-
-  const a_draw_x_data =
-    (a_placeholder_data.textAlign ?? "left") === "center"
-      ? a_box_x_data + a_box_width_data / 2
-      : (a_placeholder_data.textAlign ?? "left") === "right"
-        ? a_box_x_data + a_box_width_data - a_padding_data
-        : a_box_x_data + a_padding_data;
-  const a_draw_y_data = a_box_y_data + a_padding_data;
-
-  a_layout_data.lines.forEach((a_line_data, a_index_data) => {
-    a_canvas_context_data.fillText(a_line_data, a_draw_x_data, a_draw_y_data + a_index_data * a_layout_data.lineHeight);
-  });
-  a_canvas_context_data.restore();
-};
-
 const a_normalize_template_element_list_data = (a_element_list_data: TemplateData["elements"]): TemplateData["elements"] =>
   a_element_list_data.map((a_element_data) => {
     if ((a_element_data as PlaceholderElement).type !== "placeholder") return a_element_data;
     return a_normalize_placeholder_settings_data(a_element_data as PlaceholderElement);
   });
-
-/** Render one thumbnail PNG for the given template + placeholder→imagePath map.
- *  Returns a data URL.
- */
-async function renderThumbnail(
-  template: TemplateData,
-  placeholderMap: Record<string, string>, // key → image path/URL
-): Promise<string> {
-  const outW = template.pageSize === "youtube" ? 1280 : 1080;
-  const outH = template.pageSize === "youtube" ? 720  : 1920;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = outW;
-  canvas.height = outH;
-  const ctx = canvas.getContext("2d")!;
-
-  const { color1, opacity1, transparent1, color2, opacity2, transparent2, mode, split, pageSize } = template;
-
-  // Background gradient
-  if (!(transparent1 && transparent2)) {
-    const c1 = transparent1 ? "rgba(0,0,0,0)" : toRgba(color1, opacity1);
-    const c2 = transparent2 ? "rgba(0,0,0,0)" : toRgba(color2, opacity2);
-    const grad = pageSize === "youtube"
-      ? ctx.createLinearGradient(0, 0, outW, 0)
-      : ctx.createLinearGradient(0, 0, 0, outH);
-    if (mode === "gradient-split") {
-      const p = split / 100;
-      grad.addColorStop(0, c1);
-      grad.addColorStop(Math.max(0, p - 0.001), c1);
-      grad.addColorStop(Math.min(1, p + 0.001), c2);
-      grad.addColorStop(1, c2);
-    } else {
-      const p = split / 100;
-      grad.addColorStop(0, c1);
-      grad.addColorStop(Math.max(0, p - 0.05), c1);
-      grad.addColorStop(Math.min(1, p + 0.05), c2);
-      grad.addColorStop(1, c2);
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, outW, outH);
-  }
-
-  const a_template_canvas_space_data = a_get_template_canvas_space_data(template);
-  const sx = outW / a_template_canvas_space_data.width;
-  const sy = outH / a_template_canvas_space_data.height;
-
-  for (const el of template.elements) {
-    if (el.type === "placeholder") {
-      const ph = a_normalize_placeholder_settings_data(el as PlaceholderElement);
-      const cellValue = String(placeholderMap[ph.name] ?? "");
-      if (!cellValue.trim()) continue;
-
-      if (ph.placeholderType === "text") {
-        a_draw_text_placeholder_data(ctx, ph, cellValue, sx, sy);
-        continue;
-      }
-
-      try {
-        const img = await loadImage(cellValue.trim());
-        a_draw_image_contain_in_box_data(ctx, img, ph.x * sx, ph.y * sy, ph.w * sx, ph.h * sy);
-      } catch {
-        // skip failed images
-      }
-    } else {
-      const imgEl = el as ImageElement;
-      if (!imgEl.src) continue;
-      try {
-        const img = await loadImage(imgEl.src);
-        ctx.globalAlpha = (imgEl.opacity ?? 100) / 100;
-        a_draw_image_contain_in_box_data(ctx, img, el.x * sx, el.y * sy, el.w * sx, el.h * sy);
-        ctx.globalAlpha = 1;
-      } catch {
-        // skip
-      }
-    }
-  }
-
-  return canvas.toDataURL("image/png");
-}
 
 // ─── component ────────────────────────────────────────────────────────────────
 

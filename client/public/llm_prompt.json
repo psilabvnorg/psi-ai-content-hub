@@ -67,8 +67,8 @@
     "id": "hook_generator",
     "labelKey": "tool.llm.template_hook_generator",
     "prompt": {
-      "en": "Generate a catchy, attention-grabbing title for the following article. Rules: make it stunning and impactful, avoid generic or vague phrasing, no clickbait slop, aim for 10–20 words (up to 40 is acceptable), do not add quotes or punctuation at the start. Return only the title.",
-      "vi": "Tạo một tiêu đề hấp dẫn, gây chú ý cho bài viết sau. Quy tắc: tiêu đề phải ấn tượng và có sức tác động, tránh diễn đạt chung chung hoặc mơ hồ, không dùng kiểu giật tít rẻ tiền, cố gắng từ 10–20 từ (tối đa 40 từ vẫn chấp nhận được), không dùng dấu ngoặc kép hay dấu chấm câu ở đầu. Chỉ trả về tiêu đề."
+      "en": "Generate a catchy, attention-grabbing title for the following article. Rules: make it stunning and impactful, avoid generic or vague phrasing, no clickbait slop, aim for 10–20 words (up to 40 is acceptable), do not add quotes or punctuation at the start, and do not use special characters like * $ ( ) that may look unattractive in large web display text. Slash dates such as 14/2 are allowed. Return only the title.",
+      "vi": "Tạo một tiêu đề hấp dẫn, gây chú ý cho bài viết sau. Quy tắc: tiêu đề phải ấn tượng và có sức tác động, tránh diễn đạt chung chung hoặc mơ hồ, không dùng kiểu giật tít rẻ tiền, cố gắng từ 10–20 từ (tối đa 40 từ vẫn chấp nhận được), không dùng dấu ngoặc kép hay dấu chấm câu ở đầu, và không dùng các ký tự đặc biệt như * $ ( ) làm tiêu đề trông xấu khi hiển thị lớn trên web. Dấu gạch chéo trong ngày như 14/2 được phép. Chỉ trả về tiêu đề."
     }
   },
   {

@@ -3,6 +3,11 @@ const path = require('path');
 const { fork, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
+const {
+  a_start_thumbnail_bridge_server_data,
+  a_stop_thumbnail_bridge_server_data,
+  a_thumbnail_bridge_port_number_data,
+} = require('./thumbnail_bridge_server.cjs');
 
 // Shared log file written by all managed services (except 'app' which uses its Python FileHandler)
 const _LOG_DIR = path.join(process.env.APPDATA || path.join(os.homedir(), '.config'), 'psi-ai-content-hub', 'logs');
@@ -1019,6 +1024,13 @@ app.whenReady().then(async () => {
   console.log('App ready, isDev:', isDev);
   console.log('App path:', app.getAppPath());
   initializeManagedServicesState();
+
+  try {
+    await a_start_thumbnail_bridge_server_data();
+    console.log(`[ThumbnailBridge] Listening on http://127.0.0.1:${a_thumbnail_bridge_port_number_data}`);
+  } catch (error) {
+    console.error('[ThumbnailBridge] Failed to start:', error);
+  }
   
   // Setup IPC handlers
   setupIpcHandlers();
@@ -1072,6 +1084,10 @@ app.on('before-quit', () => {
     }
   }
   managedServiceProcesses.clear();
+
+  a_stop_thumbnail_bridge_server_data().catch((error) => {
+    console.error('[ThumbnailBridge] Failed to stop:', error);
+  });
 });
 
 process.on('uncaughtException', (err) => {

@@ -66,6 +66,34 @@ def llm_save_prompts(payload: list[Any] = Body(...)) -> dict:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.post("/batch/preview")
+def llm_batch_preview(payload: dict = Body(...)) -> dict:
+    """Build final_prompt for each entry without calling Ollama."""
+    data: dict = payload.get("data", {})
+    prompt: str = payload.get("prompt", "")
+    result: dict[str, Any] = {}
+    for key, input_text in data.items():
+        final_prompt = f"{prompt}\n\n{input_text}" if prompt else input_text
+        result[key] = final_prompt
+    return result
+
+
+@router.post("/batch/generate")
+def llm_batch_generate(payload: dict = Body(...)) -> dict:
+    """Run Ollama on each entry sequentially and return all outputs."""
+    data: dict = payload.get("data", {})
+    prompt: str = payload.get("prompt", "")
+    model: str | None = payload.get("model") or None
+    result: dict[str, Any] = {}
+    for key, input_text in data.items():
+        try:
+            output = generate(prompt, str(input_text), model)
+            result[key] = output
+        except Exception as exc:
+            result[key] = f"[ERROR] {exc}"
+    return result
+
+
 @router.post("/generate")
 def llm_generate(payload: dict = Body(...)) -> dict:
     prompt = payload.get("prompt", "")

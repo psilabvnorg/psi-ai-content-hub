@@ -23,7 +23,8 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
   const { toast } = useToast();
 
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
-  const [templateId, setTemplateId] = useState("fix_grammar");
+  const [templateId, setTemplateId] = useState("hook_generator");
+  const [promptLang, setPromptLang] = useState<"en" | "vi">(language as "en" | "vi");
   const [promptText, setPromptText] = useState("");
   const [inputText, setInputText] = useState("");
   const [output, setOutput] = useState("");
@@ -52,10 +53,10 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
       if (!resp.ok) throw new Error("Failed to load prompts");
       const data: PromptTemplate[] = await resp.json();
       setTemplates(data);
-      const initial = data.find((t) => t.id === "fix_grammar") ?? data[0];
+      const initial = data.find((t) => t.id === "hook_generator") ?? data[0];
       if (initial) {
         setTemplateId(initial.id);
-        setPromptText(initial.prompt[language] ?? "");
+        setPromptText(initial.prompt[promptLang] ?? "");
       }
     } catch (err) {
       toast({ title: "Error", description: String(err), variant: "destructive" });
@@ -67,11 +68,11 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
     fetchPrompts();
   }, []);
 
-  // When language changes, refresh the displayed prompt for the active template
+  // When promptLang changes, reload the prompt for the active template
   useEffect(() => {
     const tmpl = templates.find((t) => t.id === templateId);
-    if (tmpl) setPromptText(tmpl.prompt[language] ?? "");
-  }, [language]);
+    if (tmpl) setPromptText(tmpl.prompt[promptLang] ?? "");
+  }, [promptLang]);
 
   const statusRows: StatusRowConfig[] = [
     {
@@ -87,7 +88,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
 
   const handleSelectTemplate = (tmpl: PromptTemplate) => {
     setTemplateId(tmpl.id);
-    setPromptText(tmpl.prompt[language] ?? "");
+    setPromptText(tmpl.prompt[promptLang] ?? "");
   };
 
   const handleSavePrompt = async () => {
@@ -95,7 +96,7 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
     setSaved(false);
     const updated = templates.map((t) =>
       t.id === templateId
-        ? { ...t, prompt: { ...t.prompt, [language]: promptText } }
+        ? { ...t, prompt: { ...t.prompt, [promptLang]: promptText } }
         : t
     );
     try {
@@ -166,8 +167,23 @@ export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void })
 
       {/* Section 1: Template Selection */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t("tool.llm.template")}</CardTitle>
+          <div className="flex gap-1 rounded-lg border border-border p-0.5">
+            {(["en", "vi"] as const).map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setPromptLang(lang)}
+                className={`rounded-md px-3 py-1 text-xs font-bold uppercase transition-colors ${
+                  promptLang === lang
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
