@@ -13,6 +13,9 @@ import { Loader2, Upload, Download, FileJson } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { APP_API_URL } from "@/lib/api";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
+import { useAppStatus } from "@/context/AppStatusContext";
 import type { I18nKey } from "@/i18n/translations";
 
 type PromptTemplate = {
@@ -21,14 +24,26 @@ type PromptTemplate = {
   prompt: { en: string; vi: string };
 };
 
-export default function LLMBatch() {
-  const { t, language } = useI18n();
+export default function LLMBatch({ onOpenSettings }: { onOpenSettings?: () => void }) {
+  const { t } = useI18n();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { hasMissingDeps } = useAppStatus();
+  const [serverUnreachable, setServerUnreachable] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch(`${APP_API_URL}/api/v1/status`);
+      if (!response.ok) throw new Error("status");
+      setServerUnreachable(false);
+    } catch {
+      setServerUnreachable(true);
+    }
+  };
 
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [templateId, setTemplateId] = useState("");
-  const [promptLang, setPromptLang] = useState<"en" | "vi">(language as "en" | "vi");
+  const [promptLang, setPromptLang] = useState<"en" | "vi">("vi");
 
   const [fileData, setFileData] = useState<Record<string, string> | null>(null);
   const [fileName, setFileName] = useState("");
@@ -38,9 +53,11 @@ export default function LLMBatch() {
 
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [generatingBatch, setGeneratingBatch] = useState(false);
+  const [parsedResult, setParsedResult] = useState<Record<string, { box1: string; box2: string }> | null>(null);
 
   // ── fetch prompt templates ────────────────────────────────────────────────
   useEffect(() => {
+    fetchStatus();
     fetch(`${APP_API_URL}/api/v1/llm/prompts`)
       .then((r) => r.json())
       .then((data: PromptTemplate[]) => {
@@ -125,6 +142,28 @@ export default function LLMBatch() {
     }
   };
 
+  // ── parse JSON ───────────────────────────────────────────────────────────
+  const [parsingJson, setParsingJson] = useState(false);
+
+  const handleParseJson = async () => {
+    if (!batchResult) return;
+    setParsingJson(true);
+    setParsedResult(null);
+    try {
+      const resp = await fetch(`${APP_API_URL}/api/v1/llm/batch/parse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: batchResult }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      setParsedResult(await resp.json());
+    } catch (err) {
+      toast({ title: "Error", description: String(err), variant: "destructive" });
+    } finally {
+      setParsingJson(false);
+    }
+  };
+
   // ── download helper ───────────────────────────────────────────────────────
   const downloadJson = (data: object, name: string) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -136,8 +175,21 @@ export default function LLMBatch() {
     URL.revokeObjectURL(url);
   };
 
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.tts_fast.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
+
   return (
     <div className="space-y-6">
+      <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} serverWarning={hasMissingDeps} onOpenSettings={onOpenSettings} />
 
       {/* Section 1: Upload JSON */}
       <Card>
@@ -302,6 +354,43 @@ export default function LLMBatch() {
               rows={16}
               className="font-mono text-xs"
               value={JSON.stringify(batchResult, null, 2)}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section 5: Parse JSON */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Parse JSON</CardTitle>
+          {parsedResult && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => downloadJson(parsedResult, "parsed_output.json")}
+            >
+              <Download className="w-4 h-4" />
+              {t("tool.llm_batch.download")}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            className="w-full"
+            onClick={handleParseJson}
+            disabled={parsingJson || !batchResult}
+          >
+            {parsingJson && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Parse JSON
+          </Button>
+
+          {parsedResult && (
+            <Textarea
+              readOnly
+              rows={16}
+              className="font-mono text-xs"
+              value={JSON.stringify(parsedResult, null, 2)}
             />
           )}
         </CardContent>

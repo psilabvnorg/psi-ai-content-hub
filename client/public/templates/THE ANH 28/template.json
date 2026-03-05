@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772618158119.3706,
+      "id": 1772682212784.8533,
       "x": 12,
       "y": 304,
       "w": 63,
@@ -22,16 +22,16 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772618158119.809,
+      "id": 1772682212784.411,
       "x": -46,
-      "y": 377,
+      "y": 379,
       "w": 397,
       "h": 397,
       "opacity": 60,
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772618158119.0347,
+      "id": 1772682212785.4968,
       "x": 252,
       "y": 12,
       "w": 63,
@@ -40,17 +40,43 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1772618158119.8142,
+      "id": 1772682212785.969,
       "type": "placeholder",
       "name": "box1",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#000000",
-      "x": 15,
-      "y": 374,
-      "w": 242,
-      "h": 216.07142857142858
+      "x": 141,
+      "y": 354,
+      "w": 185,
+      "h": 140.96428571428567
+    },
+    {
+      "id": 1772682212785.6304,
+      "type": "placeholder",
+      "name": "box2",
+      "placeholderType": "text",
+      "fontFamily": "Anton",
+      "textAlign": "left",
+      "textColor": "#ffffff",
+      "x": 11,
+      "y": 377,
+      "w": 81,
+      "h": 30
+    },
+    {
+      "id": 1772682216420,
+      "type": "placeholder",
+      "name": "box3",
+      "placeholderType": "image",
+      "fontFamily": "Anton",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 89,
+      "y": 167,
+      "w": 199,
+      "h": 149.25
     }
   ]
 }

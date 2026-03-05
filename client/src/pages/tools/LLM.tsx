@@ -19,12 +19,12 @@ type PromptTemplate = {
 };
 
 export default function LLM({ onOpenSettings }: { onOpenSettings?: () => void }) {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const { toast } = useToast();
 
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [templateId, setTemplateId] = useState("hook_generator");
-  const [promptLang, setPromptLang] = useState<"en" | "vi">(language as "en" | "vi");
+  const [promptLang, setPromptLang] = useState<"en" | "vi">("vi");
   const [promptText, setPromptText] = useState("");
   const [inputText, setInputText] = useState("");
   const [output, setOutput] = useState("");

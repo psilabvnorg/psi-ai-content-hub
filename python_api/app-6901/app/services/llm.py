@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://172.18.96.1:11434")
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
 DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1:8b")
 
 # Runtime config — overrides env-based defaults when set via the API.

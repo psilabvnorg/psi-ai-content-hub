@@ -193,10 +193,27 @@ const a_draw_text_placeholder_data = (
   a_canvas_context_data.restore();
 };
 
+const a_preload_fonts_data = async (a_template_data: TemplateData): Promise<void> => {
+  const a_font_families_data = new Set<string>();
+  for (const a_element_data of a_template_data.elements) {
+    if (a_element_data.type === "placeholder") {
+      const a_font_data = (a_element_data as PlaceholderElement).fontFamily;
+      if (a_font_data) a_font_families_data.add(a_font_data);
+    }
+  }
+  await Promise.all(
+    [...a_font_families_data].map((a_font_name_data) =>
+      document.fonts.load(`bold 40px "${a_font_name_data}"`).catch(() => {})
+    )
+  );
+};
+
 const a_render_thumbnail_data = async (
   a_template_data: TemplateData,
   a_placeholder_map_data: Record<string, string>,
 ): Promise<string> => {
+  await a_preload_fonts_data(a_template_data);
+
   const a_output_width_data = a_template_data.pageSize === "youtube" ? 1280 : 1080;
   const a_output_height_data = a_template_data.pageSize === "youtube" ? 720 : 1920;
 

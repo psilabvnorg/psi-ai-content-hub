@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +93,15 @@ def llm_batch_generate(payload: dict = Body(...)) -> dict:
         except Exception as exc:
             result[key] = f"[ERROR] {exc}"
     return result
+
+
+@router.post("/batch/parse")
+def llm_batch_parse(payload: dict = Body(...)) -> dict:
+    """Transform { key: text } → { key: { box1: text, box2: 'Ngày DD/MM/YYYY' } }."""
+    data: dict = payload.get("data", {})
+    today = date.today()
+    box2 = f"Ngày {today.day:02d}/{today.month:02d}/{today.year}"
+    return {key: {"box1": value, "box2": box2} for key, value in data.items()}
 
 
 @router.post("/generate")

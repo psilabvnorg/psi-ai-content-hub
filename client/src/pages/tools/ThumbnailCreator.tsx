@@ -273,15 +273,16 @@ export default function ThumbnailCreator() {
     e.stopPropagation();
     const el = elements.find(x => x.id === id);
     if (!el) return;
-    const startX = e.clientX, startW = el.w, startH = el.h;
-    const isImg = el.type !== "placeholder";
+    const startX = e.clientX, startY = e.clientY, startW = el.w, startH = el.h;
+    const isTextPlaceholder = el.type === "placeholder" && (el as PlaceholderElement).placeholderType === "text";
     const ratio = startH / startW;
     const move = (evt: MouseEvent) => {
       const newW = Math.max(30, startW + evt.clientX - startX);
+      const newH = isTextPlaceholder
+        ? Math.max(30, startH + evt.clientY - startY)
+        : newW * ratio;
       setElements(prev => prev.map(item =>
-        item.id === id
-          ? { ...item, w: newW, h: isImg ? newW * ratio : Math.max(30, startH + (newW - startW) * ratio) }
-          : item
+        item.id === id ? { ...item, w: newW, h: newH } : item
       ));
     };
     const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
@@ -524,7 +525,7 @@ export default function ThumbnailCreator() {
                 {el.type === "placeholder" ? (
                   <div
                     className="w-full h-full border-2 border-dashed flex flex-col items-center justify-center rounded select-none"
-                    style={{ borderColor: "rgba(255,255,255,0.65)", background: "rgba(255,255,255,0.10)" }}
+                    style={{ borderColor: "rgba(255,255,255,0.65)", background: "rgba(128,128,128,0.20)", outline: "2px dashed rgba(0,0,0,0.5)", outlineOffset: "2px" }}
                   >
                     <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
                       placeholder
@@ -776,11 +777,6 @@ export default function ThumbnailCreator() {
           )}
         </div>
 
-        {/* Export */}
-        <Button className="w-full h-12 rounded-xl font-bold mt-4" onClick={exportPNG}>
-          Export PNG
-        </Button>
-
         {/* Save buttons */}
         <div className="flex gap-2">
           <Button
@@ -813,6 +809,11 @@ export default function ThumbnailCreator() {
         {savedMsg && (
           <p className="text-center text-xs text-green-500 mt-1">Saved</p>
         )}
+
+        {/* Export */}
+        <Button className="w-full h-12 rounded-xl font-bold" onClick={exportPNG}>
+          Export PNG
+        </Button>
       </CardContent>
     </Card>
   );
