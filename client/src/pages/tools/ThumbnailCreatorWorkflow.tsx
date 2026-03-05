@@ -147,6 +147,18 @@ export default function ThumbnailCreatorWorkflow() {
     setGenerated([]);
     setError("");
 
+    // Throwaway warm-up render — fonts render incorrectly on the very first
+    // canvas draw after being loaded; this sacrificial render absorbs that hit
+    // so all real renders below are effectively "second runs".
+    try {
+      const firstRow = configRows[0];
+      const warmupMap: Record<string, string> = {};
+      for (const ph of a_normalized_placeholder_list_data) {
+        if (firstRow[ph.name]) warmupMap[ph.name] = firstRow[ph.name];
+      }
+      await renderThumbnail(template, warmupMap);
+    } catch { /* ignore */ }
+
     const results: GeneratedItem[] = [];
     for (let i = 0; i < configRows.length; i++) {
       const row = configRows[i];
