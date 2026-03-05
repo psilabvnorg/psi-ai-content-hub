@@ -3,9 +3,9 @@
   "pageSize": "tiktok",
   "mode": "normal-gradient",
   "split": 50,
-  "color1": "#00ff88",
-  "opacity1": 100,
-  "transparent1": true,
+  "color1": "#ffffff",
+  "opacity1": 20,
+  "transparent1": false,
   "color2": "#349863",
   "opacity2": 100,
   "transparent2": false,
@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772682212784.8533,
+      "id": 1772700768178.708,
       "x": 12,
       "y": 304,
       "w": 63,
@@ -22,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772682212784.411,
+      "id": 1772700768178.7212,
       "x": -46,
       "y": 379,
       "w": 397,
@@ -31,7 +31,7 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772682212785.4968,
+      "id": 1772700768178.1282,
       "x": 252,
       "y": 12,
       "w": 63,
@@ -40,9 +40,9 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1772682212785.969,
+      "id": 1772700768178.265,
       "type": "placeholder",
-      "name": "box1",
+      "name": "title",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",
@@ -53,9 +53,9 @@
       "h": 140.96428571428567
     },
     {
-      "id": 1772682212785.6304,
+      "id": 1772700768178.528,
       "type": "placeholder",
-      "name": "box2",
+      "name": "date",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",
@@ -66,17 +66,31 @@
       "h": 30
     },
     {
-      "id": 1772682216420,
+      "id": 1772700768178.0935,
       "type": "placeholder",
-      "name": "box3",
+      "name": "idol_image",
       "placeholderType": "image",
       "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#000000",
-      "x": 89,
-      "y": 167,
-      "w": 199,
-      "h": 149.25
+      "x": 140,
+      "y": 204,
+      "w": 193,
+      "h": 144.75
+    },
+    {
+      "id": 1772700777066,
+      "type": "placeholder",
+      "name": "intro_image",
+      "placeholderType": "image",
+      "fontFamily": "Anton",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": -131,
+      "y": 2,
+      "w": 467,
+      "h": 350.25,
+      "bottomLayer": true
     }
   ]
 }

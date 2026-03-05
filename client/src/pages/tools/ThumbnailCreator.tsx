@@ -29,6 +29,7 @@ export type PlaceholderElement = {
   type: "placeholder";
   name: string;
   placeholderType?: "image" | "text";
+  bottomLayer?: boolean;
   fontFamily?: string;
   textAlign?: "left" | "center" | "right";
   textColor?: string;
@@ -688,6 +689,21 @@ export default function ThumbnailCreator() {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  {(ph.placeholderType ?? "image") === "image" && (
+                    <div className="flex items-center gap-2 px-1">
+                      <input
+                        id={`bottom-layer-${ph.id}`}
+                        type="checkbox"
+                        checked={ph.bottomLayer ?? false}
+                        onChange={e => setElements(prev => prev.map(el => el.id === ph.id ? { ...el, bottomLayer: e.target.checked } : el))}
+                        className="w-4 h-4 cursor-pointer accent-accent"
+                      />
+                      <label htmlFor={`bottom-layer-${ph.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                        Bottom layer (render behind all other elements)
+                      </label>
+                    </div>
+                  )}
 
                   {(ph.placeholderType ?? "image") === "text" && (
                     <div className="grid grid-cols-3 gap-2">

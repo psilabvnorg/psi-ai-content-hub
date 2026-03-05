@@ -202,10 +202,13 @@ const a_preload_fonts_data = async (a_template_data: TemplateData): Promise<void
     }
   }
   await Promise.all(
-    [...a_font_families_data].map((a_font_name_data) =>
+    Array.from(a_font_families_data).map((a_font_name_data) =>
       document.fonts.load(`bold 40px "${a_font_name_data}"`).catch(() => {})
     )
   );
+  // Wait one animation frame so the canvas rendering engine fully registers
+  // newly loaded fonts — without this, first render uses fallback font
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 };
 
 const a_render_thumbnail_data = async (
@@ -237,13 +240,13 @@ const a_render_thumbnail_data = async (
     pageSize: a_page_size_text_data,
   } = a_template_data;
 
-  if (!(a_transparent_first_flag_data && a_transparent_second_flag_data)) {
+  const a_draw_gradient_data = () => {
+    if (a_transparent_first_flag_data && a_transparent_second_flag_data) return;
     const a_gradient_color_first_text_data = a_transparent_first_flag_data ? "rgba(0,0,0,0)" : a_to_rgba_text_data(a_color_first_text_data, a_opacity_first_number_data);
     const a_gradient_color_second_text_data = a_transparent_second_flag_data ? "rgba(0,0,0,0)" : a_to_rgba_text_data(a_color_second_text_data, a_opacity_second_number_data);
     const a_gradient_data = a_page_size_text_data === "youtube"
       ? a_canvas_context_data.createLinearGradient(0, 0, a_output_width_data, 0)
       : a_canvas_context_data.createLinearGradient(0, 0, 0, a_output_height_data);
-
     if (a_gradient_mode_text_data === "gradient-split") {
       const a_split_ratio_data = a_split_percent_number_data / 100;
       a_gradient_data.addColorStop(0, a_gradient_color_first_text_data);
@@ -257,16 +260,66 @@ const a_render_thumbnail_data = async (
       a_gradient_data.addColorStop(Math.min(1, a_split_ratio_data + 0.05), a_gradient_color_second_text_data);
       a_gradient_data.addColorStop(1, a_gradient_color_second_text_data);
     }
-
     a_canvas_context_data.fillStyle = a_gradient_data;
     a_canvas_context_data.fillRect(0, 0, a_output_width_data, a_output_height_data);
-  }
+  };
 
   const a_template_canvas_space_data = a_get_template_canvas_space_data(a_template_data);
   const a_scale_x_data = a_output_width_data / a_template_canvas_space_data.width;
   const a_scale_y_data = a_output_height_data / a_template_canvas_space_data.height;
 
-  for (const a_element_data of a_template_data.elements) {
+  // Draw order: bottomLayer elements → gradient → rest
+  const a_bottom_elements_data = a_template_data.elements.filter(e => (e as any).bottomLayer);
+  const a_top_elements_data = a_template_data.elements.filter(e => !(e as any).bottomLayer);
+
+  for (const a_element_data of a_bottom_elements_data) {
+    if (a_element_data.type === "placeholder") {
+      const a_placeholder_data = a_normalize_placeholder_settings_data(a_element_data as PlaceholderElement);
+      const a_cell_value_data = String(a_placeholder_map_data[a_placeholder_data.name] ?? "");
+      if (!a_cell_value_data.trim()) continue;
+
+      if (a_placeholder_data.placeholderType === "text") {
+        a_draw_text_placeholder_data(a_canvas_context_data, a_placeholder_data, a_cell_value_data, a_scale_x_data, a_scale_y_data);
+      } else {
+        try {
+          const a_image_data = await a_load_image_data(a_cell_value_data.trim());
+          a_draw_image_contain_in_box_data(
+            a_canvas_context_data,
+            a_image_data,
+            a_placeholder_data.x * a_scale_x_data,
+            a_placeholder_data.y * a_scale_y_data,
+            a_placeholder_data.w * a_scale_x_data,
+            a_placeholder_data.h * a_scale_y_data,
+          );
+        } catch {
+          // skip failed image placeholders
+        }
+      }
+      continue;
+    }
+
+    const a_static_image_data = a_element_data as { src?: string; opacity?: number; x: number; y: number; w: number; h: number };
+    if (!a_static_image_data.src) continue;
+    try {
+      const a_image_data = await a_load_image_data(a_static_image_data.src);
+      a_canvas_context_data.globalAlpha = (a_static_image_data.opacity ?? 100) / 100;
+      a_draw_image_contain_in_box_data(
+        a_canvas_context_data,
+        a_image_data,
+        a_static_image_data.x * a_scale_x_data,
+        a_static_image_data.y * a_scale_y_data,
+        a_static_image_data.w * a_scale_x_data,
+        a_static_image_data.h * a_scale_y_data,
+      );
+      a_canvas_context_data.globalAlpha = 1;
+    } catch {
+      // skip failed static images
+    }
+  }
+
+  a_draw_gradient_data();
+
+  for (const a_element_data of a_top_elements_data) {
     if (a_element_data.type === "placeholder") {
       const a_placeholder_data = a_normalize_placeholder_settings_data(a_element_data as PlaceholderElement);
       const a_cell_value_data = String(a_placeholder_map_data[a_placeholder_data.name] ?? "");

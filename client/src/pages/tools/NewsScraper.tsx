@@ -7,13 +7,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Link2,
-  List,
-  Search,
-  Copy,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -28,31 +22,6 @@ import { useEffect } from "react";
 // Types
 // ---------------------------------------------------------------------------
 
-type Mode = "fetch" | "scrape" | "crawl";
-
-type ArticleMeta = {
-  title?: string;
-  description?: string;
-  author?: string;
-  published_time?: string;
-  image?: string;
-  tags?: string[];
-  categories?: string[];
-  url?: string;
-};
-
-type ArticleBody = {
-  paragraphs?: string[];
-  images?: { src: string; caption?: string | null }[];
-};
-
-type ScrapeResult = {
-  scraped_at?: string;
-  source_url?: string;
-  meta?: ArticleMeta;
-  body?: ArticleBody;
-};
-
 type CrawlProgress = {
   status?: string;
   message?: string;
@@ -61,7 +30,7 @@ type CrawlProgress = {
   percent?: number;
   processed?: number;
   failed?: number;
-  saved_files?: string[];
+  consolidated_file?: string;
   out_dir?: string;
 };
 
@@ -74,7 +43,7 @@ type Source = {
 };
 
 // ---------------------------------------------------------------------------
-// VNExpress predefined categories (used as quick-picks)
+// Predefined categories
 // ---------------------------------------------------------------------------
 
 const VNEXPRESS_CATEGORIES = [
@@ -166,28 +135,15 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
   const currentSource = sources.find((s) => s.id === selectedSource) ?? sources[0];
   const categories = currentSource?.categories ?? [];
 
-  // ----- Mode -----
-  const [mode, setMode] = useState<Mode>("fetch");
-
   // ----- Inputs -----
   const [categoryUrl, setCategoryUrl] = useState(VNEXPRESS_CATEGORIES[0].url);
-  const [articleUrl, setArticleUrl] = useState("");
   const [limit, setLimit] = useState(10);
   const [outDir, setOutDir] = useState("");
 
-  // ----- Fetch-URL results -----
-  const [fetchedUrls, setFetchedUrls] = useState<string[]>([]);
-
-  // ----- Scrape results -----
-  const [scrapeResult, setScrapeResult] = useState<ScrapeResult | null>(null);
-  const [bodyExpanded, setBodyExpanded] = useState(false);
-
-  // ----- Crawl results -----
+  // ----- Crawl state -----
   const [crawlJobId, setCrawlJobId] = useState<string | null>(null);
   const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
   const crawlJobIdRef = useRef<string | null>(null);
-
-  // ----- Generic state -----
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,7 +172,7 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
           es.close();
           setLoading(false);
           if (data.status === "error") {
-            setError(data.message ?? "Crawl failed");
+            setError((data as { message?: string }).message ?? "Crawl failed");
           }
         }
       } catch {
@@ -242,67 +198,9 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
   // ----- Actions -----
 
   const resetResults = () => {
-    setFetchedUrls([]);
-    setScrapeResult(null);
     setCrawlProgress(null);
     setError(null);
     setCrawlJobId(null);
-  };
-
-  const handleFetchUrls = async () => {
-    resetResults();
-    setLoading(true);
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/news-scraper/fetch-urls`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: selectedSource, category_url: categoryUrl, limit }),
-      });
-      if (!res.ok) {
-        const err = await res.json() as { detail?: string };
-        throw new Error(err.detail ?? "Failed to fetch URLs");
-      }
-      const data = await res.json() as { urls: string[]; count: number };
-      setFetchedUrls(data.urls);
-      toast({ title: t("tool.common.success"), description: t("tool.news_scraper.urls_found").replace("{{count}}", String(data.count)) });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Fetch failed";
-      setError(msg);
-      toast({ title: t("tool.common.error"), description: msg, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleScrape = async (url?: string) => {
-    const targetUrl = url ?? articleUrl;
-    if (!targetUrl) {
-      toast({ title: t("tool.common.error"), description: "Please enter an article URL", variant: "destructive" });
-      return;
-    }
-    resetResults();
-    setLoading(true);
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/news-scraper/scrape`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl }),
-      });
-      if (!res.ok) {
-        const err = await res.json() as { detail?: string };
-        throw new Error(err.detail ?? "Scrape failed");
-      }
-      const data = await res.json() as ScrapeResult;
-      setScrapeResult(data);
-      setBodyExpanded(false);
-      toast({ title: t("tool.common.success"), description: data.meta?.title ?? "Article scraped" });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Scrape failed";
-      setError(msg);
-      toast({ title: t("tool.common.error"), description: msg, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleStartCrawl = async () => {
@@ -328,23 +226,28 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
     }
   };
 
-  const handleSubmit = () => {
-    if (mode === "fetch") void handleFetchUrls();
-    else if (mode === "scrape") void handleScrape();
-    else void handleStartCrawl();
-  };
-
-  const copyToClipboard = (text: string) => {
-    void navigator.clipboard.writeText(text);
-    toast({ title: "Copied", description: text.slice(0, 60) });
+  const handleDownloadJson = async () => {
+    if (!crawlJobId) return;
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/news-scraper/crawl/download/${crawlJobId}`);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `articles_${crawlJobId.slice(0, 8)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast({ title: t("tool.common.error"), description: "Download failed", variant: "destructive" });
+    }
   };
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
-
-  const paragraphs = scrapeResult?.body?.paragraphs ?? [];
-  const PREVIEW_PARAGRAPHS = 3;
 
   return (
     <div className="space-y-6">
@@ -356,7 +259,7 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
         onOpenSettings={onOpenSettings}
       />
 
-      {/* ---- Input card ---- */}
+      {/* ---- Batch Crawl card ---- */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -396,36 +299,8 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
           </div>
 
-          {/* Mode selector */}
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2">
-              {(
-                [
-                  { id: "fetch" as Mode, label: t("tool.news_scraper.mode_fetch"), icon: List },
-                  { id: "scrape" as Mode, label: t("tool.news_scraper.mode_scrape"), icon: Search },
-                  { id: "crawl" as Mode, label: t("tool.news_scraper.mode_crawl"), icon: Newspaper },
-                ] as const
-              ).map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => { setMode(id); resetResults(); }}
-                  className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all
-                    ${mode === id
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : "border-border bg-muted/40 text-muted-foreground hover:border-accent/60 hover:text-foreground"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Category quick-picks (fetch / crawl mode) */}
-          {(mode === "fetch" || mode === "crawl") && categories.length > 0 && (
+          {/* Category quick-picks */}
+          {categories.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("tool.news_scraper.category")}</label>
               <div className="flex flex-wrap gap-1.5">
@@ -455,61 +330,44 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
           )}
 
-          {/* Article URL input (scrape mode) */}
-          {mode === "scrape" && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("tool.news_scraper.article_url")}</label>
-              <Input
-                value={articleUrl}
-                onChange={(e) => setArticleUrl(e.target.value)}
-                placeholder={t("tool.news_scraper.article_url_placeholder")}
-                disabled={loading}
-              />
+          {/* Limit */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {t("tool.news_scraper.limit")}: <span className="text-accent font-bold">{limit}</span>
+            </label>
+            <input
+              type="range"
+              min={1}
+              max={50}
+              step={1}
+              value={limit}
+              disabled={loading}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-border accent-accent disabled:opacity-50"
+            />
+            <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground">
+              <span>Min</span>
+              <span>Max 50</span>
             </div>
-          )}
+          </div>
 
-          {/* Limit (fetch / crawl) */}
-          {(mode === "fetch" || mode === "crawl") && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {t("tool.news_scraper.limit")}: <span className="text-accent font-bold">{limit}</span>
-              </label>
-              <input
-                type="range"
-                min={mode === "fetch" ? 5 : 1}
-                max={mode === "fetch" ? 100 : 50}
-                step={1}
-                value={limit}
-                disabled={loading}
-                onChange={(e) => setLimit(Number(e.target.value))}
-                className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-border accent-accent disabled:opacity-50"
-              />
-              <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground">
-                <span>Min</span>
-                <span>Max {mode === "fetch" ? 100 : 50}</span>
-              </div>
-            </div>
-          )}
+          {/* Output dir */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">{t("tool.news_scraper.out_dir")}</label>
+            <Input
+              value={outDir}
+              onChange={(e) => setOutDir(e.target.value)}
+              placeholder={defaultOutDir || t("tool.news_scraper.out_dir_placeholder")}
+              disabled={loading}
+              className="font-mono text-xs"
+            />
+            {defaultOutDir && !outDir && (
+              <p className="text-[11px] text-muted-foreground font-mono break-all">{defaultOutDir}</p>
+            )}
+          </div>
 
-          {/* Output dir (crawl) */}
-          {mode === "crawl" && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("tool.news_scraper.out_dir")}</label>
-              <Input
-                value={outDir}
-                onChange={(e) => setOutDir(e.target.value)}
-                placeholder={defaultOutDir || t("tool.news_scraper.out_dir_placeholder")}
-                disabled={loading}
-                className="font-mono text-xs"
-              />
-              {defaultOutDir && !outDir && (
-                <p className="text-[11px] text-muted-foreground font-mono break-all">{defaultOutDir}</p>
-              )}
-            </div>
-          )}
-
-          {/* Loading state (crawl progress bar) */}
-          {loading && mode === "crawl" && crawlProgress && (
+          {/* Progress bar */}
+          {loading && crawlProgress && (
             <div className="space-y-2">
               <Progress value={crawlProgress.percent ?? 0} className="w-full" />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -519,13 +377,11 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
           )}
 
-          {/* Loading state (generic spinner) */}
-          {loading && mode !== "crawl" && (
+          {/* Loading spinner (before first progress event) */}
+          {loading && !crawlProgress && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>
-                {mode === "fetch" ? t("tool.news_scraper.fetching") : t("tool.news_scraper.scraping")}
-              </span>
+              <span>{t("tool.news_scraper.crawling")}</span>
             </div>
           )}
 
@@ -540,163 +396,25 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
           )}
 
-          {/* Action button */}
-          <Button onClick={handleSubmit} disabled={loading} className="w-full">
+          {/* Batch Crawl button */}
+          <Button onClick={() => void handleStartCrawl()} disabled={loading} className="w-full">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {mode === "fetch"
-                  ? t("tool.news_scraper.fetching")
-                  : mode === "scrape"
-                  ? t("tool.news_scraper.scraping")
-                  : t("tool.news_scraper.crawling")}
+                {t("tool.news_scraper.crawling")}
               </>
             ) : (
               <>
-                {mode === "fetch" && <><List className="w-4 h-4 mr-2" />{t("tool.news_scraper.fetch_urls")}</>}
-                {mode === "scrape" && <><Search className="w-4 h-4 mr-2" />{t("tool.news_scraper.scrape")}</>}
-                {mode === "crawl" && <><Newspaper className="w-4 h-4 mr-2" />{t("tool.news_scraper.start_crawl")}</>}
+                <Newspaper className="w-4 h-4 mr-2" />
+                {t("tool.news_scraper.start_crawl")}
               </>
             )}
           </Button>
         </CardContent>
       </Card>
 
-      {/* ---- Fetched URLs result ---- */}
-      {fetchedUrls.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              {t("tool.news_scraper.urls_found").replace("{{count}}", String(fetchedUrls.length))}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-1 max-h-80 overflow-y-auto pr-1">
-              {fetchedUrls.map((url, i) => (
-                <li key={i} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-                  <Link2 className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                  <span className="flex-1 truncate font-mono text-foreground/80">{url}</span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(url)}
-                    className="flex-shrink-0 text-muted-foreground hover:text-foreground"
-                    title="Copy URL"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setMode("scrape"); setArticleUrl(url); void handleScrape(url); }}
-                    className="flex-shrink-0 text-muted-foreground hover:text-accent"
-                    title="Scrape this article"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                  </button>
-                  <a href={url} target="_blank" rel="noreferrer" className="flex-shrink-0 text-muted-foreground hover:text-foreground">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ---- Scraped article result ---- */}
-      {scrapeResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              {scrapeResult.meta?.title ?? "Article"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Thumbnail */}
-            {scrapeResult.meta?.image && (
-              <img
-                src={scrapeResult.meta.image}
-                alt={scrapeResult.meta.title ?? ""}
-                className="w-full rounded-lg object-cover max-h-52"
-              />
-            )}
-
-            {/* Meta */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              {scrapeResult.meta?.author && (
-                <div>
-                  <span className="text-muted-foreground text-xs">Author</span>
-                  <p className="font-medium">{scrapeResult.meta.author}</p>
-                </div>
-              )}
-              {scrapeResult.meta?.published_time && (
-                <div>
-                  <span className="text-muted-foreground text-xs">Published</span>
-                  <p className="font-medium">{scrapeResult.meta.published_time.replace("T", " ").replace("Z", "")}</p>
-                </div>
-              )}
-              {(scrapeResult.meta?.categories ?? []).length > 0 && (
-                <div className="col-span-2">
-                  <span className="text-muted-foreground text-xs">Categories</span>
-                  <div className="flex flex-wrap gap-1 mt-0.5">
-                    {scrapeResult.meta?.categories?.map((c, i) => (
-                      <span key={i} className="rounded-full bg-accent/20 text-accent px-2 py-0.5 text-[11px] font-medium">{c}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            {scrapeResult.meta?.description && (
-              <p className="text-sm text-muted-foreground border-l-2 border-accent pl-3 italic">
-                {scrapeResult.meta.description}
-              </p>
-            )}
-
-            {/* Body paragraphs */}
-            {paragraphs.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Body ({paragraphs.length} paragraphs, {scrapeResult.body?.images?.length ?? 0} images)
-                </p>
-                <div className="space-y-2">
-                  {(bodyExpanded ? paragraphs : paragraphs.slice(0, PREVIEW_PARAGRAPHS)).map((p, i) => (
-                    <p key={i} className="text-sm leading-relaxed">{p}</p>
-                  ))}
-                </div>
-                {paragraphs.length > PREVIEW_PARAGRAPHS && (
-                  <button
-                    type="button"
-                    onClick={() => setBodyExpanded(!bodyExpanded)}
-                    className="flex items-center gap-1 text-xs text-accent hover:underline"
-                  >
-                    {bodyExpanded ? (
-                      <><ChevronUp className="w-3.5 h-3.5" /> Show less</>
-                    ) : (
-                      <><ChevronDown className="w-3.5 h-3.5" /> Show {paragraphs.length - PREVIEW_PARAGRAPHS} more paragraphs</>
-                    )}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Copy JSON */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => copyToClipboard(JSON.stringify(scrapeResult, null, 2))}
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy JSON
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* ---- Crawl result ---- */}
-      {crawlProgress && (mode === "crawl") && (
+      {(crawlProgress?.status === "complete" || crawlProgress?.status === "error") && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -731,15 +449,11 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
                     <p className="font-mono text-xs text-foreground mt-0.5 break-all">{crawlProgress.out_dir}</p>
                   </div>
                 )}
-                {(crawlProgress.saved_files ?? []).length > 0 && (
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {crawlProgress.saved_files?.map((f, i) => (
-                      <div key={i} className="flex items-center gap-2 rounded border border-border bg-muted/20 px-2 py-1 text-xs font-mono text-muted-foreground">
-                        <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-green-500" />
-                        <span className="truncate">{f}</span>
-                      </div>
-                    ))}
-                  </div>
+                {crawlJobId && (
+                  <Button onClick={() => void handleDownloadJson()} variant="outline" className="w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Consolidated JSON
+                  </Button>
                 )}
               </>
             )}

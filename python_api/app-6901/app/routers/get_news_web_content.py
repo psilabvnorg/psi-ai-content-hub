@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from ..services.get_news_web_content.vnexpress import (
     fetch_article_urls as _vne_fetch_urls,
@@ -238,7 +238,7 @@ def _run_crawl(
 
         processed = 0
         failed = 0
-        saved_files: list[str] = []
+        articles: list[dict[str, Any]] = []
 
         for idx, url in enumerate(to_scrape):
             prefix = f"article_{idx + 1}"
@@ -255,29 +255,43 @@ def _run_crawl(
             )
 
             try:
-                json_path, _ = _scrape_for(source, url=url, prefix=prefix, out_dir=out_dir)
+                json_path, html_path = _scrape_for(source, url=url, prefix=prefix, out_dir=out_dir)
+                with open(json_path, "r", encoding="utf-8") as fh:
+                    article_data = json.load(fh)
+                articles.append(article_data)
+                # Remove individual files; only consolidated JSON will be kept
+                try:
+                    Path(json_path).unlink(missing_ok=True)
+                    if html_path:
+                        Path(html_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
                 processed += 1
-                saved_files.append(json_path)
             except Exception as exc:
                 failed += 1
                 _push_event(job_id, {"status": "article_failed", "url": url, "error": str(exc)})
 
             _set_job(
                 job_id,
-                {"status": "running", "processed": processed, "failed": failed, "saved_files": saved_files},
+                {"status": "running", "processed": processed, "failed": failed},
             )
 
             if idx < len(to_scrape) - 1:
                 time.sleep(0.5)
 
+        # Save one consolidated JSON file
+        consolidated_path = os.path.join(out_dir, "consolidated.json")
+        with open(consolidated_path, "w", encoding="utf-8") as fh:
+            json.dump(articles, fh, ensure_ascii=False, indent=2)
+
         result: dict[str, Any] = {
             "status": "complete",
             "processed": processed,
             "failed": failed,
-            "saved_files": saved_files,
+            "consolidated_file": consolidated_path,
             "out_dir": os.path.abspath(out_dir),
         }
-        _set_job(job_id, result)
+        _set_job(job_id, {**result, "articles": articles})
         _push_event(job_id, {**result, "percent": 100, "message": f"Done — {processed} articles saved"})
 
     except Exception as exc:
@@ -354,3 +368,22 @@ def crawl_result(job_id: str) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+
+@router.get("/crawl/download/{job_id}")
+def crawl_download(job_id: str) -> Response:
+    """Download the consolidated JSON from a completed crawl job."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.get("status") != "complete":
+        raise HTTPException(status_code=400, detail="Job not complete yet")
+    articles = job.get("articles", [])
+    content = json.dumps(articles, ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"articles_{job_id[:8]}.json"
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
