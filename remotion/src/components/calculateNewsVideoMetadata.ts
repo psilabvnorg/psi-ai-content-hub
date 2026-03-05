@@ -7,7 +7,7 @@ import {
   getCaptionFileForAudio,
 } from '../utils/getStaticAssets';
 import { normalizeCaptions } from '../utils/normalizeCaptions';
-import type { MainVideoProps } from './index';
+import type { NewsVideoProps } from './NewsVideo';
 
 const loadJsonConfig = async (contentDirectory: string, filename: string): Promise<Record<string, unknown> | null> => {
   try {
@@ -24,15 +24,17 @@ const loadJsonConfig = async (contentDirectory: string, filename: string): Promi
   return null;
 };
 
-export const calculateMainVideoMetadata: CalculateMetadataFunction<MainVideoProps> = async ({ props }) => {
+export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProps> = async ({ props }) => {
   const fps = 30;
 
   console.log(`\n========== METADATA CALCULATION ==========`);
   console.log(`Content Directory: ${props.contentDirectory}`);
 
   const videoConfig = await loadJsonConfig(props.contentDirectory, 'video-config.json');
-  const orientation = ((videoConfig?.orientation as string) ?? props.orientation ?? 'vertical') as 'vertical' | 'horizontal';
-  const backgroundMode = (videoConfig?.backgroundMode as boolean) ?? props.backgroundMode ?? false;
+  // props values (FIXED constants from variant wrappers) take priority over video-config.json.
+  // introDurationInFrames and imageDurationInFrames remain config-overridable (legitimately tunable per content).
+  const orientation = (props.orientation ?? (videoConfig?.orientation as string) ?? 'vertical') as 'vertical' | 'horizontal';
+  const backgroundMode = props.backgroundMode ?? (videoConfig?.backgroundMode as boolean) ?? false;
   const introDurationInFrames = (videoConfig?.introDurationInFrames as number) ?? props.introDurationInFrames;
   const imageDurationInFrames = (videoConfig?.imageDurationInFrames as number) ?? props.imageDurationInFrames;
 
@@ -47,10 +49,28 @@ export const calculateMainVideoMetadata: CalculateMetadataFunction<MainVideoProp
   const defaultImage2 = isHorizontal ? 'templates/news-intro-horizontal/right.png' : 'templates/news-intro-vertical/bottom.png';
   const defaultHero = isHorizontal ? 'templates/news-intro-horizontal/hero.png' : 'templates/news-intro-vertical/hero.png';
 
+  const trim = (v: unknown, fallback: string) => ((v as string)?.trim()) || fallback;
+
+  const configImage1 = introConfig?.image1 as string | undefined;
+  const configImage2 = introConfig?.image2 as string | undefined;
+
+  // Reject intro-config image paths that belong to the opposite orientation.
+  // heroImage is orientation-agnostic and always flows through unchanged.
+  const isOrientationMismatch = (path: string | undefined): boolean => {
+    if (!path) return false;
+    if (isHorizontal && path.includes('vertical')) return true;
+    if (!isHorizontal && path.includes('horizontal')) return true;
+    return false;
+  };
+
   const introProps = {
-    image1: (introConfig?.image1 as string) || props.introProps.image1 || defaultImage1,
-    image2: (introConfig?.image2 as string) || props.introProps.image2 || defaultImage2,
-    heroImage: (introConfig?.heroImage as string) || props.introProps.heroImage || defaultHero,
+    image1: isOrientationMismatch(configImage1)
+      ? (props.introProps.image1 || defaultImage1)
+      : trim(configImage1, props.introProps.image1 || defaultImage1),
+    image2: isOrientationMismatch(configImage2)
+      ? (props.introProps.image2 || defaultImage2)
+      : trim(configImage2, props.introProps.image2 || defaultImage2),
+    heroImage: trim(introConfig?.heroImage, props.introProps.heroImage || defaultHero),
   };
 
   const images = (!props.images || props.images.length === 0)
@@ -79,6 +99,14 @@ export const calculateMainVideoMetadata: CalculateMetadataFunction<MainVideoProp
   }
 
   const captions = normalizeCaptions(captionsSource);
+
+  // Load section mapping (optional — used by education-style content)
+  const sectionMapping = await loadJsonConfig(props.contentDirectory, 'section-mapping.json');
+  const sections = Array.isArray(sectionMapping?.sections)
+    ? (sectionMapping.sections as Array<{ title: string; startMs: number }>)
+    : [];
+  if (sections.length > 0) console.log(`Sections: ${sections.length} loaded`);
+
   console.log(`==========================================\n`);
 
   const audioDuration = audioSrc ? await getAudioDuration(audioSrc) : 0;
@@ -105,6 +133,7 @@ export const calculateMainVideoMetadata: CalculateMetadataFunction<MainVideoProp
       videoDurations: [],
       captions,
       imageDurationInFrames,
+      sections,
     },
   };
 };

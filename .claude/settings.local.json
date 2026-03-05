@@ -33,7 +33,8 @@
       "Bash(__NEW_LINE_d1a7ea08a629d66f__ echo \"\")",
       "Bash(xargs cat)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in [''main'',''build'',''scripts''] if k in d}, indent=2\\)\\)\")",
-      "Bash(npm install html2canvas)"
+      "Bash(npm install html2canvas)",
+      "WebFetch(domain:www.remotion.dev)"
     ]
   }
 }

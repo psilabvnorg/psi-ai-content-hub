@@ -2,19 +2,46 @@ import "./index.css";
 import { Composition } from "remotion";
 import { NewsIntroVertical, newsIntroVerticalSchema } from "./components/NewsIntroVertical";
 import { NewsIntroHorizontal, newsIntroHorizontalSchema } from "./components/NewsIntroHorizontal";
-import { News, mainVideoSchema } from "./news";
-import { calculateMainVideoMetadata } from "./news/calculateMainVideoMetadata";
-import { Education, mainVideoSchema as educationSchema } from "./education";
-import { calculateMainVideoMetadata as calculateEducationMetadata } from "./education/calculateMainVideoMetadata";
+import { NewsVerticalNoBackground, schema as schemaVNB, calculateMetadata as calcVNB } from "./news/NewsVerticalNoBackground";
+import { NewsVerticalBackground, schema as schemaVB, calculateMetadata as calcVB } from "./news/NewsVerticalBackground";
+import { NewsHorizontalNoBackground, schema as schemaHNB, calculateMetadata as calcHNB } from "./news/NewsHorizontalNoBackground";
+import { NewsHorizontalBackground, schema as schemaHB, calculateMetadata as calcHB } from "./news/NewsHorizontalBackground";
 import { MusicPlaylistVideo, musicPlaylistSchema } from "./music-playlist";
 import { calculateMusicPlaylistMetadata } from "./music-playlist/calculateMainVideoMetadata";
 import { MusicPlaylistVideo as PodcastVideo, musicPlaylistSchema as podcastSchema } from "./podcast";
 import { calculateMusicPlaylistMetadata as calculatePodcastMetadata } from "./podcast/calculateMainVideoMetadata";
 
+const NEWS_INTRO_DEFAULTS = {
+  vertical: {
+    image1: 'templates/news-intro-vertical/top.png',
+    image2: 'templates/news-intro-vertical/bottom.png',
+    heroImage: 'templates/news-intro-vertical/hero.png',
+  },
+  horizontal: {
+    image1: 'templates/news-intro-horizontal/left.png',
+    image2: 'templates/news-intro-horizontal/right.png',
+    heroImage: 'templates/news-intro-horizontal/hero.png',
+  },
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ── NewsIntroHorizontal ── */}
+      {/* ── Standalone intro previews ── */}
+      <Composition
+        id="NewsIntroVertical"
+        component={NewsIntroVertical}
+        schema={newsIntroVerticalSchema}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={150}
+        defaultProps={{
+          topImage: 'templates/news-intro-vertical/top.png',
+          bottomImage: 'templates/news-intro-vertical/bottom.png',
+          heroImage: 'templates/news-intro-vertical/hero.png',
+        }}
+      />
       <Composition
         id="NewsIntroHorizontal"
         component={NewsIntroHorizontal}
@@ -30,71 +57,67 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
 
-      {/* ── NewsIntroVertical ── */}
+      {/* ── News: Vertical + Background overlay ── */}
       <Composition
-        id="NewsIntroVertical"
-        component={NewsIntroVertical}
-        schema={newsIntroVerticalSchema}
-        width={1080}
-        height={1920}
-        fps={30}
-        durationInFrames={150}
+        id="NewsVerticalBackground"
+        component={NewsVerticalBackground}
+        calculateMetadata={calcVB}
+        schema={schemaVB}
         defaultProps={{
-          topImage: 'templates/news-intro-vertical/top.png',
-          bottomImage: 'templates/news-intro-vertical/bottom.png',
-          heroImage: 'templates/news-intro-vertical/hero.png',
-        }}
-      />
-
-      <Composition
-        id="News"
-        component={News}
-        calculateMetadata={calculateMainVideoMetadata}
-        schema={mainVideoSchema}
-        defaultProps={{
-          contentDirectory: "main/preview",
-          orientation: "vertical",
-          introProps: {
-            image1: 'templates/news-intro-vertical/top.png',
-            image2: 'templates/news-intro-vertical/bottom.png',
-            heroImage: 'templates/news-intro-vertical/hero.png',
-          },
-          images: [],
-          videos: [],
-          videoDurations: [],
-          captions: [],
-          backgroundMode: false,
+          contentDirectory: 'main/preview',
+          introProps: NEWS_INTRO_DEFAULTS.vertical,
+          images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
         }}
       />
 
-      {/* ── Education ── */}
+      {/* ── News: Vertical + Full intro ── */}
       <Composition
-        id="Education"
-        component={Education}
-        calculateMetadata={calculateEducationMetadata}
-        schema={educationSchema}
+        id="NewsVerticalNoBackground"
+        component={NewsVerticalNoBackground}
+        calculateMetadata={calcVNB}
+        schema={schemaVNB}
         defaultProps={{
-          contentDirectory: "main/education",
-          orientation: "vertical",
-          introProps: {
-            image1: 'templates/news-intro-vertical/top.png',
-            image2: 'templates/news-intro-vertical/bottom.png',
-            heroImage: 'templates/news-intro-vertical/hero.png',
-          },
-          images: [],
-          videos: [],
-          videoDurations: [],
-          captions: [],
-          sections: [],
-          backgroundMode: false,
+          contentDirectory: 'main/preview',
+          introProps: NEWS_INTRO_DEFAULTS.vertical,
+          images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
         }}
       />
 
-      {/* ── Music Playlist: TikTok  ── */}
+      {/* ── News: Horizontal + Background overlay ── */}
+      <Composition
+        id="NewsHorizontalBackground"
+        component={NewsHorizontalBackground}
+        calculateMetadata={calcHB}
+        schema={schemaHB}
+        defaultProps={{
+          contentDirectory: 'main/preview',
+          introProps: NEWS_INTRO_DEFAULTS.horizontal,
+          images: [], videos: [], videoDurations: [], captions: [], sections: [],
+          introDurationInFrames: 150,
+          imageDurationInFrames: 170,
+        }}
+      />
+
+      {/* ── News: Horizontal + Full intro ── */}
+      <Composition
+        id="NewsHorizontalNoBackground"
+        component={NewsHorizontalNoBackground}
+        calculateMetadata={calcHNB}
+        schema={schemaHNB}
+        defaultProps={{
+          contentDirectory: 'main/preview',
+          introProps: NEWS_INTRO_DEFAULTS.horizontal,
+          images: [], videos: [], videoDurations: [], captions: [], sections: [],
+          introDurationInFrames: 150,
+          imageDurationInFrames: 170,
+        }}
+      />
+
+      {/* ── Music Playlist ── */}
       <Composition
         id="MusicPlaylist"
         component={MusicPlaylistVideo}
@@ -142,8 +165,6 @@ export const RemotionRoot: React.FC = () => {
           trackCaptions: [],
         }}
       />
-
-
     </>
   );
 };
