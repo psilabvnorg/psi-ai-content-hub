@@ -50,7 +50,7 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
         <AbsoluteFill
           style={{
             width: '100%',
-            height: '50%',
+            height: '65%',
             top: 0,
             overflow: 'hidden',
             position: 'absolute',
@@ -72,7 +72,7 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
         <AbsoluteFill
           style={{
             width: '100%',
-            height: '50%',
+            height: '65%',
             top: 0,
             display: 'flex',
             justifyContent: 'center',

@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772618144508.317,
+      "id": 1772718895609.6265,
       "x": 144,
       "y": 418,
       "w": 196,
@@ -22,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772618144508.0466,
+      "id": 1772718895609.4727,
       "x": -27,
       "y": 297,
       "w": 120,
@@ -31,9 +31,9 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772618144508.7043,
+      "id": 1772718895609.1892,
       "type": "placeholder",
-      "name": "box1",
+      "name": "title",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",

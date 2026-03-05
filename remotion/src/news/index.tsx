@@ -1,41 +1,36 @@
-import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Img, Sequence, staticFile, useVideoConfig } from 'remotion';
 import { z } from 'zod';
-import { IntroOverlay, introSchema } from '../components/Intro';
+import { NewsIntroVertical } from '../components/NewsIntroVertical';
+import { NewsIntroHorizontal } from '../components/NewsIntroHorizontal';
 import { LoopingImageSlider } from '../components/LoopingImageSlider';
 import { CaptionDisplay } from '../components/CaptionDisplay';
 import type { Caption } from '@remotion/captions';
-import { getFirstAudioFromDirectory } from '../utils/getStaticAssets';
+
+const introPropsSchema = z.object({
+  image1: z.string().default(''),      // top (vertical) / left (horizontal)
+  image2: z.string().default(''),      // bottom overlay (vertical) / right overlay (horizontal)
+  heroImage: z.string().default(''),
+});
 
 export const mainVideoSchema = z.object({
-  // Intro props
-  introProps: introSchema,
-
-  // Content directory for dynamic asset loading (e.g., 'main/video_1')
+  introProps: introPropsSchema,
   contentDirectory: z.string().describe('Directory path for content assets (e.g., main/video_1)'),
-
-  // Image paths (auto-loaded from contentDirectory if empty)
-  images: z.array(z.string()).default([]).describe('Array of image paths'),
-
-  // Video paths and durations (auto-loaded from contentDirectory if empty)
-  videos: z.array(z.string()).default([]).describe('Array of video paths (MP4)'),
-  videoDurations: z.array(z.number()).default([]).describe('Array of video durations in frames'),
-
-  // Audio path (auto-loaded from contentDirectory/audio if empty)
-  audioSrc: z.string().optional().describe('Audio file path'),
-
-  // Captions
-  captions: z.array(z.any()).optional().describe('Optional captions array'),
-
-  // Video orientation
-  orientation: z.enum(['vertical', 'horizontal']).default('vertical').describe('Video orientation: vertical (1080x1920) or horizontal (1920x1080)'),
-
-  // Timing
-  backgroundMode: z.boolean().default(false).describe('When true, intro overlay stays for entire video with images playing behind'),
-  introDurationInFrames: z.number().describe('Intro duration in frames (only used when backgroundMode is false)'),
-  imageDurationInFrames: z.number().describe('Duration per image in frames'),
+  images: z.array(z.string()).default([]),
+  videos: z.array(z.string()).default([]),
+  videoDurations: z.array(z.number()).default([]),
+  audioSrc: z.string().optional(),
+  captions: z.array(z.any()).optional(),
+  orientation: z.enum(['vertical', 'horizontal']).default('vertical'),
+  backgroundMode: z.boolean().default(false),
+  introDurationInFrames: z.number(),
+  imageDurationInFrames: z.number(),
 });
 
 export type MainVideoProps = z.infer<typeof mainVideoSchema>;
+
+// Default overlay images when none specified in intro-config
+const DEFAULT_OVERLAY_VERTICAL = 'templates/news-intro-vertical/bottom.png';
+const DEFAULT_OVERLAY_HORIZONTAL = 'templates/news-intro-horizontal/right.png';
 
 export const News: React.FC<MainVideoProps> = ({
   introProps,
@@ -45,17 +40,21 @@ export const News: React.FC<MainVideoProps> = ({
   backgroundMode = false,
   introDurationInFrames,
   imageDurationInFrames,
+  orientation = 'vertical',
 }) => {
   const { durationInFrames: totalDuration } = useVideoConfig();
+  const isHorizontal = orientation === 'horizontal';
 
-  // Background mode: intro overlay stays for entire video, images play behind
-  // Normal mode: intro plays for introDurationInFrames, then disappears
   const effectiveIntroDuration = backgroundMode ? totalDuration : introDurationInFrames;
   const mediaStartFrame = backgroundMode ? 0 : introDurationInFrames;
 
+  const overlayImage = isHorizontal
+    ? (introProps.image2 || DEFAULT_OVERLAY_HORIZONTAL)
+    : (introProps.image2 || DEFAULT_OVERLAY_VERTICAL);
+
   return (
     <AbsoluteFill style={{ backgroundColor: '#000' }}>
-      {/* ========== LAYER 3 (BOTTOM): Images and Videos ========== */}
+      {/* LAYER 1 (BOTTOM): Sliding images */}
       <AbsoluteFill style={{ zIndex: 1 }}>
         <LoopingImageSlider
           images={images}
@@ -66,33 +65,38 @@ export const News: React.FC<MainVideoProps> = ({
         />
       </AbsoluteFill>
 
-      {/* ========== LAYER 2 (MIDDLE): Background Overlay from Intro ========== */}
-      {/* ========== LAYER 1 (TOP): Text, Icons, Logo from Intro ========== */}
+      {/* LAYER 2: Intro overlay */}
       <Sequence durationInFrames={effectiveIntroDuration} layout="none">
-        <IntroOverlay {...introProps} isBackgroundMode={backgroundMode} />
+        {backgroundMode ? (
+          // Background mode: just the overlay PNG on top of sliding images
+          <AbsoluteFill style={{ zIndex: 10 }}>
+            <Img
+              src={staticFile(overlayImage)}
+              style={{ width: '100%', height: '100%', objectFit: 'fill' }}
+            />
+          </AbsoluteFill>
+        ) : isHorizontal ? (
+          <NewsIntroHorizontal
+            leftImage={introProps.image1}
+            rightImage={introProps.image2}
+            heroImage={introProps.heroImage}
+          />
+        ) : (
+          <NewsIntroVertical
+            topImage={introProps.image1}
+            bottomImage={introProps.image2}
+            heroImage={introProps.heroImage}
+          />
+        )}
       </Sequence>
 
-      {/* ========== AUDIO LAYERS ========== */}
-      {/* Voice/Narration Audio */}
+      {/* AUDIO */}
       {audioSrc && <Audio src={audioSrc} />}
 
-      {/* Background Music - Loops to play for entire video */}
-      {(() => {
-        const templateId = introProps.templateId || 'template_1';
-        const bgMusic = getFirstAudioFromDirectory(`templates/${templateId}/sound`);
-        if (bgMusic) {
-          return <Audio src={bgMusic} loop volume={() => 0.3} />;
-        }
-        return null;
-      })()}
-
-      {/* ========== CAPTIONS OVERLAY (TOP-MOST) ========== */}
+      {/* CAPTIONS */}
       {captions && captions.length > 0 && (
         <AbsoluteFill style={{ zIndex: 100 }}>
-          <CaptionDisplay
-            captions={captions as Caption[]}
-            introDurationInFrames={0}
-          />
+          <CaptionDisplay captions={captions as Caption[]} introDurationInFrames={0} />
         </AbsoluteFill>
       )}
     </AbsoluteFill>

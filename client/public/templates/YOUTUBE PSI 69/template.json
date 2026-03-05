@@ -1,0 +1,39 @@
+{
+  "name": "YOUTUBE PSI 69",
+  "pageSize": "youtube",
+  "mode": "normal-gradient",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#ffa31a",
+  "opacity2": 100,
+  "transparent2": false,
+  "canvasWidth": 702,
+  "canvasHeight": 394,
+  "elements": [
+    {
+      "id": 1772720620259.1882,
+      "type": "image",
+      "x": 511,
+      "y": -37,
+      "w": 196,
+      "h": 196,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772720620259.0237,
+      "type": "placeholder",
+      "name": "title",
+      "placeholderType": "text",
+      "fontFamily": "Barlow Condensed",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 431,
+      "y": 129,
+      "w": 260,
+      "h": 250
+    }
+  ]
+}

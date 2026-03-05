@@ -1,5 +1,7 @@
 import "./index.css";
-import { Composition, staticFile } from "remotion";
+import { Composition } from "remotion";
+import { NewsIntroVertical, newsIntroVerticalSchema } from "./components/NewsIntroVertical";
+import { NewsIntroHorizontal, newsIntroHorizontalSchema } from "./components/NewsIntroHorizontal";
 import { News, mainVideoSchema } from "./news";
 import { calculateMainVideoMetadata } from "./news/calculateMainVideoMetadata";
 import { Education, mainVideoSchema as educationSchema } from "./education";
@@ -12,6 +14,38 @@ import { calculateMusicPlaylistMetadata as calculatePodcastMetadata } from "./po
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ── NewsIntroHorizontal ── */}
+      <Composition
+        id="NewsIntroHorizontal"
+        component={NewsIntroHorizontal}
+        schema={newsIntroHorizontalSchema}
+        width={1920}
+        height={1080}
+        fps={30}
+        durationInFrames={150}
+        defaultProps={{
+          leftImage: 'templates/news-intro-horizontal/left.png',
+          rightImage: 'templates/news-intro-horizontal/right.png',
+          heroImage: 'templates/news-intro-horizontal/hero.png',
+        }}
+      />
+
+      {/* ── NewsIntroVertical ── */}
+      <Composition
+        id="NewsIntroVertical"
+        component={NewsIntroVertical}
+        schema={newsIntroVerticalSchema}
+        width={1080}
+        height={1920}
+        fps={30}
+        durationInFrames={150}
+        defaultProps={{
+          topImage: 'templates/news-intro-vertical/top.png',
+          bottomImage: 'templates/news-intro-vertical/bottom.png',
+          heroImage: 'templates/news-intro-vertical/hero.png',
+        }}
+      />
+
       <Composition
         id="News"
         component={News}
@@ -21,60 +55,9 @@ export const RemotionRoot: React.FC = () => {
           contentDirectory: "main/preview",
           orientation: "vertical",
           introProps: {
-            templateId: "template_1",
-            title: "Loạt cổ phiếu ngân hàng, chứng khoán tăng trần",
-            brandName: "PSI.VN",
-            tagline: "KÊNH KINH TẾ - CHÍNH TRỊ - XÃ HỘI",
-            url: "https://psi.vn",
-            backgroundImage: staticFile("main/news/image/Intro.jpg"),
-            gradientTopColor: "rgba(10, 10, 26, 0.7)",
-            gradientBottomColor: "rgba(0, 0, 0, 0.85)",
-            gradientOpacity: 1,
-            showBackgroundPattern: true,
-            backgroundPatternOpacity: 0.7,
-            showTopLogo: true,
-            topLogoX: 960,
-            topLogoY: 30,
-            topLogoSize: 80,
-            showBrandLogo: true,
-            brandSectionX: 80,
-            brandSectionY: 1080,
-            brandLogoSize: 100,
-            brandNameSize: 120,
-            brandNameColor: "#ffffff",
-            accentColor: "#ffffff",
-            taglineX: 80,
-            taglineY: 1230,
-            taglineSize: 28,
-            taglineColor: "#ffffff",
-            titleX: 80,
-            titleY: 1390,
-            titleSize: 64,
-            titleColor: "#ffffff",
-            showSocialIcons: true,
-            socialSectionX: 40,
-            socialSectionY: 1830,
-            socialIconSize: 45,
-            showFacebook: true,
-            showTikTok: true,
-            showYouTube: true,
-            showInstagram: true,
-            urlX: 0,
-            urlSize: 32,
-            urlColor: "#ffffff",
-            showMoneyElement: true,
-            moneyElementX: 140,
-            moneyElementY: 1260,
-            moneyElementSize: 400,
-            moneyElementOpacity: 0.1,
-            showProfitElement: true,
-            profitElementX: 410,
-            profitElementY: 1430,
-            profitElementSize: 710,
-            profitElementOpacity: 0.2,
-            enableAudio: false,
-            audioVolume: 0.3,
-            animationSpeed: 1,
+            image1: 'templates/news-intro-vertical/top.png',
+            image2: 'templates/news-intro-vertical/bottom.png',
+            heroImage: 'templates/news-intro-vertical/hero.png',
           },
           images: [],
           videos: [],
@@ -96,60 +79,9 @@ export const RemotionRoot: React.FC = () => {
           contentDirectory: "main/education",
           orientation: "vertical",
           introProps: {
-            templateId: "template_2",
-            title: "Timeline of World War II",
-            brandName: "PSI.VN",
-            tagline: "KÊNH GIÁO DỤC - LỊCH SỬ",
-            url: "https://psi.vn",
-            backgroundImage: staticFile("main/news/image/Intro.jpg"),
-            gradientTopColor: "rgba(10, 10, 26, 0.7)",
-            gradientBottomColor: "rgba(0, 0, 0, 0.85)",
-            gradientOpacity: 1,
-            showBackgroundPattern: true,
-            backgroundPatternOpacity: 0.7,
-            showTopLogo: true,
-            topLogoX: 960,
-            topLogoY: 30,
-            topLogoSize: 80,
-            showBrandLogo: true,
-            brandSectionX: 80,
-            brandSectionY: 1080,
-            brandLogoSize: 100,
-            brandNameSize: 120,
-            brandNameColor: "#ffffff",
-            accentColor: "#ffffff",
-            taglineX: 80,
-            taglineY: 1230,
-            taglineSize: 28,
-            taglineColor: "#ffffff",
-            titleX: 80,
-            titleY: 1390,
-            titleSize: 64,
-            titleColor: "#ffffff",
-            showSocialIcons: true,
-            socialSectionX: 40,
-            socialSectionY: 1830,
-            socialIconSize: 45,
-            showFacebook: true,
-            showTikTok: true,
-            showYouTube: true,
-            showInstagram: true,
-            urlX: 0,
-            urlSize: 32,
-            urlColor: "#ffffff",
-            showMoneyElement: true,
-            moneyElementX: 140,
-            moneyElementY: 1260,
-            moneyElementSize: 400,
-            moneyElementOpacity: 0.1,
-            showProfitElement: true,
-            profitElementX: 410,
-            profitElementY: 1430,
-            profitElementSize: 710,
-            profitElementOpacity: 0.2,
-            enableAudio: false,
-            audioVolume: 0.3,
-            animationSpeed: 1,
+            image1: 'templates/news-intro-vertical/top.png',
+            image2: 'templates/news-intro-vertical/bottom.png',
+            heroImage: 'templates/news-intro-vertical/hero.png',
           },
           images: [],
           videos: [],

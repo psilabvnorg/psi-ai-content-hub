@@ -9,10 +9,6 @@ import {
 import { normalizeCaptions } from '../utils/normalizeCaptions';
 import type { MainVideoProps } from './index';
 
-/**
- * Load a JSON config file from {contentDirectory}/config/{filename}
- * Returns the parsed config or null if not found
- */
 const loadJsonConfig = async (contentDirectory: string, filename: string): Promise<Record<string, unknown> | null> => {
   try {
     const configPath = staticFile(`${contentDirectory}/config/${filename}`);
@@ -28,60 +24,47 @@ const loadJsonConfig = async (contentDirectory: string, filename: string): Promi
   return null;
 };
 
-export const calculateMainVideoMetadata: CalculateMetadataFunction<
-  MainVideoProps
-> = async ({ props }) => {
+export const calculateMainVideoMetadata: CalculateMetadataFunction<MainVideoProps> = async ({ props }) => {
   const fps = 30;
 
   console.log(`\n========== METADATA CALCULATION ==========`);
   console.log(`Content Directory: ${props.contentDirectory}`);
 
-  // Load video config (orientation, backgroundMode, introDurationInFrames, imageDurationInFrames)
   const videoConfig = await loadJsonConfig(props.contentDirectory, 'video-config.json');
   const orientation = ((videoConfig?.orientation as string) ?? props.orientation ?? 'vertical') as 'vertical' | 'horizontal';
   const backgroundMode = (videoConfig?.backgroundMode as boolean) ?? props.backgroundMode ?? false;
   const introDurationInFrames = (videoConfig?.introDurationInFrames as number) ?? props.introDurationInFrames;
   const imageDurationInFrames = (videoConfig?.imageDurationInFrames as number) ?? props.imageDurationInFrames;
 
-  // Set dimensions based on orientation
   const isHorizontal = orientation === 'horizontal';
   const width = isHorizontal ? 1920 : 1080;
   const height = isHorizontal ? 1080 : 1920;
   console.log(`Orientation: ${orientation} (${width}x${height})`);
 
-  // Load intro config from JSON file (overrides introProps defaults)
+  // Load simplified intro config: { image1, image2, heroImage }
   const introConfig = await loadJsonConfig(props.contentDirectory, 'intro-config.json');
-  if (introConfig?.backgroundImage && !(introConfig.backgroundImage as string).startsWith('http') && !(introConfig.backgroundImage as string).startsWith('/')) {
-    introConfig.backgroundImage = staticFile(introConfig.backgroundImage as string);
-  }
+  const defaultImage1 = isHorizontal ? 'templates/news-intro-horizontal/left.png' : 'templates/news-intro-vertical/top.png';
+  const defaultImage2 = isHorizontal ? 'templates/news-intro-horizontal/right.png' : 'templates/news-intro-vertical/bottom.png';
+  const defaultHero = isHorizontal ? 'templates/news-intro-horizontal/hero.png' : 'templates/news-intro-vertical/hero.png';
 
-  // Merge intro config: extract orientation-specific layout block, then flatten
-  let introProps = props.introProps;
-  if (introConfig) {
-    const { vertical, horizontal, ...sharedConfig } = introConfig as Record<string, unknown>;
-    const layoutBlock = (isHorizontal ? horizontal : vertical) as Record<string, unknown> | undefined;
-    introProps = { ...props.introProps, ...sharedConfig, ...(layoutBlock || {}) };
-  }
+  const introProps = {
+    image1: (introConfig?.image1 as string) || props.introProps.image1 || defaultImage1,
+    image2: (introConfig?.image2 as string) || props.introProps.image2 || defaultImage2,
+    heroImage: (introConfig?.heroImage as string) || props.introProps.heroImage || defaultHero,
+  };
 
-  // Dynamically load assets from contentDirectory if not provided
   const images = (!props.images || props.images.length === 0)
     ? getSliderImagesForContentDirectory(props.contentDirectory)
     : props.images;
 
-  // Load audio from contentDirectory/audio subfolder if not provided
-  const audioSrc =
-    props.audioSrc || getFirstAudioFromDirectory(`${props.contentDirectory}/audio`);
-
+  const audioSrc = props.audioSrc || getFirstAudioFromDirectory(`${props.contentDirectory}/audio`);
   console.log(`Audio Source: ${audioSrc}`);
 
-  // Load captions - use the helper to find matching JSON file
   let captionsSource: unknown = props.captions;
-
   if ((!Array.isArray(captionsSource) || captionsSource.length === 0) && audioSrc) {
     try {
       const audioDir = `${props.contentDirectory}/audio`;
       const captionPath = getCaptionFileForAudio(audioSrc, audioDir);
-
       if (captionPath) {
         const response = await fetch(captionPath + `?t=${Date.now()}`);
         if (response.ok) {
@@ -97,26 +80,19 @@ export const calculateMainVideoMetadata: CalculateMetadataFunction<
 
   const captions = normalizeCaptions(captionsSource);
 
-  // Load section mapping (optional, defaults to empty array)
+  // Load section mapping
   const sectionMapping = await loadJsonConfig(props.contentDirectory, 'section-mapping.json');
   const sections = Array.isArray(sectionMapping?.sections)
     ? (sectionMapping.sections as Array<{ title: string; startMs: number }>)
     : [];
   console.log(`Sections: ${sections.length} section(s) loaded`);
-
   console.log(`==========================================\n`);
 
-  // Get audio duration (default to 0 if no audio)
   const audioDuration = audioSrc ? await getAudioDuration(audioSrc) : 0;
-
-  // Calculate total duration in seconds
-  const introDurationInSeconds = introDurationInFrames / fps;
   const slideshowDurationSec = audioDuration > 0 ? audioDuration : images.length * 5;
   const contentDurationSec = backgroundMode
     ? slideshowDurationSec
-    : introDurationInSeconds + slideshowDurationSec;
-
-  // Use the longer of audio duration or content duration
+    : introDurationInFrames / fps + slideshowDurationSec;
   const totalDuration = Math.max(audioDuration, contentDurationSec);
 
   return {
