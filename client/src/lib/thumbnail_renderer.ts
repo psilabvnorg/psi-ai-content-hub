@@ -117,6 +117,38 @@ const a_load_image_data = async (a_source_text_data: string): Promise<HTMLImageE
   });
 };
 
+const a_draw_image_cover_in_box_data = (
+  a_canvas_context_data: CanvasRenderingContext2D,
+  a_image_data: HTMLImageElement,
+  a_box_x_data: number,
+  a_box_y_data: number,
+  a_box_width_data: number,
+  a_box_height_data: number,
+) => {
+  if (a_box_width_data <= 0 || a_box_height_data <= 0 || a_image_data.width <= 0 || a_image_data.height <= 0) return;
+  const a_image_aspect_data = a_image_data.width / a_image_data.height;
+  const a_box_aspect_data = a_box_width_data / a_box_height_data;
+
+  let a_src_x_data = 0, a_src_y_data = 0;
+  let a_src_width_data = a_image_data.width, a_src_height_data = a_image_data.height;
+
+  if (a_image_aspect_data > a_box_aspect_data) {
+    // image wider than box — crop sides, center horizontally
+    a_src_width_data = a_image_data.height * a_box_aspect_data;
+    a_src_x_data = (a_image_data.width - a_src_width_data) / 2;
+  } else {
+    // image taller than box — crop top/bottom, center vertically
+    a_src_height_data = a_image_data.width / a_box_aspect_data;
+    a_src_y_data = (a_image_data.height - a_src_height_data) / 2;
+  }
+
+  a_canvas_context_data.drawImage(
+    a_image_data,
+    a_src_x_data, a_src_y_data, a_src_width_data, a_src_height_data,
+    a_box_x_data, a_box_y_data, a_box_width_data, a_box_height_data,
+  );
+};
+
 const a_draw_image_contain_in_box_data = (
   a_canvas_context_data: CanvasRenderingContext2D,
   a_image_data: HTMLImageElement,
@@ -206,8 +238,18 @@ const a_preload_fonts_data = async (a_template_data: TemplateData): Promise<void
       document.fonts.load(`bold 40px "${a_font_name_data}"`).catch(() => {})
     )
   );
-  // Wait one animation frame so the canvas rendering engine fully registers
-  // newly loaded fonts — without this, first render uses fallback font
+  // Warm up each font by actually drawing with it on a throwaway canvas.
+  // document.fonts.load() only ensures the bytes are available — the canvas
+  // rendering engine still needs one real draw call to fully register the font.
+  // Without this, the first batch render uses the fallback font.
+  const a_warmup_canvas_data = document.createElement("canvas");
+  const a_warmup_ctx_data = a_warmup_canvas_data.getContext("2d");
+  if (a_warmup_ctx_data) {
+    for (const a_font_name_data of Array.from(a_font_families_data)) {
+      a_warmup_ctx_data.font = `bold 40px "${a_font_name_data}"`;
+      a_warmup_ctx_data.fillText("\u200b", 0, 0); // zero-width space, invisible
+    }
+  }
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 };
 
@@ -283,7 +325,7 @@ const a_render_thumbnail_data = async (
       } else {
         try {
           const a_image_data = await a_load_image_data(a_cell_value_data.trim());
-          a_draw_image_contain_in_box_data(
+          a_draw_image_cover_in_box_data(
             a_canvas_context_data,
             a_image_data,
             a_placeholder_data.x * a_scale_x_data,
@@ -330,7 +372,7 @@ const a_render_thumbnail_data = async (
       } else {
         try {
           const a_image_data = await a_load_image_data(a_cell_value_data.trim());
-          a_draw_image_contain_in_box_data(
+          a_draw_image_cover_in_box_data(
             a_canvas_context_data,
             a_image_data,
             a_placeholder_data.x * a_scale_x_data,

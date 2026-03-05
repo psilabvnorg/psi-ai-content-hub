@@ -275,13 +275,13 @@ export default function ThumbnailCreator() {
     const el = elements.find(x => x.id === id);
     if (!el) return;
     const startX = e.clientX, startY = e.clientY, startW = el.w, startH = el.h;
-    const isTextPlaceholder = el.type === "placeholder" && (el as PlaceholderElement).placeholderType === "text";
+    const isLockedRatio = el.type !== "placeholder"; // only static image overlays lock ratio
     const ratio = startH / startW;
     const move = (evt: MouseEvent) => {
       const newW = Math.max(30, startW + evt.clientX - startX);
-      const newH = isTextPlaceholder
-        ? Math.max(30, startH + evt.clientY - startY)
-        : newW * ratio;
+      const newH = isLockedRatio
+        ? newW * ratio
+        : Math.max(30, startH + evt.clientY - startY);
       setElements(prev => prev.map(item =>
         item.id === id ? { ...item, w: newW, h: newH } : item
       ));
