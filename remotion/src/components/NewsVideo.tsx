@@ -1,8 +1,8 @@
 // NewsVideo — shared render engine for all 4 news compositions
 //
 // Layer stack (bottom → top):
-//   zIndex  1  LAYER 1 : LoopingImageSlider   — always present; starts at frame 0 (backgroundMode)
-//                                                or after intro (noBackground mode)
+//   zIndex  1  LAYER 1 : LoopingImageSlider   — always starts after intro ends (introDurationInFrames);
+//                                                visible under static overlay (backgroundMode) or fullscreen (noBackground)
 //   zIndex 10  LAYER 2a: Animated intro        — [0 … introDurationInFrames)  all variants
 //   zIndex 10  LAYER 2b: Static overlay image  — [introDurationInFrames … end) backgroundMode only
 //   zIndex 50  LAYER 3 : SectionSlider         — optional chapter markers
@@ -68,11 +68,11 @@ export const NewsVideo: React.FC<NewsVideoProps> = ({
   const { durationInFrames: totalDuration } = useVideoConfig();
   const isHorizontal = orientation === 'horizontal';
 
-  // In backgroundMode the slider starts at frame 0 so images are always visible
-  // as a background beneath both the intro animation and the post-intro overlay.
-  // In noBackground mode the slider only starts after the intro, so no images
-  // show through while the intro animation is playing.
-  const sliderStartFrame = backgroundMode ? 0 : introDurationInFrames;
+  // The slider always starts after the intro ends to avoid bleeding through the
+  // transparent top area of NewsIntroVertical's bottomImage overlay.
+  // In backgroundMode the slider is visible underneath the static post-intro overlay;
+  // in noBackground mode it fills the full screen after the intro.
+  const sliderStartFrame = introDurationInFrames;
 
   // The static overlay image shown after the intro in backgroundMode.
   // introProps.image2 is the primary source (e.g. bottom2.png for vertical,
