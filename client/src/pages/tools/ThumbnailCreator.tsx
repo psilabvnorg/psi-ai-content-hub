@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X, Maximize2, Save, Trash2, Plus } from "lucide-react";
+import { Upload, X, Maximize2, Save, Trash2, Plus, FilePlus } from "lucide-react";
 
 const PAGE_SIZES = {
   youtube: { label: "YouTube — Horizontal (16:9)", aspectRatio: "16 / 9", maxWidth: "100%" },
@@ -116,6 +116,16 @@ export default function ThumbnailCreator() {
       textAlign: a_placeholder_data.textAlign ?? "left",
       textColor: a_placeholder_data.textColor ?? "#000000",
     };
+  };
+
+  const resetCanvas = () => {
+    setSelectedTemplate("");
+    setPageSize("tiktok");
+    setMode("normal-gradient");
+    setSplit(50);
+    setColor1("#00ff88"); setOpacity1(100); setTransparent1(false);
+    setColor2("#003322"); setOpacity2(100); setTransparent2(false);
+    setElements([]);
   };
 
   const applyTemplate = (t: TemplateData) => {
@@ -248,10 +258,24 @@ export default function ThumbnailCreator() {
 
   const handleAddOverlay = (file: File) => {
     const url = URL.createObjectURL(file);
-    setElements(prev => [
-      ...prev,
-      { id: Date.now(), type: "image" as const, x: 100, y: 100, w: 120, h: 120, opacity: 100, src: url },
-    ]);
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 200;
+      const ratio = img.naturalHeight / img.naturalWidth;
+      const w = maxW;
+      const h = Math.round(maxW * ratio);
+      setElements(prev => [
+        ...prev,
+        { id: Date.now(), type: "image" as const, x: 100, y: 100, w, h, opacity: 100, src: url },
+      ]);
+    };
+    img.onerror = () => {
+      setElements(prev => [
+        ...prev,
+        { id: Date.now(), type: "image" as const, x: 100, y: 100, w: 120, h: 120, opacity: 100, src: url },
+      ]);
+    };
+    img.src = url;
   };
 
   const startDrag = (id: number, e: React.MouseEvent) => {
@@ -354,7 +378,18 @@ export default function ThumbnailCreator() {
 
         {/* Templates */}
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase text-muted-foreground">Templates</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold uppercase text-muted-foreground">Templates</label>
+            <button
+              onClick={resetCanvas}
+              className="flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110 active:scale-[0.97]"
+              style={{ background: "#ff9000", color: "#000" }}
+              title="New template (clear canvas)"
+            >
+              <FilePlus className="w-4 h-4" />
+              New
+            </button>
+          </div>
           <Select value={selectedTemplate} onValueChange={handleLoadTemplate}>
             <SelectTrigger className="rounded-xl">
               <SelectValue placeholder="Load a template…" />

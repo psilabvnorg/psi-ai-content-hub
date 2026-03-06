@@ -1,0 +1,49 @@
+{
+  "name": "YOUTUBE CNN NEWS",
+  "pageSize": "youtube",
+  "mode": "normal-gradient",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#003322",
+  "opacity2": 100,
+  "transparent2": true,
+  "canvasWidth": 702,
+  "canvasHeight": 394,
+  "elements": [
+    {
+      "id": 1772772544597,
+      "type": "image",
+      "x": 1,
+      "y": -164,
+      "w": 703,
+      "h": 703,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772772558087,
+      "type": "image",
+      "x": 23,
+      "y": -11,
+      "w": 120,
+      "h": 120,
+      "opacity": 100,
+      "file": "elements/el_1.png"
+    },
+    {
+      "id": 1772772571022,
+      "type": "placeholder",
+      "name": "title",
+      "placeholderType": "text",
+      "fontFamily": "Barlow Condensed",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 42,
+      "y": 302,
+      "w": 542,
+      "h": 45
+    }
+  ]
+}
