@@ -40,7 +40,7 @@ const CaptionPage: React.FC<{ page: TikTokPage }> = ({ page }) => {
       <div
         style={{
           position: 'absolute',
-          bottom: '10%',
+          bottom: '20%',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '90%',

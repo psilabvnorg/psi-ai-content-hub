@@ -22,9 +22,9 @@ import type { Caption } from '@remotion/captions';
 
 export const newsVideoSchema = z.object({
   // Intro template images.
-  // vertical:   image1 = top half background,  image2 = full-screen overlay (bottom.png)
-  // horizontal: image1 = left half background, image2 = full-screen overlay (right.png)
-  // image2 is also reused as the static post-intro overlay in backgroundMode.
+  // vertical:   image1 = top half background,  image2 = full-screen overlay (bottom.png) — intro only
+  // horizontal: image1 = left half background, image2 = full-screen overlay (right.png) — reused as post-intro overlay
+  // vertical backgroundMode post-intro overlay always uses bottom2.png (FALLBACK_OVERLAY_VERTICAL).
   introProps: z.object({
     image1: z.string().default(''),
     image2: z.string().default(''),
@@ -49,7 +49,7 @@ export type NewsVideoProps = z.infer<typeof newsVideoSchema>;
 
 // ─── Fallback overlay images (used when introProps.image2 is empty) ───────────
 
-const FALLBACK_OVERLAY_VERTICAL   = 'templates/news-intro-vertical/bottom.png';
+const FALLBACK_OVERLAY_VERTICAL   = 'templates/news-intro-vertical/bottom2.png';
 const FALLBACK_OVERLAY_HORIZONTAL = 'templates/news-intro-horizontal/right.png';
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -75,11 +75,11 @@ export const NewsVideo: React.FC<NewsVideoProps> = ({
   const sliderStartFrame = introDurationInFrames;
 
   // The static overlay image shown after the intro in backgroundMode.
-  // introProps.image2 is the primary source (e.g. bottom2.png for vertical,
-  // right.png for horizontal); falls back to the template default.
+  // Horizontal reuses introProps.image2 (right.png); vertical always uses bottom2.png
+  // (separate from introProps.image2 which is bottom.png used only by the intro animation).
   const postIntroOverlayImage = isHorizontal
     ? (introProps.image2 || FALLBACK_OVERLAY_HORIZONTAL)
-    : (introProps.image2 || FALLBACK_OVERLAY_VERTICAL);
+    : FALLBACK_OVERLAY_VERTICAL;
 
   // Frames remaining for the post-intro overlay (only used in backgroundMode).
   const postIntroDurationInFrames = totalDuration - introDurationInFrames;
