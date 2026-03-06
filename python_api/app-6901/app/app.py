@@ -24,6 +24,7 @@ from .routers import image_finder as image_finder_router
 from .routers import sources as image_sources_router
 from .routers import upscale_image as upscale_image_router
 from .routers import get_news_web_content as news_scraper_router
+from .routers import transparent_logo as transparent_logo_router
 from .services.remove_overlay import (
     cleanup_results,
     cleanup_video_results,
@@ -79,6 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(image_sources_router.router, prefix="/api/v1/image-search")
     app.include_router(upscale_image_router.router, prefix="/api/v1/image/upscale")
     app.include_router(news_scraper_router.router)
+    app.include_router(transparent_logo_router.router, prefix="/api/v1/transparent-logo")
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app

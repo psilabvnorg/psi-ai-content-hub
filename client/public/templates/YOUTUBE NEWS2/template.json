@@ -1,0 +1,62 @@
+{
+  "name": "YOUTUBE NEWS2",
+  "pageSize": "youtube",
+  "mode": "normal-gradient",
+  "split": 50,
+  "color1": "#00ff88",
+  "opacity1": 100,
+  "transparent1": true,
+  "color2": "#003322",
+  "opacity2": 100,
+  "transparent2": true,
+  "canvasWidth": 702,
+  "canvasHeight": 394,
+  "elements": [
+    {
+      "id": 1772783338886.3496,
+      "type": "image",
+      "x": -3,
+      "y": -4,
+      "w": 711,
+      "h": 401.715,
+      "opacity": 100,
+      "file": "elements/el_0.png"
+    },
+    {
+      "id": 1772783338886.7817,
+      "type": "image",
+      "x": 573,
+      "y": -7,
+      "w": 128,
+      "h": 66.56,
+      "opacity": 100,
+      "file": "elements/el_1.png"
+    },
+    {
+      "id": 1772783338886.8977,
+      "type": "placeholder",
+      "name": "title",
+      "placeholderType": "text",
+      "fontFamily": "Anton",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 67,
+      "y": 345,
+      "w": 523,
+      "h": 31
+    },
+    {
+      "id": 1772783338886.798,
+      "type": "placeholder",
+      "name": "date",
+      "placeholderType": "text",
+      "fontFamily": "Be Vietnam Pro",
+      "textAlign": "left",
+      "textColor": "#ffffff",
+      "x": 596,
+      "y": 345,
+      "w": 117,
+      "h": 30
+    }
+  ]
+}

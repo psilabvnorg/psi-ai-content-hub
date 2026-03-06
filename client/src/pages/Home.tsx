@@ -56,6 +56,7 @@ const basicToolSections: BasicToolSection[] = [
       { id: "text-generator", titleKey: "feature.tool.text_generator.title" as I18nKey, icon: Type, descriptionKey: "feature.tool.text_generator.desc" as I18nKey },
       { id: "color-picker", titleKey: "feature.tool.color_picker.title" as I18nKey, icon: Palette, descriptionKey: "feature.tool.color_picker.desc" as I18nKey },
       { id: "thumbnail", titleKey: "feature.tool.thumbnail.title" as I18nKey, icon: ImageIcon, descriptionKey: "feature.tool.thumbnail.desc" as I18nKey },
+      { id: "thumbnail-simple", titleKey: "feature.tool.thumbnail_simple.title" as I18nKey, icon: ImageIcon, descriptionKey: "feature.tool.thumbnail_simple.desc" as I18nKey },
     ],
   },
   {

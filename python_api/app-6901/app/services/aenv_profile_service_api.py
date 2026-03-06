@@ -81,6 +81,14 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "einops": "einops",
         "cv2": "opencv-python",
     },
+    "thumbnail-simple": {
+        "fastapi": "fastapi",
+        "uvicorn": "uvicorn",
+        "multipart": "python-multipart",
+        "numpy": "numpy",
+        "PIL": "pillow",
+        "sklearn": "scikit-learn",
+    },
 }
 
 
