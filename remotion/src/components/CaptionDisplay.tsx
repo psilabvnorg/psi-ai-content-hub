@@ -18,9 +18,10 @@ const TEXT_COLOR = '#FFFFFF'; // White text
 interface CaptionDisplayProps {
   captions: Caption[];
   introDurationInFrames?: number;
+  captionBottomPercent?: number;
 }
 
-const CaptionPage: React.FC<{ page: TikTokPage }> = ({ page }) => {
+const CaptionPage: React.FC<{ page: TikTokPage; captionBottomPercent: number }> = ({ page, captionBottomPercent }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -40,7 +41,7 @@ const CaptionPage: React.FC<{ page: TikTokPage }> = ({ page }) => {
       <div
         style={{
           position: 'absolute',
-          bottom: '20%',
+          bottom: `${captionBottomPercent}%`,
           left: '50%',
           transform: 'translateX(-50%)',
           width: '90%',
@@ -72,7 +73,7 @@ const CaptionPage: React.FC<{ page: TikTokPage }> = ({ page }) => {
   );
 };
 
-export const CaptionDisplay: React.FC<CaptionDisplayProps> = ({ captions, introDurationInFrames = 0 }) => {
+export const CaptionDisplay: React.FC<CaptionDisplayProps> = ({ captions, introDurationInFrames = 0, captionBottomPercent = 20 }) => {
   const { fps } = useVideoConfig();
 
   const { pages } = useMemo(() => {
@@ -121,7 +122,7 @@ export const CaptionDisplay: React.FC<CaptionDisplayProps> = ({ captions, introD
             durationInFrames={adjustedDuration}
             layout="none"
           >
-            <CaptionPage page={page} />
+            <CaptionPage page={page} captionBottomPercent={captionBottomPercent} />
           </Sequence>
         );
       })}

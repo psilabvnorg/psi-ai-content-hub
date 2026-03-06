@@ -6,6 +6,7 @@ import { NewsVerticalNoBackground, schema as schemaVNB, calculateMetadata as cal
 import { NewsVerticalBackground, schema as schemaVB, calculateMetadata as calcVB } from "./news/NewsVerticalBackground";
 import { NewsHorizontalNoBackground, schema as schemaHNB, calculateMetadata as calcHNB } from "./news/NewsHorizontalNoBackground";
 import { NewsHorizontalBackground, schema as schemaHB, calculateMetadata as calcHB } from "./news/NewsHorizontalBackground";
+import { NewsHorizontalBackgroundCNN, schema as schemaHCNN, calculateMetadata as calcHCNN } from "./news/NewsHorizontalBackgroundCNN";
 import { MusicPlaylistVideo, musicPlaylistSchema } from "./music-playlist";
 import { calculateMusicPlaylistMetadata } from "./music-playlist/calculateMainVideoMetadata";
 import { MusicPlaylistVideo as PodcastVideo, musicPlaylistSchema as podcastSchema } from "./podcast";
@@ -69,6 +70,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          captionBottomPercent: 20,
           backgroundOverlayImage: 'templates/news-intro-vertical/bottom2.png',
         }}
       />
@@ -85,6 +87,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          captionBottomPercent: 20,
           overlayImage: 'templates/news-overlay/vertical-logo-only1.png',
         }}
       />
@@ -101,6 +104,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          captionBottomPercent: 20,
           backgroundOverlayImage: 'templates/news-intro-horizontal/right.png',
         }}
       />
@@ -117,7 +121,26 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          captionBottomPercent: 20,
           overlayImage: 'templates/news-overlay/horizontal-logo-only1.png',
+        }}
+      />
+
+      {/* ── News: Horizontal + CNN style (no intro, immediate captions) ── */}
+      <Composition
+        id="NewsHorizontalBackgroundCNN"
+        component={NewsHorizontalBackgroundCNN}
+        calculateMetadata={calcHCNN}
+        schema={schemaHCNN}
+        defaultProps={{
+          contentDirectory: 'main/preview',
+          introProps: NEWS_INTRO_DEFAULTS.horizontal,
+          images: [], videos: [], videoDurations: [], captions: [], sections: [],
+          introDurationInFrames: 0,
+          imageDurationInFrames: 170,
+          captionBottomPercent: 0,
+          videoConfigFilename: 'video-config-horizontal-cnn.json',
+          overlayImage: 'templates/news-overlay/horizontal-bg2.png',
         }}
       />
 

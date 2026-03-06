@@ -8,9 +8,11 @@ export const newsIntroHorizontalSchema = z.object({
   heroImage: z.string().default('templates/news-intro-horizontal/hero.png'),
 });
 
-export type NewsIntroHorizontalProps = z.infer<typeof newsIntroHorizontalSchema>;
+export type NewsIntroHorizontalProps = z.infer<typeof newsIntroHorizontalSchema> & {
+  showHeroImage?: boolean;
+};
 
-export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftImage, rightImage, heroImage }) => {
+export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftImage, rightImage, heroImage, showHeroImage = true }) => {
   const frame = useCurrentFrame();
   const { fps, width, height, durationInFrames } = useVideoConfig();
 
@@ -56,22 +58,24 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
       </AbsoluteFill>
 
       {/* HERO IMAGE: right edge of left half, vertically centered, with effects */}
-      <div
-        style={{
-          position: 'absolute',
-          top: (height - heroSize) / 2,
-          left: width / 2 - heroSize,
-          width: heroSize,
-          height: heroSize,
-          transform: `translateX(${pendulumX}px) scale(${heroScale * slowGrow})`,
-          transformOrigin: 'right center',
-        }}
-      >
-        <Img
-          src={staticFile(heroImage)}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-        />
-      </div>
+      {showHeroImage && (
+        <div
+          style={{
+            position: 'absolute',
+            top: (height - heroSize) / 2,
+            left: width / 2 - heroSize,
+            width: heroSize,
+            height: heroSize,
+            transform: `translateX(${pendulumX}px) scale(${heroScale * slowGrow})`,
+            transformOrigin: 'right center',
+          }}
+        >
+          <Img
+            src={staticFile(heroImage)}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        </div>
+      )}
     </AbsoluteFill>
   );
 };

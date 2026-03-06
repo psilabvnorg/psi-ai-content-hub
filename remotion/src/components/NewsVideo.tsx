@@ -36,8 +36,11 @@ export const newsVideoSchema = z.object({
   backgroundMode: z.boolean().default(false),
   // overlayImage: logo shown after intro in noBackground mode (video-config overlayImage)
   overlayImage: z.string().optional(),
+  // videoConfigFilename: override the auto-detected config file (e.g. 'video-config-horizontal-cnn.json')
+  videoConfigFilename: z.string().optional(),
   // backgroundOverlayImage: static overlay after intro in backgroundMode (video-config backgroundOverlayImage)
   backgroundOverlayImage: z.string().optional(),
+  captionBottomPercent: z.number().default(20),
   introDurationInFrames: z.number(),
   imageDurationInFrames: z.number(),
   sections: z.array(z.object({ title: z.string(), startMs: z.number() })).default([]),
@@ -58,6 +61,10 @@ export type NewsVideoBaseProps = {
   sections?: Section[];
   orientation: 'vertical' | 'horizontal';
   isBackgroundMode: boolean;
+  /** Use horizontal background layout for the image slider (left 65% width) */
+  isHorizontalBackground?: boolean;
+  /** Vertical position of captions from bottom (default 20) */
+  captionBottomPercent?: number;
   /** The animated intro component (NewsIntroVertical or NewsIntroHorizontal) */
   intro: React.ReactNode;
   /** Optional post-intro overlay rendered after introDurationInFrames until end */
@@ -73,6 +80,8 @@ export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
   sections = [],
   orientation,
   isBackgroundMode,
+  isHorizontalBackground = false,
+  captionBottomPercent = 20,
   intro,
   postIntroOverlay,
 }) => {
@@ -90,15 +99,18 @@ export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
           totalDurationInFrames={totalDuration}
           slideDurationInFrames={imageDurationInFrames}
           isBackgroundMode={isBackgroundMode}
+          isHorizontalBackground={isHorizontalBackground}
         />
       </AbsoluteFill>
 
       {/* ── LAYER 2a: Animated intro ──────────────────────────────────────── */}
-      <Sequence durationInFrames={introDurationInFrames} layout="none">
-        <AbsoluteFill style={{ zIndex: 10 }}>
-          {intro}
-        </AbsoluteFill>
-      </Sequence>
+      {introDurationInFrames > 0 && (
+        <Sequence durationInFrames={introDurationInFrames} layout="none">
+          <AbsoluteFill style={{ zIndex: 10 }}>
+            {intro}
+          </AbsoluteFill>
+        </Sequence>
+      )}
 
       {/* ── LAYER 2b: Post-intro overlay slot ─────────────────────────────── */}
       {postIntroOverlay && postIntroDurationInFrames > 0 && (
@@ -129,6 +141,7 @@ export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
           <CaptionDisplay
             captions={captions as Caption[]}
             introDurationInFrames={introDurationInFrames}
+            captionBottomPercent={captionBottomPercent}
           />
         </AbsoluteFill>
       )}

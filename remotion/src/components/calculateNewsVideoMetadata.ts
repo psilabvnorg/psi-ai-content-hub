@@ -38,6 +38,9 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
   const bgKey = propsBackgroundMode ? 'bg' : 'nobg';
 
   const videoConfig =
+    (props.videoConfigFilename
+      ? await loadJsonConfig(props.contentDirectory, props.videoConfigFilename)
+      : null) ??
     await loadJsonConfig(props.contentDirectory, `video-config-${orientationKey}-${bgKey}.json`) ??
     await loadJsonConfig(props.contentDirectory, 'video-config.json');
 
@@ -58,6 +61,8 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
     props.overlayImage;
   const backgroundOverlayImage =
     (videoConfig?.backgroundOverlayImage as string | undefined) ?? props.backgroundOverlayImage;
+  const captionBottomPercent =
+    (videoConfig?.captionBottomPercent as number | undefined) ?? props.captionBottomPercent ?? 20;
   const width = isHorizontal ? 1920 : 1080;
   const height = isHorizontal ? 1080 : 1920;
   console.log(`Orientation: ${orientation} (${width}x${height})`);
@@ -149,6 +154,7 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
       backgroundMode,
       overlayImage,
       backgroundOverlayImage,
+      captionBottomPercent,
       introDurationInFrames,
       images,
       videos: [],

@@ -4,12 +4,14 @@ interface ImageSlideProps {
   src: string;
   durationInFrames: number;
   isBackgroundMode?: boolean;
+  isHorizontalBackground?: boolean;
 }
 
 export const ImageSlide: React.FC<ImageSlideProps> = ({
   src,
   durationInFrames,
   isBackgroundMode = false,
+  isHorizontalBackground = false,
 }) => {
   const frame = useCurrentFrame();
 
@@ -39,6 +41,64 @@ export const ImageSlide: React.FC<ImageSlideProps> = ({
     translate(${panX}%, ${panY}%)
     scale(${zoom})
   `;
+
+  //
+  // HORIZONTAL BACKGROUND MODE — image fills left 65% width, full height (matches NewsIntroHorizontal layout)
+  //
+  if (isHorizontalBackground) {
+    return (
+      <AbsoluteFill style={{ backgroundColor: '#000' }}>
+        {/* Blur fill */}
+        <AbsoluteFill
+          style={{
+            width: '60%',
+            height: '100%',
+            left: 0,
+            top: 0,
+            overflow: 'hidden',
+            position: 'absolute',
+          }}
+        >
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'blur(25px)',
+              transform: 'scale(1.1)',
+            }}
+          />
+        </AbsoluteFill>
+
+        {/* Foreground Ken Burns */}
+        <AbsoluteFill
+          style={{
+            width: '50%',
+            height: '100%',
+            left: 0,
+            top: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'hidden',
+            position: 'absolute',
+          }}
+        >
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              transform: imageTransform,
+              transformOrigin: 'center center',
+            }}
+          />
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
 
   //
   // BACKGROUND MODE

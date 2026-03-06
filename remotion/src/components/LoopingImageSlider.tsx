@@ -7,6 +7,7 @@ interface LoopingImageSliderProps {
   totalDurationInFrames: number;
   slideDurationInFrames: number;
   isBackgroundMode?: boolean;
+  isHorizontalBackground?: boolean;
 }
 
 export const LoopingImageSlider: React.FC<LoopingImageSliderProps> = ({
@@ -15,6 +16,7 @@ export const LoopingImageSlider: React.FC<LoopingImageSliderProps> = ({
   totalDurationInFrames,
   slideDurationInFrames,
   isBackgroundMode = false,
+  isHorizontalBackground = false,
 }) => {
   if (images.length === 0 || slideDurationInFrames <= 0) {
     return null;
@@ -48,6 +50,7 @@ export const LoopingImageSlider: React.FC<LoopingImageSliderProps> = ({
               src={images[index % images.length]}
               durationInFrames={durationInFrames}
               isBackgroundMode={isBackgroundMode}
+              isHorizontalBackground={isHorizontalBackground}
             />
           </Sequence>
         );
