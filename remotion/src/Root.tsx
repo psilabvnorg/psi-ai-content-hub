@@ -69,6 +69,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          backgroundOverlayImage: 'templates/news-intro-vertical/bottom2.png',
         }}
       />
 
@@ -84,6 +85,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          overlayImage: 'templates/news-overlay/vertical-logo-only1.png',
         }}
       />
 
@@ -99,6 +101,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          backgroundOverlayImage: 'templates/news-intro-horizontal/right.png',
         }}
       />
 
@@ -114,6 +117,7 @@ export const RemotionRoot: React.FC = () => {
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
           imageDurationInFrames: 170,
+          overlayImage: 'templates/news-overlay/horizontal-logo-only1.png',
         }}
       />
 

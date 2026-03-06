@@ -3,18 +3,19 @@
 // Orientation : VERTICAL  — 1080 × 1920 (portrait / TikTok / Reels)
 // Background mode : OFF
 //   • Frames [0 … introDurationInFrames)  → animated NewsIntroVertical plays (full screen)
-//   • Frames [introDurationInFrames … end) → slideshow images only (no overlay)
+//   • Frames [introDurationInFrames … end) → slideshow images fill the screen;
+//     overlayImage (logo) is shown on top if configured
 //   • Audio plays from frame 0
 //   • Subtitles appear only after the intro ends (introDurationInFrames)
 
 import React from 'react';
 import { z } from 'zod';
+import { Img, staticFile } from 'remotion';
 import type { CalculateMetadataFunction } from 'remotion';
-import { NewsVideo, newsVideoSchema } from '../components/NewsVideo';
+import { newsVideoSchema, type NewsVideoProps, NewsVideoBase } from '../components/NewsVideo';
+import { NewsIntroVertical } from '../components/NewsIntroVertical';
 import { calculateNewsVideoMetadata } from '../components/calculateNewsVideoMetadata';
-import type { NewsVideoProps } from '../components/NewsVideo';
 
-// orientation and backgroundMode are locked by this composition and hidden from the user-facing schema
 export const schema = newsVideoSchema.omit({ orientation: true, backgroundMode: true });
 export type Props = z.infer<typeof schema>;
 
@@ -24,6 +25,38 @@ export const calculateMetadata: CalculateMetadataFunction<Props> = async (opts) 
   return calculateNewsVideoMetadata({ ...opts, props: fullProps, defaultProps: fullDefaultProps });
 };
 
-export const NewsVerticalNoBackground: React.FC<Props> = (props) => (
-  <NewsVideo {...props} orientation="vertical" backgroundMode={false} />
+const fill: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'fill' };
+
+export const NewsVerticalNoBackground: React.FC<Props> = ({
+  introProps,
+  images,
+  audioSrc,
+  captions,
+  overlayImage,
+  introDurationInFrames,
+  imageDurationInFrames,
+  sections = [],
+}) => (
+  <NewsVideoBase
+    images={images}
+    introDurationInFrames={introDurationInFrames}
+    imageDurationInFrames={imageDurationInFrames}
+    audioSrc={audioSrc}
+    captions={captions}
+    sections={sections}
+    orientation="vertical"
+    isBackgroundMode={false}
+    intro={
+      <NewsIntroVertical
+        topImage={introProps.image1}
+        bottomImage={introProps.image2}
+        heroImage={introProps.heroImage}
+      />
+    }
+    postIntroOverlay={
+      overlayImage
+        ? <Img src={staticFile(overlayImage)} style={fill} />
+        : undefined
+    }
+  />
 );

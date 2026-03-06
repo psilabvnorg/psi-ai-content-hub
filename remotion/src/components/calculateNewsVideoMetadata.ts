@@ -30,21 +30,42 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
   console.log(`\n========== METADATA CALCULATION ==========`);
   console.log(`Content Directory: ${props.contentDirectory}`);
 
-  const videoConfig = await loadJsonConfig(props.contentDirectory, 'video-config.json');
+  // Use locked orientation/backgroundMode from wrapper compositions to pick specific config files.
+  // Specific files (e.g. video-config-vertical-nobg.json) take priority over the generic fallback.
+  const propsOrientation = props.orientation ?? 'vertical';
+  const propsBackgroundMode = props.backgroundMode ?? false;
+  const orientationKey = propsOrientation === 'horizontal' ? 'horizontal' : 'vertical';
+  const bgKey = propsBackgroundMode ? 'bg' : 'nobg';
+
+  const videoConfig =
+    await loadJsonConfig(props.contentDirectory, `video-config-${orientationKey}-${bgKey}.json`) ??
+    await loadJsonConfig(props.contentDirectory, 'video-config.json');
+
   // props values (FIXED constants from variant wrappers) take priority over video-config.json.
   // introDurationInFrames and imageDurationInFrames remain config-overridable (legitimately tunable per content).
-  const orientation = (props.orientation ?? (videoConfig?.orientation as string) ?? 'vertical') as 'vertical' | 'horizontal';
-  const backgroundMode = props.backgroundMode ?? (videoConfig?.backgroundMode as boolean) ?? false;
+  const orientation = (videoConfig?.orientation as string ?? propsOrientation) as 'vertical' | 'horizontal';
+  const backgroundMode = (videoConfig?.backgroundMode as boolean) ?? propsBackgroundMode;
   const introDurationInFrames = (videoConfig?.introDurationInFrames as number) ?? props.introDurationInFrames;
   const imageDurationInFrames = (videoConfig?.imageDurationInFrames as number) ?? props.imageDurationInFrames;
 
   const isHorizontal = orientation === 'horizontal';
+  // Specific configs use plain overlayImage; generic fallback supports overlayImageVertical/Horizontal keys.
+  const overlayImage =
+    (videoConfig?.overlayImage as string | undefined) ??
+    (isHorizontal
+      ? (videoConfig?.overlayImageHorizontal as string | undefined)
+      : (videoConfig?.overlayImageVertical as string | undefined)) ??
+    props.overlayImage;
+  const backgroundOverlayImage =
+    (videoConfig?.backgroundOverlayImage as string | undefined) ?? props.backgroundOverlayImage;
   const width = isHorizontal ? 1920 : 1080;
   const height = isHorizontal ? 1080 : 1920;
   console.log(`Orientation: ${orientation} (${width}x${height})`);
 
   // Load simplified intro config: { image1, image2, heroImage }
-  const introConfig = await loadJsonConfig(props.contentDirectory, 'intro-config.json');
+  const introConfig =
+    await loadJsonConfig(props.contentDirectory, `intro-config-${orientationKey}-${bgKey}.json`) ??
+    await loadJsonConfig(props.contentDirectory, 'intro-config.json');
   const defaultImage1 = isHorizontal ? 'templates/news-intro-horizontal/left.png' : 'templates/news-intro-vertical/top.png';
   const defaultImage2 = isHorizontal ? 'templates/news-intro-horizontal/right.png' : 'templates/news-intro-vertical/bottom.png';
   const defaultHero = isHorizontal ? 'templates/news-intro-horizontal/hero.png' : 'templates/news-intro-vertical/hero.png';
@@ -126,6 +147,8 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
       orientation,
       introProps,
       backgroundMode,
+      overlayImage,
+      backgroundOverlayImage,
       introDurationInFrames,
       images,
       videos: [],
