@@ -67,18 +67,20 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
   const height = isHorizontal ? 1080 : 1920;
   console.log(`Orientation: ${orientation} (${width}x${height})`);
 
-  // Load simplified intro config: { image1, image2, heroImage }
-  const introConfig =
-    await loadJsonConfig(props.contentDirectory, `intro-config-${orientationKey}-${bgKey}.json`) ??
-    await loadJsonConfig(props.contentDirectory, 'intro-config.json');
+  // Load intro config: prefer introProps embedded in video-config, then fall back to separate intro-config file
+  const videoConfigIntroProps = videoConfig?.introProps as { image1?: string; image2?: string; heroImage?: string } | undefined;
+  const introConfig = videoConfigIntroProps
+    ? null
+    : (await loadJsonConfig(props.contentDirectory, `intro-config-${orientationKey}-${bgKey}.json`) ??
+       await loadJsonConfig(props.contentDirectory, 'intro-config.json'));
   const defaultImage1 = isHorizontal ? 'templates/news-intro-horizontal/left.png' : 'templates/news-intro-vertical/top.png';
   const defaultImage2 = isHorizontal ? 'templates/news-intro-horizontal/right.png' : 'templates/news-intro-vertical/bottom.png';
   const defaultHero = isHorizontal ? 'templates/news-intro-horizontal/hero.png' : 'templates/news-intro-vertical/hero.png';
 
   const trim = (v: unknown, fallback: string) => ((v as string)?.trim()) || fallback;
 
-  const configImage1 = introConfig?.image1 as string | undefined;
-  const configImage2 = introConfig?.image2 as string | undefined;
+  const configImage1 = videoConfigIntroProps?.image1 ?? introConfig?.image1 as string | undefined;
+  const configImage2 = videoConfigIntroProps?.image2 ?? introConfig?.image2 as string | undefined;
 
   // Reject intro-config image paths that belong to the opposite orientation.
   // heroImage is orientation-agnostic and always flows through unchanged.
@@ -96,14 +98,19 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
     image2: isOrientationMismatch(configImage2)
       ? (props.introProps.image2 || defaultImage2)
       : trim(configImage2, props.introProps.image2 || defaultImage2),
-    heroImage: trim(introConfig?.heroImage, props.introProps.heroImage || defaultHero),
+    heroImage: trim(videoConfigIntroProps?.heroImage ?? introConfig?.heroImage, props.introProps.heroImage || defaultHero),
   };
 
-  const images = (!props.images || props.images.length === 0)
-    ? getSliderImagesForContentDirectory(props.contentDirectory)
-    : props.images;
+  const configImages = Array.isArray(videoConfig?.images)
+    ? (videoConfig.images as string[]).map(img => staticFile(img))
+    : null;
+  const images = (props.images && props.images.length > 0)
+    ? props.images
+    : configImages ?? getSliderImagesForContentDirectory(props.contentDirectory);
 
-  const audioSrc = props.audioSrc || getFirstAudioFromDirectory(`${props.contentDirectory}/audio`);
+  const audioSrc = props.audioSrc
+    || (videoConfig?.audioSrc ? staticFile(videoConfig.audioSrc as string) : null)
+    || getFirstAudioFromDirectory(`${props.contentDirectory}/audio`);
   console.log(`Audio Source: ${audioSrc}`);
 
   let captionsSource: unknown = props.captions;
