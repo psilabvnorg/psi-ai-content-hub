@@ -23,6 +23,7 @@ import BackgroundRemoval from "./tools/BackgroundRemoval";
 import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
 import TextToVideo from "./tools/TextToVideo";
+import NewsToVideo from "./tools/NewsToVideo";
 import LLM from "./tools/LLM";
 import LLMBatch from "./tools/LLMBatch";
 import Translator from "./tools/Translator";
@@ -142,6 +143,8 @@ export default function FeaturePlaceholder({
         return <MergeOverlay onOpenSettings={() => onSelectFeature("settings")} />;
       case "text-to-video":
         return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
+      case "news-to-video":
+        return <NewsToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
         return <ReupYoutube onOpenSettings={() => onSelectFeature("settings")} />;
       case "llm":

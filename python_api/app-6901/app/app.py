@@ -25,6 +25,7 @@ from .routers import sources as image_sources_router
 from .routers import upscale_image as upscale_image_router
 from .routers import get_news_web_content as news_scraper_router
 from .routers import transparent_logo as transparent_logo_router
+from .routers import news_to_video as news_to_video_router
 from .services.remove_overlay import (
     cleanup_results,
     cleanup_video_results,
@@ -32,6 +33,7 @@ from .services.remove_overlay import (
     cleanup_video_overlay_results,
 )
 from .services.text_to_video import cleanup_text_to_video_state
+from .services.news_to_video import cleanup_news_to_video_state
 
 
 def _cleanup_loop() -> None:
@@ -43,6 +45,7 @@ def _cleanup_loop() -> None:
         cleanup_overlay_results()
         cleanup_video_overlay_results()
         cleanup_text_to_video_state()
+        cleanup_news_to_video_state()
 
 
 def create_app() -> FastAPI:
@@ -81,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(upscale_image_router.router, prefix="/api/v1/image/upscale")
     app.include_router(news_scraper_router.router)
     app.include_router(transparent_logo_router.router, prefix="/api/v1/transparent-logo")
+    app.include_router(news_to_video_router.router)
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app
