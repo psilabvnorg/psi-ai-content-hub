@@ -26,6 +26,8 @@ PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / "preview"
 PREVIEW_IMAGE_DIR = REMOTION_PUBLIC_MAIN / "preview" / "image"
 STUDIO_PORT = 3100
 
+USER_ASSETS_DIR = REMOTION_ROOT / "public" / "user-assets"
+
 RENDER_CONCURRENCY = 4
 RETENTION_SECONDS = 60 * 60
 
@@ -165,6 +167,54 @@ def _build_staging_config(template_key: str, overrides: dict | None = None) -> d
     return config
 
 
+def _normalize_asset_path(path: str, staging_root: Path) -> str:
+    """Convert an absolute filesystem path to a Remotion-public-relative path.
+
+    - If already relative, return as-is.
+    - If absolute and within remotion/public, compute the relative path from there.
+    - If absolute and outside remotion/public, copy the file into staging_root/assets/
+      and return the Remotion-public-relative path to the copy.
+    """
+    p = Path(path)
+    if not p.is_absolute():
+        return path
+
+    public_root = REMOTION_ROOT / "public"
+    try:
+        rel = p.relative_to(public_root)
+        return rel.as_posix()
+    except ValueError:
+        pass
+
+    if not p.exists():
+        raise RuntimeError(f"Asset file not found: {path}")
+
+    assets_dir = staging_root / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    dest = assets_dir / p.name
+    shutil.copy2(str(p), str(dest))
+    staging_rel = staging_root.relative_to(public_root)
+    return (staging_rel / "assets" / p.name).as_posix()
+
+
+def _normalize_config_paths(config: dict, staging_root: Path) -> dict:
+    """Walk config dict and normalize any absolute paths in asset fields."""
+    result = dict(config)
+
+    for field in ("backgroundOverlayImage", "overlayImage"):
+        if field in result and isinstance(result[field], str):
+            result[field] = _normalize_asset_path(result[field], staging_root)
+
+    if "introProps" in result and isinstance(result["introProps"], dict):
+        intro = dict(result["introProps"])
+        for key in ("image1", "image2", "heroImage"):
+            if key in intro and isinstance(intro[key], str):
+                intro[key] = _normalize_asset_path(intro[key], staging_root)
+        result["introProps"] = intro
+
+    return result
+
+
 def _stage_files(
     staging_root: Path,
     template_key: str,
@@ -208,6 +258,7 @@ def _stage_files(
 
     # Video config — built from the TEMPLATES dict, merged with any user overrides
     config = _build_staging_config(template_key, overrides)
+    config = _normalize_config_paths(config, staging_root)
     (config_dir / template["_config_filename"]).write_text(
         json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -238,6 +289,19 @@ def _cleanup_expired() -> None:
 
 def cleanup_news_to_video_state() -> None:
     _cleanup_expired()
+
+
+# ── User-asset upload ─────────────────────────────────────────────────────────
+
+def upload_user_asset(upload: UploadedFileData) -> str:
+    """Save an uploaded image to remotion/public/user-assets/ and return its relative path."""
+    _validate_image(upload, "file")
+    suffix = _resolve_image_suffix(upload.filename)
+    stem = Path(upload.filename).stem
+    filename = f"{stem}_{uuid.uuid4().hex[:8]}{suffix}"
+    USER_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    (USER_ASSETS_DIR / filename).write_bytes(upload.data)
+    return f"user-assets/{filename}"
 
 
 # ── Preview staging ───────────────────────────────────────────────────────────

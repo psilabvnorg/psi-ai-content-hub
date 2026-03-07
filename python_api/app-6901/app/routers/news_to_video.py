@@ -16,6 +16,7 @@ from ..services.news_to_video import (
     render_progress_store,
     stage_preview,
     start_render_pipeline,
+    upload_user_asset,
 )
 
 
@@ -140,6 +141,16 @@ def stage_preview_endpoint(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return result
+
+
+@router.post("/upload-asset")
+def upload_asset_endpoint(file: UploadFile = File(...)) -> dict:
+    upload = _to_file(file, "file")
+    try:
+        path = upload_user_asset(upload)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"path": path}
 
 
 @router.get("/setup/status")

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Eye, FileText, ImagePlus, Loader2, Play, Upload, Video, X } from "lucide-react";
+import { Download, Eye, FileText, FolderOpen, ImagePlus, Loader2, Play, Upload, Video, X } from "lucide-react";
 import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
@@ -226,6 +226,36 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const transcriptInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
+
+  // Config image upload refs
+  const bgOverlayFileRef = useRef<HTMLInputElement>(null);
+  const introImg1FileRef = useRef<HTMLInputElement>(null);
+  const introImg2FileRef = useRef<HTMLInputElement>(null);
+  const introHeroFileRef = useRef<HTMLInputElement>(null);
+
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const uploadConfigAsset = async (file: File, setter: (path: string) => void, field: string) => {
+    setUploadingField(field);
+    setUploadError(null);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res = await fetch(`${N2V_BASE}/upload-asset`, { method: "POST", body: form });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { detail?: string };
+        setUploadError(err.detail ?? "Upload failed");
+        return;
+      }
+      const data = (await res.json()) as { path: string };
+      setter(data.path);
+    } catch {
+      setUploadError("Upload failed — is the app server running?");
+    } finally {
+      setUploadingField(null);
+    }
+  };
 
   // ── Render state ──
   const [isStaging, setIsStaging] = useState(false);
@@ -503,76 +533,119 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             <summary className="cursor-pointer select-none px-3 py-2 font-semibold text-foreground hover:bg-muted/50 rounded-lg">
               Details Config
             </summary>
-          <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
-            {/* Durations */}
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-foreground">introDurationInFrames</span>
+          <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
+
+            {/* Hidden file inputs for config asset uploads */}
+            <input ref={bgOverlayFileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadConfigAsset(f, setBgOverlay, "bgOverlay"); e.target.value = ""; }} />
+            <input ref={introImg1FileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadConfigAsset(f, setIntroImage1, "img1"); e.target.value = ""; }} />
+            <input ref={introImg2FileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadConfigAsset(f, setIntroImage2, "img2"); e.target.value = ""; }} />
+            <input ref={introHeroFileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadConfigAsset(f, setIntroHeroImage, "hero"); e.target.value = ""; }} />
+            {uploadError && (
+              <p className="text-[10px] text-red-400">{uploadError}</p>
+            )}
+
+            {/* Durations + Overlay row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                <span className="font-semibold text-foreground">Intro Duration</span>
+                <span className="text-[10px] text-muted-foreground">Frames played for the animated intro (30 fps)</span>
                 <input
                   type="number" min={0} step={1} value={introDuration}
                   onChange={(e) => setIntroDuration(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent mt-1"
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-foreground">imageDurationInFrames</span>
+              </div>
+              <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                <span className="font-semibold text-foreground">Slide Duration</span>
+                <span className="text-[10px] text-muted-foreground">Frames each slideshow image stays on screen</span>
                 <input
                   type="number" min={1} step={1} value={imageDuration}
                   onChange={(e) => setImageDuration(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent mt-1"
                 />
-              </label>
+              </div>
+              <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                <span className="font-semibold text-foreground">
+                  {selectedTemplate.backgroundOverlayImage !== undefined ? "Background Overlay" : "Logo / Overlay"}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {selectedTemplate.backgroundOverlayImage !== undefined
+                    ? "Persistent image layered over the background after the intro ends"
+                    : "Image overlaid on top of the video throughout (logo, watermark, etc.)"}
+                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <button type="button" onClick={() => bgOverlayFileRef.current?.click()} disabled={uploadingField === "bgOverlay"}
+                    className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
+                    {uploadingField === "bgOverlay" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />}Upload
+                  </button>
+                  <span className="text-[10px] text-muted-foreground truncate" title={bgOverlay}>
+                    {bgOverlay ? bgOverlay.split(/[\\/]/).pop() : "No file"}
+                  </span>
+                </div>
+              </div>
+              {selectedTemplate.captionBottomPercent !== undefined && (
+                <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                  <span className="font-semibold text-foreground">Caption Bottom Offset (%)</span>
+                  <span className="text-[10px] text-muted-foreground">Vertical position of captions from the bottom edge</span>
+                  <input
+                    type="number" step={0.1} value={captionBottom}
+                    onChange={(e) => setCaptionBottom(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                    className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent mt-1"
+                  />
+                </div>
+              )}
             </div>
-            {/* Overlay image */}
-            <label className="flex flex-col gap-1">
-              <span className="font-semibold text-foreground">
-                {selectedTemplate.backgroundOverlayImage !== undefined ? "backgroundOverlayImage" : "overlayImage"}
-              </span>
-              <input
-                type="text" value={bgOverlay}
-                onChange={(e) => setBgOverlay(e.target.value)}
-                className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </label>
-            {/* captionBottomPercent (CNN only) */}
-            {selectedTemplate.captionBottomPercent !== undefined && (
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-foreground">captionBottomPercent</span>
-                <input
-                  type="number" step={0.1} value={captionBottom}
-                  onChange={(e) => setCaptionBottom(e.target.value === "" ? "" : parseFloat(e.target.value))}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
-            )}
+
             {/* introProps */}
-            <div className="space-y-1 pt-1 border-t border-border">
-              <span className="font-semibold text-foreground">introProps</span>
-              <label className="flex flex-col gap-1">
-                <span className="text-muted-foreground">image1</span>
-                <input
-                  type="text" value={introImage1}
-                  onChange={(e) => setIntroImage1(e.target.value)}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-muted-foreground">image2</span>
-                <input
-                  type="text" value={introImage2}
-                  onChange={(e) => setIntroImage2(e.target.value)}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-muted-foreground">heroImage</span>
-                <input
-                  type="text" value={introHeroImage}
-                  onChange={(e) => setIntroHeroImage(e.target.value)}
-                  className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </label>
+            <div className="space-y-2 pt-1 border-t border-border">
+              <span className="font-semibold text-foreground">Intro Images</span>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                  <span className="font-medium text-foreground">Top Panel</span>
+                  <span className="text-[10px] text-muted-foreground">Top decorative graphic in the animated intro</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button type="button" onClick={() => introImg1FileRef.current?.click()} disabled={uploadingField === "img1"}
+                      className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
+                      {uploadingField === "img1" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />}Upload
+                    </button>
+                    <span className="text-[10px] text-muted-foreground truncate" title={introImage1}>
+                      {introImage1 ? introImage1.split(/[\\/]/).pop() : "No file"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                  <span className="font-medium text-foreground">Bottom Panel</span>
+                  <span className="text-[10px] text-muted-foreground">Bottom decorative graphic in the animated intro</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button type="button" onClick={() => introImg2FileRef.current?.click()} disabled={uploadingField === "img2"}
+                      className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
+                      {uploadingField === "img2" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />}Upload
+                    </button>
+                    <span className="text-[10px] text-muted-foreground truncate" title={introImage2}>
+                      {introImage2 ? introImage2.split(/[\\/]/).pop() : "No file"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
+                  <span className="font-medium text-foreground">Anchor / Hero</span>
+                  <span className="text-[10px] text-muted-foreground">Main presenter image in the intro animation</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button type="button" onClick={() => introHeroFileRef.current?.click()} disabled={uploadingField === "hero"}
+                      className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
+                      {uploadingField === "hero" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />}Upload
+                    </button>
+                    <span className="text-[10px] text-muted-foreground truncate" title={introHeroImage}>
+                      {introHeroImage ? introHeroImage.split(/[\\/]/).pop() : "No file"}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
           </details>
         </div>
