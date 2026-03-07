@@ -1,0 +1,17 @@
+{
+  "introDurationInFrames": 150,
+  "imageDurationInFrames": 170,
+  "backgroundOverlayImage": "templates/news-intro-horizontal/right2.png",
+  "introProps": {
+    "image1": "templates/news-intro-horizontal/left.png",
+    "image2": "templates/news-intro-horizontal/right2.png",
+    "heroImage": "templates/news-intro-horizontal/hero.png"
+  },
+  "audioSrc": "main/preview/audio/narration.wav",
+  "images": [
+    "main/preview/image/01.png",
+    "main/preview/image/02.png",
+    "main/preview/image/image-finder-3.jpg",
+    "main/preview/image/xx.webp"
+  ]
+}

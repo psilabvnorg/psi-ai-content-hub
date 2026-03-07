@@ -13,14 +13,6 @@ whisper.cpp/
 .env.local
 .env.*.local
 
-# Generated content (audio, videos, subtitles)
-public/main/*/audio/*.mp3
-public/main/*/audio/*.wav
-public/main/*/audio/*.json
-public/main/*/*.mp4
-public/main/*/*.json
-!public/main/video_1/
-!public/main/video_2/
 
 # Temporary files
 *.tmp
