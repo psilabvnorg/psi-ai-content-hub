@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,105 +15,59 @@ type StreamPayload = { status?: string; percent?: number; message?: string; logs
 type RenderCreateResponse = { task_id: string };
 type RenderResultResponse = { video: { filename: string; download_url: string }; preview_url: string };
 
-const N2V_BASE = `${APP_API_URL}/api/v1/news-to-video`;
+const API_BASE = `${APP_API_URL}/api/v1`;
+const N2V_BASE = `${API_BASE}/news-to-video`;
 
 // ── Templates ─────────────────────────────────────────────────────────────────
 
-type TemplateId =
-  | "NewsVerticalBackground"
-  | "NewsVerticalNoBackground"
-  | "NewsHorizontalBackground"
-  | "NewsHorizontalNoBackground"
-  | "NewsHorizontalBackgroundCNN";
-
-type IntroProps = { image1: string; image2: string; heroImage: string };
-
 type TemplateMeta = {
-  id: TemplateId;
+  id: string;
   label: string;
   desc: string;
   usesHero: boolean;
+  backgroundMode: boolean;
   introDurationInFrames: number;
   imageDurationInFrames: number;
-  introProps: IntroProps;
-  backgroundOverlayImage?: string;
-  overlayImage?: string;
   captionBottomPercent?: number;
 };
 
-const TEMPLATES: TemplateMeta[] = [
-  {
-    id: "NewsVerticalBackground",
-    label: "Vertical — Background",
-    desc: "1080×1920 · Animated intro + background overlay after intro",
-    usesHero: false,
-    introDurationInFrames: 150,
-    imageDurationInFrames: 170,
-    backgroundOverlayImage: "templates/news-intro-vertical/bottom2.png",
-    introProps: {
-      image1: "templates/news-intro-vertical/top.png",
-      image2: "templates/news-intro-vertical/bottom.png",
-      heroImage: "templates/news-intro-vertical/hero.png",
-    },
-  },
-  {
-    id: "NewsVerticalNoBackground",
-    label: "Vertical — No Background",
-    desc: "1080×1920 · Full animated intro, logo overlay after intro",
-    usesHero: false,
-    introDurationInFrames: 150,
-    imageDurationInFrames: 170,
-    overlayImage: "templates/news-overlay/vertical-logo-only1.png",
-    introProps: {
-      image1: "templates/news-intro-vertical/top.png",
-      image2: "templates/news-intro-vertical/bottom.png",
-      heroImage: "templates/news-intro-vertical/hero.png",
-    },
-  },
-  {
-    id: "NewsHorizontalBackground",
-    label: "Horizontal — Background",
-    desc: "1920×1080 · Animated intro + persistent hero image overlay",
-    usesHero: true,
-    introDurationInFrames: 150,
-    imageDurationInFrames: 170,
-    backgroundOverlayImage: "templates/news-intro-horizontal/right2.png",
-    introProps: {
-      image1: "templates/news-intro-horizontal/left.png",
-      image2: "templates/news-intro-horizontal/right2.png",
-      heroImage: "templates/news-intro-horizontal/hero.png",
-    },
-  },
-  {
-    id: "NewsHorizontalNoBackground",
-    label: "Horizontal — No Background",
-    desc: "1920×1080 · Full animated intro, logo overlay after intro",
-    usesHero: false,
-    introDurationInFrames: 150,
-    imageDurationInFrames: 170,
-    overlayImage: "templates/news-overlay/horizontal-logo-only1.png",
-    introProps: {
-      image1: "templates/news-intro-horizontal/left.png",
-      image2: "templates/news-intro-horizontal/right.png",
-      heroImage: "templates/news-intro-horizontal/hero.png",
-    },
-  },
-  {
-    id: "NewsHorizontalBackgroundCNN",
-    label: "Horizontal — CNN Style",
-    desc: "1920×1080 · No intro, captions from frame 0, logo overlay",
-    usesHero: false,
-    introDurationInFrames: 0,
-    imageDurationInFrames: 170,
-    captionBottomPercent: 2.9,
-    overlayImage: "templates/news-overlay/horizontal-bg2.png",
-    introProps: {
-      image1: "templates/news-intro-horizontal/left.png",
-      image2: "templates/news-intro-horizontal/right.png",
-      heroImage: "templates/news-intro-horizontal/hero.png",
-    },
-  },
-];
+type PlatformPreset = {
+  id: string;
+  label: string;
+  description: string;
+  featureFlags: string[];
+  defaultConfig: {
+    introDurationInFrames?: number;
+    imageDurationInFrames?: number;
+    captionBottomPercent?: number;
+  };
+  status?: string;
+};
+
+type PlatformCatalog = {
+  categories: Array<{ category: string; presets: PlatformPreset[] }>;
+};
+
+const FALLBACK_TEMPLATE: TemplateMeta = {
+  id: "news.anchor.vertical.background",
+  label: "News Anchor Vertical Background",
+  desc: "Fallback template while the platform catalog loads.",
+  usesHero: false,
+  backgroundMode: true,
+  introDurationInFrames: 150,
+  imageDurationInFrames: 170,
+};
+
+const mapPreset = (preset: PlatformPreset): TemplateMeta => ({
+  id: preset.id,
+  label: preset.label,
+  desc: preset.description,
+  usesHero: preset.featureFlags.includes("hero-overlay"),
+  backgroundMode: preset.featureFlags.includes("background-overlay"),
+  introDurationInFrames: preset.defaultConfig?.introDurationInFrames ?? 150,
+  imageDurationInFrames: preset.defaultConfig?.imageDurationInFrames ?? 170,
+  captionBottomPercent: preset.defaultConfig?.captionBottomPercent,
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -179,7 +133,6 @@ async function streamTask(
 export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () => void }) {
   // ── Server status ──
   const [appServerReachable, setAppServerReachable] = useState(false);
-  const [studioRunning, setStudioRunning] = useState(false);
   const { servicesById, start, stop, isBusy } = useManagedServices();
   const { hasMissingDeps } = useAppStatus();
   const appService = servicesById.app;
@@ -187,32 +140,31 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const appBusy = isBusy("app");
 
   // ── Template selection ──
-  const [template, setTemplate] = useState<TemplateId>("NewsVerticalBackground");
-  const selectedTemplate = TEMPLATES.find((t) => t.id === template)!;
+  const [templates, setTemplates] = useState<TemplateMeta[]>([]);
+  const [templateId, setTemplateId] = useState<string>(FALLBACK_TEMPLATE.id);
+  const selectedTemplate = templates.find((t) => t.id === templateId) ?? FALLBACK_TEMPLATE;
 
   // ── Editable config overrides (reset when template changes) ──
   const [introDuration, setIntroDuration] = useState(selectedTemplate.introDurationInFrames);
   const [imageDuration, setImageDuration] = useState(selectedTemplate.imageDurationInFrames);
-  const [bgOverlay, setBgOverlay] = useState(
-    selectedTemplate.backgroundOverlayImage ?? selectedTemplate.overlayImage ?? ""
-  );
+  const [bgOverlay, setBgOverlay] = useState("");
   const [captionBottom, setCaptionBottom] = useState<number | "">(
     selectedTemplate.captionBottomPercent ?? ""
   );
-  const [introImage1, setIntroImage1] = useState(selectedTemplate.introProps.image1);
-  const [introImage2, setIntroImage2] = useState(selectedTemplate.introProps.image2);
-  const [introHeroImage, setIntroHeroImage] = useState(selectedTemplate.introProps.heroImage);
+  const [introImage1, setIntroImage1] = useState("");
+  const [introImage2, setIntroImage2] = useState("");
+  const [introHeroImage, setIntroHeroImage] = useState("");
 
   useEffect(() => {
-    const tpl = TEMPLATES.find((t) => t.id === template)!;
+    const tpl = templates.find((t) => t.id === templateId) ?? FALLBACK_TEMPLATE;
     setIntroDuration(tpl.introDurationInFrames);
     setImageDuration(tpl.imageDurationInFrames);
-    setBgOverlay(tpl.backgroundOverlayImage ?? tpl.overlayImage ?? "");
+    setBgOverlay("");
     setCaptionBottom(tpl.captionBottomPercent ?? "");
-    setIntroImage1(tpl.introProps.image1);
-    setIntroImage2(tpl.introProps.image2);
-    setIntroHeroImage(tpl.introProps.heroImage);
-  }, [template]);
+    setIntroImage1("");
+    setIntroImage2("");
+    setIntroHeroImage("");
+  }, [templateId, templates]);
 
   // ── File uploads ──
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -236,20 +188,20 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const uploadConfigAsset = async (file: File, setter: (path: string) => void, field: string) => {
+  const uploadConfigAsset = async (file: File, setter: (ref: string) => void, field: string) => {
     setUploadingField(field);
     setUploadError(null);
     const form = new FormData();
     form.append("file", file);
     try {
-      const res = await fetch(`${N2V_BASE}/upload-asset`, { method: "POST", body: form });
+      const res = await fetch(`${API_BASE}/assets`, { method: "POST", body: form });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { detail?: string };
         setUploadError(err.detail ?? "Upload failed");
         return;
       }
-      const data = (await res.json()) as { path: string };
-      setter(data.path);
+      const data = (await res.json()) as { assetRef: string };
+      setter(data.assetRef);
     } catch {
       setUploadError("Upload failed — is the app server running?");
     } finally {
@@ -265,22 +217,6 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoDownloadName, setVideoDownloadName] = useState<string | null>(null);
 
-  // ── Studio stop on unmount ──
-  const stopStudio = useCallback(() => {
-    fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`, { method: "POST" }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      navigator.sendBeacon(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`);
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      stopStudio();
-    };
-  }, [stopStudio]);
-
   // ── Status fetch ──
   const fetchStatus = async () => {
     try {
@@ -289,16 +225,26 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     } catch {
       setAppServerReachable(false);
     }
-    try {
-      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/status`);
-      const data = (await res.json()) as { running?: boolean };
-      setStudioRunning(data.running === true);
-    } catch {
-      setStudioRunning(false);
-    }
   };
 
   useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/templates`);
+        if (!res.ok) return;
+        const data = (await res.json()) as PlatformCatalog;
+        const newsCategory = data.categories?.find((c) => c.category === "news");
+        const mapped = (newsCategory?.presets ?? [])
+          .filter((p) => p.status !== "internal")
+          .map(mapPreset);
+        if (!mapped.length) return;
+        setTemplates(mapped);
+        setTemplateId((current) => (mapped.some((t) => t.id === current) ? current : mapped[0].id));
+      } catch {
+        // Keep fallback template when the API catalog is unavailable.
+      }
+    };
+    void loadTemplates();
     void fetchStatus();
   }, []);
 
@@ -348,15 +294,6 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     await fetchStatus();
   };
 
-  const handleToggleStudio = async () => {
-    const endpoint = studioRunning ? "stop" : "start";
-    await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/${endpoint}`, {
-      method: "POST",
-    }).catch(() => {});
-    if (!studioRunning) await new Promise((r) => setTimeout(r, 2000));
-    void fetchStatus();
-  };
-
   // ── Render ──
   const canRender =
     appServerReachable &&
@@ -365,6 +302,29 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     images.length >= 1 &&
     !isRendering &&
     !isStaging;
+
+  const buildConfigOverrides = (): Record<string, unknown> => {
+    const overrides: Record<string, unknown> = {
+      introDurationInFrames: introDuration,
+      imageDurationInFrames: imageDuration,
+      introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+    };
+    if (selectedTemplate.backgroundMode) overrides.backgroundOverlayImage = bgOverlay;
+    else overrides.overlayImage = bgOverlay;
+    if (captionBottom !== "") overrides.captionBottomPercent = captionBottom;
+    return overrides;
+  };
+
+  const buildForm = (extraFiles?: { heroImage?: File | null }) => {
+    const form = new FormData();
+    form.append("template", selectedTemplate.id);
+    form.append("config_overrides", JSON.stringify(buildConfigOverrides()));
+    form.append("audio_file", audioFile!);
+    form.append("transcript_file", transcriptFile!);
+    for (const img of images) form.append("images", img);
+    if (extraFiles?.heroImage) form.append("hero_image", extraFiles.heroImage);
+    return form;
+  };
 
   const handleRender = async () => {
     if (!canRender || !audioFile || !transcriptFile) return;
@@ -375,24 +335,10 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     setVideoDownloadName(null);
 
     try {
-      const configOverrides: Record<string, unknown> = {
-        introDurationInFrames: introDuration,
-        imageDurationInFrames: imageDuration,
-        introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
-      };
-      if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
-      else configOverrides.overlayImage = bgOverlay;
-      if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
-
-      const form = new FormData();
-      form.append("template", template);
-      form.append("config_overrides", JSON.stringify(configOverrides));
-      form.append("audio_file", audioFile);
-      form.append("transcript_file", transcriptFile);
-      for (const img of images) form.append("images", img);
-      if (heroImage) form.append("hero_image", heroImage);
-
-      const createRes = await fetch(`${N2V_BASE}/render`, { method: "POST", body: form });
+      const createRes = await fetch(`${N2V_BASE}/render`, {
+        method: "POST",
+        body: buildForm({ heroImage }),
+      });
       if (!createRes.ok) {
         const err = (await createRes.json().catch(() => ({}))) as { detail?: string };
         throw new Error(err.detail || "Failed to create render task");
@@ -423,34 +369,21 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     if (!canRender || !audioFile || !transcriptFile) return;
     setIsStaging(true);
     try {
-      await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/start`, { method: "POST" });
-      await new Promise((r) => setTimeout(r, 3000));
-
-      const configOverrides: Record<string, unknown> = {
-        introDurationInFrames: introDuration,
-        imageDurationInFrames: imageDuration,
-        introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
-      };
-      if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
-      else configOverrides.overlayImage = bgOverlay;
-      if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
-
-      const form = new FormData();
-      form.append("template", template);
-      form.append("config_overrides", JSON.stringify(configOverrides));
-      form.append("audio_file", audioFile);
-      form.append("transcript_file", transcriptFile);
-      for (const img of images) form.append("images", img);
-      if (heroImage) form.append("hero_image", heroImage);
-
-      const res = await fetch(`${N2V_BASE}/preview/stage`, { method: "POST", body: form });
+      const res = await fetch(`${N2V_BASE}/preview/stage`, {
+        method: "POST",
+        body: buildForm({ heroImage }),
+      });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { detail?: string };
         throw new Error(err.detail || "Failed to stage preview");
       }
-
-      setStudioRunning(true);
-      window.open("http://localhost:3100", "_blank");
+      const data = (await res.json()) as { studio_url?: string };
+      const studioUrl = data.studio_url || "http://localhost:3000/NewsAnchorComposition";
+      if (window.electronAPI?.openExternal) {
+        await window.electronAPI.openExternal(studioUrl);
+      } else {
+        window.open(studioUrl, "_blank", "noopener,noreferrer");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Preview failed";
       setRenderProgress({ status: "error", percent: 0, message });
@@ -480,15 +413,6 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       actionDisabled: appBusy || appService?.status === "not_configured",
       onAction: handleToggleAppServer,
     },
-    {
-      id: "studio",
-      label: "Remotion Studio",
-      isReady: studioRunning,
-      path: "http://localhost:3100",
-      showActionButton: appServerReachable,
-      actionButtonLabel: studioRunning ? "Stop Studio" : "Start Studio",
-      onAction: handleToggleStudio,
-    },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -500,7 +424,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-foreground">News to Video</h2>
           <p className="text-sm text-muted-foreground">
-            Upload audio, transcript, and images — render a news video with one of 5 templates.
+            Upload audio, transcript, and images — render a news video with a news anchor template.
           </p>
         </div>
 
@@ -516,12 +440,12 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         {/* Step 1 — Template */}
         <div className="space-y-3">
           <h3 className="text-sm font-bold uppercase">Step 1 — Select Template</h3>
-          <Select value={template} onValueChange={(v) => setTemplate(v as TemplateId)}>
+          <Select value={templateId} onValueChange={setTemplateId}>
             <SelectTrigger className="bg-card border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TEMPLATES.map((t) => (
+              {templates.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.label}
                 </SelectItem>
@@ -570,10 +494,10 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               </div>
               <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
                 <span className="font-semibold text-foreground">
-                  {selectedTemplate.backgroundOverlayImage !== undefined ? "Background Overlay" : "Logo / Overlay"}
+                  {selectedTemplate.backgroundMode ? "Background Overlay" : "Logo / Overlay"}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  {selectedTemplate.backgroundOverlayImage !== undefined
+                  {selectedTemplate.backgroundMode
                     ? "Persistent image layered over the background after the intro ends"
                     : "Image overlaid on top of the video throughout (logo, watermark, etc.)"}
                 </span>
@@ -605,8 +529,8 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               <span className="font-semibold text-foreground">Intro Images</span>
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
-                  <span className="font-medium text-foreground">Top Panel</span>
-                  <span className="text-[10px] text-muted-foreground">Top decorative graphic in the animated intro</span>
+                  <span className="font-medium text-foreground">{selectedTemplate.id.includes("horizontal") ? "Left Panel" : "Top Panel"}</span>
+                  <span className="text-[10px] text-muted-foreground">{selectedTemplate.id.includes("horizontal") ? "Left" : "Top"} decorative graphic in the animated intro</span>
                   <div className="flex items-center gap-2 mt-1">
                     <button type="button" onClick={() => introImg1FileRef.current?.click()} disabled={uploadingField === "img1"}
                       className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
@@ -618,8 +542,8 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 rounded-md border border-border bg-background/50 p-2">
-                  <span className="font-medium text-foreground">Bottom Panel</span>
-                  <span className="text-[10px] text-muted-foreground">Bottom decorative graphic in the animated intro</span>
+                  <span className="font-medium text-foreground">{selectedTemplate.id.includes("horizontal") ? "Right Panel" : "Bottom Panel"}</span>
+                  <span className="text-[10px] text-muted-foreground">{selectedTemplate.id.includes("horizontal") ? "Right" : "Bottom"} decorative graphic in the animated intro</span>
                   <div className="flex items-center gap-2 mt-1">
                     <button type="button" onClick={() => introImg2FileRef.current?.click()} disabled={uploadingField === "img2"}
                       className="h-7 px-2 flex items-center gap-1.5 rounded-md border border-border bg-background hover:bg-muted transition-colors text-xs text-foreground shrink-0 disabled:opacity-50">
@@ -658,7 +582,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           <input
             ref={audioInputRef}
             type="file"
-            accept=".wav,audio/wav"
+            accept=".wav,.mp3,.ogg,.aac,.m4a,audio/*"
             className="hidden"
             onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
           />
@@ -673,7 +597,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold uppercase text-muted-foreground">
-                Audio file (.wav) <span className="text-red-500">*</span>
+                Audio file (.wav / .mp3 / …) <span className="text-red-500">*</span>
               </label>
               <Button
                 variant={audioFile ? "secondary" : "outline"}
@@ -681,7 +605,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
                 className="w-full justify-start"
               >
                 <Upload className="w-4 h-4 mr-2 shrink-0" />
-                <span className="truncate">{audioFile?.name || "Choose .wav file"}</span>
+                <span className="truncate">{audioFile?.name || "Choose audio file"}</span>
               </Button>
               {audioFile && (
                 <button
@@ -762,7 +686,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           </p>
         </div>
 
-        {/* Step 4 — Hero Image (only for NewsHorizontalBackground) */}
+        {/* Step 4 — Hero Image (only for templates with hero-overlay) */}
         {selectedTemplate.usesHero && (
           <div className="space-y-3">
             <h3 className="text-sm font-bold uppercase">
@@ -770,8 +694,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               <span className="text-muted-foreground font-normal normal-case">(optional)</span>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Persistent overlay on the right half of the screen. Replaces{" "}
-              <code className="font-mono text-xs">main/preview/image/hero.png</code>.
+              Persistent overlay on the right half of the screen.
             </p>
             <input
               ref={heroInputRef}
@@ -827,7 +750,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               className="h-10 px-4 rounded-xl font-bold"
               onClick={() => void handlePreview()}
               disabled={!canRender}
-              title="Preview in Remotion Studio"
+              title="Stage a preview workspace and open the Remotion family in your browser"
             >
               {isStaging ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

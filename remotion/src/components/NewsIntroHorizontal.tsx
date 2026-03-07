@@ -1,14 +1,18 @@
+import React from 'react';
 import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
-import { z } from 'zod';
 import { ImageSlide } from './KenBurnsEffect';
 
-export const newsIntroHorizontalSchema = z.object({
-  leftImage: z.string().default('templates/news-intro-horizontal/left.png'),
-  rightImage: z.string().default('templates/news-intro-horizontal/right.png'),
-  heroImage: z.string().default('templates/news-intro-horizontal/hero.png'),
-});
+const resolveAssetSrc = (src: string): string => {
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/")) {
+    return src;
+  }
+  return staticFile(src);
+};
 
-export type NewsIntroHorizontalProps = z.infer<typeof newsIntroHorizontalSchema> & {
+type NewsIntroHorizontalProps = {
+  leftImage: string;
+  rightImage: string;
+  heroImage: string;
   showHeroImage?: boolean;
 };
 
@@ -46,13 +50,13 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
           overflow: 'hidden',
         }}
       >
-        <ImageSlide src={staticFile(leftImage)} durationInFrames={durationInFrames} />
+        <ImageSlide src={resolveAssetSrc(leftImage)} durationInFrames={durationInFrames} />
       </div>
 
       {/* RIGHT OVERLAY: full-screen PNG, transparent left portion reveals left image */}
       <AbsoluteFill>
         <Img
-          src={staticFile(rightImage)}
+          src={resolveAssetSrc(rightImage)}
           style={{ width: '100%', height: '100%', objectFit: 'fill' }}
         />
       </AbsoluteFill>
@@ -71,7 +75,7 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
           }}
         >
           <Img
-            src={staticFile(heroImage)}
+            src={resolveAssetSrc(heroImage)}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         </div>

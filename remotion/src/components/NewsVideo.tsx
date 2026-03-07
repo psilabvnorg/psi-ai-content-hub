@@ -1,4 +1,4 @@
-// NewsVideo — schema, types, and shared layer structure for all 4 news compositions.
+// NewsVideo — shared layer structure for news anchor compositions.
 //
 // Layer stack (bottom → top):
 //   zIndex  1   LAYER 1 : LoopingImageSlider   — starts at introDurationInFrames
@@ -9,44 +9,11 @@
 //   zIndex 100  CAPTIONS: appear after intro ends
 
 import React from 'react';
-import { z } from 'zod';
 import { AbsoluteFill, Html5Audio, Sequence, useVideoConfig } from 'remotion';
 import { LoopingImageSlider } from './LoopingImageSlider';
 import { CaptionDisplay } from './CaptionDisplay';
 import { SectionSlider } from './SectionSlider';
 import type { Caption } from '@remotion/captions';
-
-// ─── Schema ──────────────────────────────────────────────────────────────────
-
-export const newsVideoSchema = z.object({
-  // Intro template images (loaded from intro-config-{orientation}-{bg|nobg}.json)
-  introProps: z.object({
-    image1: z.string().default(''),
-    image2: z.string().default(''),
-    heroImage: z.string().default(''),
-  }),
-  contentDirectory: z.string().describe('e.g. "main/news" — base path inside public/'),
-  images: z.array(z.string()).default([]),
-  videos: z.array(z.string()).default([]),
-  videoDurations: z.array(z.number()).default([]),
-  audioSrc: z.string().optional(),
-  captions: z.array(z.any()).optional(),
-  orientation: z.enum(['vertical', 'horizontal']).default('vertical'),
-  // Locked per-composition — not exposed in user-facing schemas.
-  backgroundMode: z.boolean().default(false),
-  // overlayImage: logo shown after intro in noBackground mode (video-config overlayImage)
-  overlayImage: z.string().optional(),
-  // videoConfigFilename: override the auto-detected config file (e.g. 'video-config-horizontal-cnn.json')
-  videoConfigFilename: z.string().optional(),
-  // backgroundOverlayImage: static overlay after intro in backgroundMode (video-config backgroundOverlayImage)
-  backgroundOverlayImage: z.string().optional(),
-  captionBottomPercent: z.number().default(20),
-  introDurationInFrames: z.number(),
-  imageDurationInFrames: z.number(),
-  sections: z.array(z.object({ title: z.string(), startMs: z.number() })).default([]),
-});
-
-export type NewsVideoProps = z.infer<typeof newsVideoSchema>;
 
 // ─── Base component ───────────────────────────────────────────────────────────
 

@@ -8,15 +8,14 @@ from fastapi.responses import StreamingResponse
 from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
-from ..services.news_to_video import (
-    TEMPLATES,
+from ..services.remotion_platform import (
     UploadedFileData,
     get_render_result,
     get_remotion_setup_status,
+    get_template_preset,
     render_progress_store,
-    stage_preview,
-    start_render_pipeline,
-    upload_user_asset,
+    stage_news_preview,
+    start_news_render,
 )
 
 
@@ -32,21 +31,6 @@ def _to_file(upload: UploadFile | None, field_name: str) -> UploadedFileData:
     return UploadedFileData(filename=upload.filename, content_type=upload.content_type, data=data)
 
 
-@router.get("/templates")
-def list_templates() -> dict:
-    return {
-        "templates": [
-            {
-                "id": key,
-                "composition": cfg["_composition"],
-                "config_filename": cfg["_config_filename"],
-                "uses_hero": cfg.get("_uses_hero", False),
-            }
-            for key, cfg in TEMPLATES.items()
-        ]
-    }
-
-
 @router.post("/render")
 def create_render_task(
     template: str = Form(...),
@@ -57,11 +41,8 @@ def create_render_task(
     hero_image: UploadFile | None = File(default=None),
     job_store: JobStore = Depends(get_job_store),
 ) -> dict:
-    if template not in TEMPLATES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown template '{template}'. Valid templates: {list(TEMPLATES.keys())}",
-        )
+    if not get_template_preset(template):
+        raise HTTPException(status_code=400, detail=f"Unknown template '{template}'")
     if not images or len(images) < 1 or len(images) > 10:
         raise HTTPException(status_code=400, detail="images must contain between 1 and 10 files")
 
@@ -76,9 +57,9 @@ def create_render_task(
         raise HTTPException(status_code=400, detail=f"Invalid config_overrides JSON: {exc}") from exc
 
     try:
-        task_id = start_render_pipeline(
+        task_id = start_news_render(
             job_store=job_store,
-            template_key=template,
+            preset_identifier=template,
             audio=audio,
             transcript=transcript,
             images=image_list,
@@ -113,7 +94,7 @@ def stage_preview_endpoint(
     images: list[UploadFile] = File(default=[]),
     hero_image: UploadFile | None = File(default=None),
 ) -> dict:
-    if template not in TEMPLATES:
+    if not get_template_preset(template):
         raise HTTPException(status_code=400, detail=f"Unknown template '{template}'")
     if not images or len(images) < 1 or len(images) > 10:
         raise HTTPException(status_code=400, detail="images must contain between 1 and 10 files")
@@ -129,8 +110,8 @@ def stage_preview_endpoint(
         raise HTTPException(status_code=400, detail=f"Invalid config_overrides JSON: {exc}") from exc
 
     try:
-        result = stage_preview(
-            template_key=template,
+        result = stage_news_preview(
+            preset_identifier=template,
             audio=audio,
             transcript=transcript,
             images=image_list,
@@ -141,16 +122,6 @@ def stage_preview_endpoint(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return result
-
-
-@router.post("/upload-asset")
-def upload_asset_endpoint(file: UploadFile = File(...)) -> dict:
-    upload = _to_file(file, "file")
-    try:
-        path = upload_user_asset(upload)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"path": path}
 
 
 @router.get("/setup/status")

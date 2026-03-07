@@ -1,14 +1,19 @@
+import React from 'react';
 import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
-import { z } from 'zod';
 import { ImageSlide } from './KenBurnsEffect';
 
-export const newsIntroVerticalSchema = z.object({
-  topImage: z.string().default('templates/news-intro-vertical/top.png'),
-  bottomImage: z.string().default('templates/news-intro-vertical/bottom.png'),
-  heroImage: z.string().default('templates/news-intro-vertical/hero.png'),
-});
+const resolveAssetSrc = (src: string): string => {
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/")) {
+    return src;
+  }
+  return staticFile(src);
+};
 
-export type NewsIntroVerticalProps = z.infer<typeof newsIntroVerticalSchema>;
+type NewsIntroVerticalProps = {
+  topImage: string;
+  bottomImage: string;
+  heroImage: string;
+};
 
 export const NewsIntroVertical: React.FC<NewsIntroVerticalProps> = ({ topImage, bottomImage, heroImage }) => {
   const frame = useCurrentFrame();
@@ -45,13 +50,13 @@ export const NewsIntroVertical: React.FC<NewsIntroVerticalProps> = ({ topImage, 
           overflow: 'hidden',
         }}
       >
-        <ImageSlide src={staticFile(topImage)} durationInFrames={durationInFrames} />
+        <ImageSlide src={resolveAssetSrc(topImage)} durationInFrames={durationInFrames} />
       </div>
 
       {/* BOTTOM OVERLAY: full-screen PNG, transparent top half reveals top image */}
       <AbsoluteFill>
         <Img
-          src={staticFile(bottomImage)}
+          src={resolveAssetSrc(bottomImage)}
           style={{ width: '100%', height: '100%', objectFit: 'fill' }}
         />
       </AbsoluteFill>
@@ -69,7 +74,7 @@ export const NewsIntroVertical: React.FC<NewsIntroVerticalProps> = ({ topImage, 
         }}
       >
         <Img
-          src={staticFile(heroImage)}
+          src={resolveAssetSrc(heroImage)}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
         />
       </div>

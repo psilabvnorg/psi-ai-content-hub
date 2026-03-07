@@ -34,7 +34,18 @@
       "Bash(xargs cat)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in [''main'',''build'',''scripts''] if k in d}, indent=2\\)\\)\")",
       "Bash(npm install html2canvas)",
-      "WebFetch(domain:www.remotion.dev)"
+      "WebFetch(domain:www.remotion.dev)",
+      "Bash(cp \"news-intro-vertical/top.png\" \"news/news-anchor-vertical/default/intro/top-panel.png\")",
+      "Bash(cp \"news-intro-vertical/bottom.png\" \"news/news-anchor-vertical/default/intro/bottom-panel.png\")",
+      "Bash(cp \"news-intro-vertical/hero.png\" \"news/news-anchor-vertical/default/intro/hero.png\")",
+      "Bash(cp \"news-overlay/vertical-bg1.png\" \"news/news-anchor-vertical/default/overlay/background.png\")",
+      "Bash(cp \"news-overlay/vertical-logo-only1.png\" \"news/news-anchor-vertical/default/branding/logo.png\")",
+      "Bash(cp \"news-intro-horizontal/left.png\" \"news/news-anchor-horizontal/default/intro/left-panel.png\")",
+      "Bash(cp \"news-intro-horizontal/right.png\" \"news/news-anchor-horizontal/default/intro/right-panel.png\")",
+      "Bash(cp \"news-intro-horizontal/hero.png\" \"news/news-anchor-horizontal/default/intro/hero.png\")",
+      "Bash(cp \"news-overlay/horizontal-bg1.png\" \"news/news-anchor-horizontal/default/overlay/background.png\")",
+      "Bash(cp \"news-overlay/horizontal-bg2.png\" \"news/news-anchor-horizontal/default/overlay/background-cnn.png\")",
+      "Bash(cp \"news-overlay/horizontal-logo-only1.png\" \"news/news-anchor-horizontal/default/branding/logo.png\")"
     ]
   }
 }

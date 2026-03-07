@@ -36,6 +36,7 @@ type ElectronApi = {
   showOpenDialog: (options: unknown) => Promise<unknown>;
   showSaveDialog: (options: unknown) => Promise<unknown>;
   getAppVersion: () => Promise<string>;
+  getAppPaths: () => Promise<{ baseAppDir: string; tempDir: string }>;
   openExternal: (url: string) => Promise<void>;
   serverSend: (name: string, args: unknown) => Promise<unknown>;
   onServerPush: (callback: (data: unknown) => void) => () => void;

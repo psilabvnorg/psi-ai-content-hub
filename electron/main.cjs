@@ -88,6 +88,18 @@ const BOOTSTRAP_PACKAGES = {
   ],
 };
 
+function getAppDataRoot() {
+  if (app.isReady()) {
+    return app.getPath('userData');
+  }
+  return path.join(process.env.APPDATA || path.join(os.homedir(), '.config'), 'psi-ai-content-hub');
+}
+
+function getAppTempRoot() {
+  const tempRoot = app.isReady() ? app.getPath('temp') : os.tmpdir();
+  return path.join(tempRoot, 'psi_ai_content_hub');
+}
+
 // Check if dev server is running on port 5000
 const isDev = !app.isPackaged;
 
@@ -372,6 +384,8 @@ async function startManagedService(serviceId) {
         ...process.env,
         PYTHONUNBUFFERED: '1',
         PYTHONIOENCODING: 'utf-8',
+        PSI_APP_DATA_DIR: getAppDataRoot(),
+        PSI_APP_TEMP_DIR: getAppTempRoot(),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     }
@@ -678,9 +692,8 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle('app:paths', async () => {
-    const appdata = process.env.APPDATA || path.join(os.homedir(), '.config');
-    const baseAppDir = path.join(appdata, 'psi-ai-content-hub');
-    const tempDir = path.join(os.tmpdir(), 'psi_ai_content_hub');
+    const baseAppDir = getAppDataRoot();
+    const tempDir = getAppTempRoot();
     return { baseAppDir, tempDir };
   });
 

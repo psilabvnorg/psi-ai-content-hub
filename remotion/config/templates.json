@@ -1,0 +1,390 @@
+{
+  "families": [
+    {
+      "id": "news-anchor",
+      "compositionId": "NewsAnchorComposition",
+      "workspaceSchemaId": "news-anchor-workspace",
+      "capabilities": [
+        "captions",
+        "hero-overlay",
+        "background-overlay",
+        "orientation-switch"
+      ],
+      "supportedSlots": [
+        "intro.topPanel",
+        "intro.bottomPanel",
+        "intro.leftPanel",
+        "intro.rightPanel",
+        "intro.hero",
+        "branding.logo",
+        "overlay.background",
+        "content.hero"
+      ],
+      "supportedTracks": [
+        "audio",
+        "image",
+        "captions"
+      ],
+      "renderDefaults": {
+        "fps": 30
+      }
+    },
+    {
+      "id": "news-intro",
+      "compositionId": "NewsIntroComposition",
+      "workspaceSchemaId": "news-intro-workspace",
+      "capabilities": [
+        "orientation-switch",
+        "intro-only"
+      ],
+      "supportedSlots": [
+        "intro.topPanel",
+        "intro.bottomPanel",
+        "intro.leftPanel",
+        "intro.rightPanel",
+        "intro.hero",
+        "branding.logo"
+      ],
+      "supportedTracks": [],
+      "renderDefaults": {
+        "fps": 30
+      }
+    },
+    {
+      "id": "audio-showcase",
+      "compositionId": "AudioShowcaseComposition",
+      "workspaceSchemaId": "audio-showcase-workspace",
+      "capabilities": [
+        "captions",
+        "multiple-audio-tracks",
+        "waveform",
+        "hero-image"
+      ],
+      "supportedSlots": [
+        "branding.logo",
+        "content.hero"
+      ],
+      "supportedTracks": [
+        "audio",
+        "image",
+        "captions"
+      ],
+      "renderDefaults": {
+        "fps": 30
+      }
+    },
+    {
+      "id": "audio-karaoke",
+      "compositionId": "AudioKaraokeComposition",
+      "workspaceSchemaId": "audio-karaoke-workspace",
+      "capabilities": [
+        "captions",
+        "multiple-audio-tracks",
+        "waveform",
+        "hero-image"
+      ],
+      "supportedSlots": [
+        "branding.logo",
+        "content.hero"
+      ],
+      "supportedTracks": [
+        "audio",
+        "image",
+        "captions"
+      ],
+      "renderDefaults": {
+        "fps": 30
+      }
+    }
+  ],
+  "presets": [
+    {
+      "id": "news.anchor.vertical.background",
+      "legacyIds": ["NewsVerticalBackground"],
+      "category": "news",
+      "familyId": "news-anchor",
+      "label": "News Anchor Vertical Background",
+      "description": "Vertical anchor layout with animated intro and persistent background overlay.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "active",
+      "defaultAssetPackId": "news.anchor.vertical.default",
+      "defaultConfig": {
+        "variant": "background",
+        "introDurationInFrames": 150,
+        "imageDurationInFrames": 170,
+        "captionBottomPercent": 20
+      },
+      "slotBindings": {
+        "intro.topPanel": "builtin://templates/news/news-anchor-vertical/default/intro/top-panel.png",
+        "intro.bottomPanel": "builtin://templates/news/news-anchor-vertical/default/intro/bottom-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-vertical/default/intro/hero.png",
+        "overlay.background": "builtin://templates/news/news-anchor-vertical/default/overlay/background.png",
+        "branding.logo": "builtin://templates/news/news-anchor-vertical/default/branding/logo.png"
+      },
+      "featureFlags": ["captions", "background-overlay"],
+      "editorSchemaId": "news-anchor-editor"
+    },
+    {
+      "id": "news.anchor.vertical.clean",
+      "legacyIds": ["NewsVerticalNoBackground"],
+      "category": "news",
+      "familyId": "news-anchor",
+      "label": "News Anchor Vertical Clean",
+      "description": "Vertical anchor layout with animated intro and persistent logo overlay.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "active",
+      "defaultAssetPackId": "news.anchor.vertical.default",
+      "defaultConfig": {
+        "variant": "clean",
+        "introDurationInFrames": 150,
+        "imageDurationInFrames": 170,
+        "captionBottomPercent": 20
+      },
+      "slotBindings": {
+        "intro.topPanel": "builtin://templates/news/news-anchor-vertical/default/intro/top-panel.png",
+        "intro.bottomPanel": "builtin://templates/news/news-anchor-vertical/default/intro/bottom-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-vertical/default/intro/hero.png",
+        "branding.logo": "builtin://templates/news/news-anchor-vertical/default/branding/logo.png"
+      },
+      "featureFlags": ["captions", "logo-overlay"],
+      "editorSchemaId": "news-anchor-editor"
+    },
+    {
+      "id": "news.anchor.horizontal.background",
+      "legacyIds": ["NewsHorizontalBackground"],
+      "category": "news",
+      "familyId": "news-anchor",
+      "label": "News Anchor Horizontal Background",
+      "description": "Horizontal anchor layout with intro, overlay background, and persistent hero panel.",
+      "orientation": "horizontal",
+      "aspectRatio": "16:9",
+      "status": "active",
+      "defaultAssetPackId": "news.anchor.horizontal.default",
+      "defaultConfig": {
+        "variant": "background",
+        "introDurationInFrames": 150,
+        "imageDurationInFrames": 170,
+        "captionBottomPercent": 20
+      },
+      "slotBindings": {
+        "intro.leftPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/left-panel.png",
+        "intro.rightPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/right-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-horizontal/default/intro/hero.png",
+        "overlay.background": "builtin://templates/news/news-anchor-horizontal/default/overlay/background.png",
+        "branding.logo": "builtin://templates/news/news-anchor-horizontal/default/branding/logo.png"
+      },
+      "featureFlags": ["captions", "background-overlay", "hero-overlay"],
+      "editorSchemaId": "news-anchor-editor"
+    },
+    {
+      "id": "news.anchor.horizontal.clean",
+      "legacyIds": ["NewsHorizontalNoBackground"],
+      "category": "news",
+      "familyId": "news-anchor",
+      "label": "News Anchor Horizontal Clean",
+      "description": "Horizontal anchor layout with intro and persistent logo overlay.",
+      "orientation": "horizontal",
+      "aspectRatio": "16:9",
+      "status": "active",
+      "defaultAssetPackId": "news.anchor.horizontal.default",
+      "defaultConfig": {
+        "variant": "clean",
+        "introDurationInFrames": 150,
+        "imageDurationInFrames": 170,
+        "captionBottomPercent": 20
+      },
+      "slotBindings": {
+        "intro.leftPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/left-panel.png",
+        "intro.rightPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/right-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-horizontal/default/intro/hero.png",
+        "branding.logo": "builtin://templates/news/news-anchor-horizontal/default/branding/logo.png"
+      },
+      "featureFlags": ["captions", "logo-overlay"],
+      "editorSchemaId": "news-anchor-editor"
+    },
+    {
+      "id": "news.anchor.horizontal.cnn",
+      "legacyIds": ["NewsHorizontalBackgroundCNN"],
+      "category": "news",
+      "familyId": "news-anchor",
+      "label": "News Anchor Horizontal CNN",
+      "description": "Horizontal news preset with no intro and immediate captions.",
+      "orientation": "horizontal",
+      "aspectRatio": "16:9",
+      "status": "active",
+      "defaultAssetPackId": "news.anchor.horizontal.default",
+      "defaultConfig": {
+        "variant": "cnn",
+        "introDurationInFrames": 0,
+        "imageDurationInFrames": 170,
+        "captionBottomPercent": 2.9
+      },
+      "slotBindings": {
+        "intro.leftPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/left-panel.png",
+        "intro.rightPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/right-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-horizontal/default/intro/hero.png",
+        "overlay.background": "builtin://templates/news/news-anchor-horizontal/default/overlay/background-cnn.png",
+        "branding.logo": "builtin://templates/news/news-anchor-horizontal/default/branding/logo.png"
+      },
+      "featureFlags": ["captions", "background-overlay"],
+      "editorSchemaId": "news-anchor-editor"
+    },
+    {
+      "id": "news.intro.vertical",
+      "legacyIds": ["NewsIntroVertical"],
+      "category": "news",
+      "familyId": "news-intro",
+      "label": "News Intro Vertical",
+      "description": "Standalone vertical intro preview for anchor templates.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "internal",
+      "defaultAssetPackId": "news.anchor.vertical.default",
+      "defaultConfig": {
+        "introDurationInFrames": 150
+      },
+      "slotBindings": {
+        "intro.topPanel": "builtin://templates/news/news-anchor-vertical/default/intro/top-panel.png",
+        "intro.bottomPanel": "builtin://templates/news/news-anchor-vertical/default/intro/bottom-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-vertical/default/intro/hero.png",
+        "branding.logo": "builtin://templates/news/news-anchor-vertical/default/branding/logo.png"
+      },
+      "featureFlags": ["intro-only"],
+      "editorSchemaId": "news-intro-editor"
+    },
+    {
+      "id": "news.intro.horizontal",
+      "legacyIds": ["NewsIntroHorizontal"],
+      "category": "news",
+      "familyId": "news-intro",
+      "label": "News Intro Horizontal",
+      "description": "Standalone horizontal intro preview for anchor templates.",
+      "orientation": "horizontal",
+      "aspectRatio": "16:9",
+      "status": "internal",
+      "defaultAssetPackId": "news.anchor.horizontal.default",
+      "defaultConfig": {
+        "introDurationInFrames": 150
+      },
+      "slotBindings": {
+        "intro.leftPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/left-panel.png",
+        "intro.rightPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/right-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-horizontal/default/intro/hero.png",
+        "branding.logo": "builtin://templates/news/news-anchor-horizontal/default/branding/logo.png"
+      },
+      "featureFlags": ["intro-only"],
+      "editorSchemaId": "news-intro-editor"
+    },
+    {
+      "id": "audio.music-playlist.vertical",
+      "legacyIds": ["MusicPlaylist"],
+      "category": "audio",
+      "familyId": "audio-showcase",
+      "label": "Music Playlist Vertical",
+      "description": "Vertical multi-track audio showcase preset.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "active",
+      "defaultAssetPackId": "audio.showcase.default",
+      "defaultConfig": {
+        "waveformStyle": "bars",
+        "numberOfBars": 64,
+        "accentColor": "#A855F7",
+        "imageDurationInFrames": 300
+      },
+      "slotBindings": {},
+      "featureFlags": ["waveform", "multiple-audio-tracks"],
+      "editorSchemaId": "audio-showcase-editor"
+    },
+    {
+      "id": "audio.podcast.vertical",
+      "legacyIds": ["Podcast"],
+      "category": "audio",
+      "familyId": "audio-showcase",
+      "label": "Podcast Vertical",
+      "description": "Vertical spoken-audio showcase preset with captions.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "active",
+      "defaultAssetPackId": "audio.showcase.default",
+      "defaultConfig": {
+        "waveformStyle": "bars",
+        "numberOfBars": 64,
+        "accentColor": "#A855F7",
+        "imageDurationInFrames": 300
+      },
+      "slotBindings": {},
+      "featureFlags": ["waveform", "captions"],
+      "editorSchemaId": "audio-showcase-editor"
+    },
+    {
+      "id": "audio.karaoke.vertical",
+      "legacyIds": ["Karaoke"],
+      "category": "audio",
+      "familyId": "audio-karaoke",
+      "label": "Karaoke Vertical",
+      "description": "Vertical lyric-driven audio preset.",
+      "orientation": "vertical",
+      "aspectRatio": "9:16",
+      "status": "active",
+      "defaultAssetPackId": "audio.showcase.default",
+      "defaultConfig": {
+        "waveformStyle": "bars",
+        "numberOfBars": 64,
+        "accentColor": "#A855F7",
+        "imageDurationInFrames": 300
+      },
+      "slotBindings": {},
+      "featureFlags": ["waveform", "captions"],
+      "editorSchemaId": "audio-showcase-editor"
+    }
+  ],
+  "assetPacks": [
+    {
+      "id": "news.anchor.vertical.default",
+      "category": "news",
+      "presetIds": [
+        "news.anchor.vertical.background",
+        "news.anchor.vertical.clean",
+        "news.intro.vertical"
+      ],
+      "slots": {
+        "intro.topPanel": "builtin://templates/news/news-anchor-vertical/default/intro/top-panel.png",
+        "intro.bottomPanel": "builtin://templates/news/news-anchor-vertical/default/intro/bottom-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-vertical/default/intro/hero.png",
+        "overlay.background": "builtin://templates/news/news-anchor-vertical/default/overlay/background.png",
+        "branding.logo": "builtin://templates/news/news-anchor-vertical/default/branding/logo.png"
+      }
+    },
+    {
+      "id": "news.anchor.horizontal.default",
+      "category": "news",
+      "presetIds": [
+        "news.anchor.horizontal.background",
+        "news.anchor.horizontal.clean",
+        "news.anchor.horizontal.cnn",
+        "news.intro.horizontal"
+      ],
+      "slots": {
+        "intro.leftPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/left-panel.png",
+        "intro.rightPanel": "builtin://templates/news/news-anchor-horizontal/default/intro/right-panel.png",
+        "intro.hero": "builtin://templates/news/news-anchor-horizontal/default/intro/hero.png",
+        "overlay.background": "builtin://templates/news/news-anchor-horizontal/default/overlay/background.png",
+        "overlay.backgroundCnn": "builtin://templates/news/news-anchor-horizontal/default/overlay/background-cnn.png",
+        "branding.logo": "builtin://templates/news/news-anchor-horizontal/default/branding/logo.png"
+      }
+    },
+    {
+      "id": "audio.showcase.default",
+      "category": "audio",
+      "presetIds": [
+        "audio.music-playlist.vertical",
+        "audio.podcast.vertical",
+        "audio.karaoke.vertical"
+      ],
+      "slots": {}
+    }
+  ]
+}
