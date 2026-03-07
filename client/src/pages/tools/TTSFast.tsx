@@ -319,14 +319,23 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!audioUrl) return;
-    const a = document.createElement("a");
-    a.href = audioUrl;
-    a.download = downloadName || "tts.mp3";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      const res = await fetch(audioUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = downloadName || "tts.mp3";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // fallback: open in new tab
+      window.open(audioUrl, "_blank");
+    }
   };
 
   const statusRows: StatusRowConfig[] = [

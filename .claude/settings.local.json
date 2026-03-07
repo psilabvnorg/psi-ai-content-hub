@@ -40,7 +40,8 @@
       "Bash(do)",
       "Bash(sed -i 's|main/preview/|main/news/|g' \"$f\")",
       "Bash(echo \"Updated: $f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(python -c \":*)"
     ]
   }
 }

@@ -42,7 +42,7 @@ export function AudioResult({
         </div>
       )}
       <audio controls className="w-full h-10">
-        <source src={audioUrl} type="audio/wav" />
+        <source src={audioUrl} />
       </audio>
     </div>
   );
