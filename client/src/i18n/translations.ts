@@ -46,9 +46,6 @@ export const translations = {
     "home.back_dashboard": "Go Back",
     "home.speed": "Speed",
     "home.processing": "Processing...",
-    "feature.workflow.text_to_video.title": "Text to Video",
-    "feature.workflow.text_to_video.desc":
-      "Transform any topic or text into engaging vertical (TikTok, YouTube Shorts, FB Reels) or horizontal videos (YouTube). Perfect for news, education, reviews, tourism, sports, investment, self-help, philosophy, and psychology content.",
     "feature.workflow.reup_youtube.title": "Reup YouTube Video",
     "feature.workflow.reup_youtube.desc":
       "Paste a YouTube URL, choose target language, and generate a translated video with new audio and visuals.",
@@ -906,9 +903,6 @@ export const translations = {
     "home.back_dashboard": "Quay Lại",
     "home.speed": "Tốc độ",
     "home.processing": "Đang xử lý...",
-    "feature.workflow.text_to_video.title": "Văn bản thành Video",
-    "feature.workflow.text_to_video.desc":
-      "Biến mọi chủ đề hoặc văn bản thành video dọc (TikTok, YouTube Shorts, FB Reels) hoặc ngang (YouTube). Phù hợp cho tin tức, giáo dục, review, du lịch, thể thao, đầu tư, self-help, triết học và tâm lý.",
     "feature.workflow.reup_youtube.title": "Reup Video YouTube",
     "feature.workflow.reup_youtube.desc":
       "Dán URL YouTube, chọn ngôn ngữ đích và tạo video dịch với âm thanh và hình ảnh mới.",

@@ -14,7 +14,6 @@ from .routers import llm as llm_router
 from .routers import media as media_router
 from .routers import thumbnail as thumbnail_router
 from .routers import system as system_router
-from .routers import text_to_video as text_to_video_router
 from .routers import tools as tools_router
 from .routers import aenv_profile_router_api as aenv_profile_router
 from .routers import stt as stt_router
@@ -32,7 +31,6 @@ from .services.remove_overlay import (
     cleanup_overlay_results,
     cleanup_video_overlay_results,
 )
-from .services.text_to_video import cleanup_text_to_video_state
 from .services.news_to_video import cleanup_news_to_video_state
 
 
@@ -44,7 +42,6 @@ def _cleanup_loop() -> None:
         cleanup_video_results()
         cleanup_overlay_results()
         cleanup_video_overlay_results()
-        cleanup_text_to_video_state()
         cleanup_news_to_video_state()
 
 
@@ -66,7 +63,6 @@ def create_app() -> FastAPI:
     # Core routers
     app.include_router(system_router.router)
     app.include_router(media_router.router)
-    app.include_router(text_to_video_router.router)
     app.include_router(files_router.router)
     app.include_router(llm_router.router)
     app.include_router(tools_router.router)

@@ -93,12 +93,6 @@ const advancedTools = [
     descriptionKey: "feature.workflow.reup_youtube.desc" as I18nKey,
   },
   {
-    id: "text-to-video",
-    titleKey: "feature.workflow.text_to_video.title" as I18nKey,
-    icon: Video,
-    descriptionKey: "feature.workflow.text_to_video.desc" as I18nKey,
-  },
-  {
     id: "news-to-video",
     titleKey: "feature.workflow.news_to_video.title" as I18nKey,
     icon: FileText,

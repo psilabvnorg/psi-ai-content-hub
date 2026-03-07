@@ -22,7 +22,6 @@ import ThumbnailCreatorSimple from "./tools/ThumbnailCreatorSimple";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
 import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
-import TextToVideo from "./tools/TextToVideo";
 import NewsToVideo from "./tools/NewsToVideo";
 import LLM from "./tools/LLM";
 import LLMBatch from "./tools/LLMBatch";
@@ -55,7 +54,6 @@ export default function FeaturePlaceholder({
 
   const getTitleKeyFromId = (targetId: string): I18nKey => {
     const titleMap: Record<string, I18nKey> = {
-      "text-to-video": "feature.workflow.text_to_video.title",
       "reup-youtube": "feature.workflow.reup_youtube.title",
       "news-to-video": "feature.workflow.news_to_video.title",
       "book-to-video": "feature.workflow.book_to_video.title",
@@ -141,8 +139,6 @@ export default function FeaturePlaceholder({
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
       case "merge-overlay":
         return <MergeOverlay onOpenSettings={() => onSelectFeature("settings")} />;
-      case "text-to-video":
-        return <TextToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "news-to-video":
         return <NewsToVideo onOpenSettings={() => onSelectFeature("settings")} />;
       case "reup-youtube":
