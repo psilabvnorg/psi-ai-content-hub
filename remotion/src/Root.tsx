@@ -65,7 +65,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calcVB}
         schema={schemaVB}
         defaultProps={{
-          contentDirectory: 'main/preview',
+          contentDirectory: 'main/news',
           introProps: NEWS_INTRO_DEFAULTS.vertical,
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
@@ -82,7 +82,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calcVNB}
         schema={schemaVNB}
         defaultProps={{
-          contentDirectory: 'main/preview',
+          contentDirectory: 'main/news',
           introProps: NEWS_INTRO_DEFAULTS.vertical,
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
@@ -99,7 +99,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calcHB}
         schema={schemaHB}
         defaultProps={{
-          contentDirectory: 'main/preview',
+          contentDirectory: 'main/news',
           introProps: NEWS_INTRO_DEFAULTS.horizontal,
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
@@ -116,7 +116,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calcHNB}
         schema={schemaHNB}
         defaultProps={{
-          contentDirectory: 'main/preview',
+          contentDirectory: 'main/news',
           introProps: NEWS_INTRO_DEFAULTS.horizontal,
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 150,
@@ -133,7 +133,7 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calcHCNN}
         schema={schemaHCNN}
         defaultProps={{
-          contentDirectory: 'main/preview',
+          contentDirectory: 'main/news',
           introProps: NEWS_INTRO_DEFAULTS.horizontal,
           images: [], videos: [], videoDurations: [], captions: [], sections: [],
           introDurationInFrames: 0,

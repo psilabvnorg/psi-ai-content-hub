@@ -7,7 +7,7 @@
 //     slideshow images remain visible underneath as background
 //   • Audio plays from frame 0
 //   • Subtitles appear only after the intro ends (introDurationInFrames)
-//   • Hero image (main/preview/image/hero.png) overlays entire clip on the left half,
+//   • Hero image (main/news/image/hero.png) overlays entire clip on the left half,
 //     with a breathing scale effect (bigger → smaller loop)
 
 import React from 'react';
@@ -57,7 +57,7 @@ const HeroPersistentOverlay: React.FC = () => {
       }}
     >
       <Img
-        src={staticFile('main/preview/image/hero.png')}
+        src={staticFile('main/news/image/hero.png')}
         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
       />
     </div>

@@ -22,8 +22,8 @@ from .aenv_profile_service_api import get_remotion_setup_status  # noqa: F401 â€
 REPO_ROOT = Path(__file__).resolve().parents[4]
 REMOTION_ROOT = REPO_ROOT / "remotion"
 REMOTION_PUBLIC_MAIN = REMOTION_ROOT / "public" / "main"
-PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / "preview"
-PREVIEW_IMAGE_DIR = REMOTION_PUBLIC_MAIN / "preview" / "image"
+PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / "news"
+PREVIEW_IMAGE_DIR = REMOTION_PUBLIC_MAIN / "news" / "image"
 STUDIO_PORT = 3100
 
 USER_ASSETS_DIR = REMOTION_ROOT / "public" / "user-assets"
@@ -247,7 +247,7 @@ def _stage_files(
         (image_dir / f"{idx:02d}{suffix}").write_bytes(img.data)
 
     # Hero image â€” saved to staging dir AND to the shared preview/image dir
-    # (NewsHorizontalBackground reads hero from main/preview/image/hero.png directly)
+    # (NewsHorizontalBackground reads hero from main/news/image/hero.png directly)
     if hero_image:
         hero_suffix = _resolve_image_suffix(hero_image.filename)
         hero_dest = image_dir / f"hero{hero_suffix}"
@@ -336,7 +336,7 @@ def stage_preview(
     )
 
     return {
-        "content_directory": "main/preview",
+        "content_directory": "main/news",
         "studio_url": f"http://localhost:{STUDIO_PORT}",
     }
 
