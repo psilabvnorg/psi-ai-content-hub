@@ -36,6 +36,50 @@ ALLOWED_AUDIO_SUFFIXES = {".wav"}
 
 _PERCENT_RE = re.compile(r"(\d+(?:\.\d+)?)%")
 
+# ── Studio process management ─────────────────────────────────────────────────
+
+_studio_proc: subprocess.Popen | None = None
+_studio_lock = threading.Lock()
+
+
+def start_studio() -> dict[str, object]:
+    """Start the Remotion Studio process on STUDIO_PORT. No-op if already running."""
+    global _studio_proc
+    with _studio_lock:
+        if _studio_proc is not None and _studio_proc.poll() is None:
+            return {"running": True, "message": "Studio already running"}
+
+        _studio_proc = subprocess.Popen(
+            ["npx", "remotion", "studio", "--port", str(STUDIO_PORT)],
+            cwd=str(REMOTION_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return {"running": True, "message": f"Studio started on port {STUDIO_PORT}"}
+
+
+def stop_studio() -> dict[str, object]:
+    """Stop the Remotion Studio process if running."""
+    global _studio_proc
+    with _studio_lock:
+        if _studio_proc is None or _studio_proc.poll() is not None:
+            _studio_proc = None
+            return {"running": False, "message": "Studio not running"}
+        _studio_proc.terminate()
+        try:
+            _studio_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _studio_proc.kill()
+        _studio_proc = None
+        return {"running": False, "message": "Studio stopped"}
+
+
+def get_studio_status() -> dict[str, object]:
+    """Return whether the Remotion Studio process is currently running."""
+    with _studio_lock:
+        running = _studio_proc is not None and _studio_proc.poll() is None
+        return {"running": running}
+
 # ── Template definitions ───────────────────────────────────────────────────────
 # Keys prefixed with _ are service-internal (not written to the staged video-config).
 # All other keys are written verbatim to the staged video-config JSON.
@@ -231,8 +275,12 @@ def _stage_files(
     image_dir = staging_root / "image"
     config_dir = staging_root / "config"
     audio_dir.mkdir(parents=True, exist_ok=True)
-    image_dir.mkdir(parents=True, exist_ok=True)
     config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clear and recreate image dir to avoid stale images from previous uploads
+    if image_dir.exists():
+        shutil.rmtree(image_dir)
+    image_dir.mkdir(parents=True)
 
     # Audio + transcript
     (audio_dir / "narration.wav").write_bytes(audio.data)
@@ -321,9 +369,6 @@ def stage_preview(
     for idx, img in enumerate(images):
         _validate_image(img, f"images[{idx}]")
     _validate_audio(audio, "audio_file")
-
-    if PREVIEW_STAGING_ROOT.exists():
-        shutil.rmtree(PREVIEW_STAGING_ROOT, ignore_errors=True)
 
     _stage_files(
         staging_root=PREVIEW_STAGING_ROOT,

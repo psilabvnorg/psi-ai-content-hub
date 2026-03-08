@@ -267,12 +267,12 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
 
   // ── Studio stop on unmount ──
   const stopStudio = useCallback(() => {
-    fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`, { method: "POST" }).catch(() => {});
+    fetch(`${APP_API_URL}/api/v1/news-to-video/preview/studio/stop`, { method: "POST" }).catch(() => {});
   }, []);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      navigator.sendBeacon(`${APP_API_URL}/api/v1/text-to-video/preview/studio/stop`);
+      navigator.sendBeacon(`${APP_API_URL}/api/v1/news-to-video/preview/studio/stop`);
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
@@ -290,7 +290,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       setAppServerReachable(false);
     }
     try {
-      const res = await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/status`);
+      const res = await fetch(`${APP_API_URL}/api/v1/news-to-video/preview/studio/status`);
       const data = (await res.json()) as { running?: boolean };
       setStudioRunning(data.running === true);
     } catch {
@@ -350,7 +350,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
 
   const handleToggleStudio = async () => {
     const endpoint = studioRunning ? "stop" : "start";
-    await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/${endpoint}`, {
+    await fetch(`${APP_API_URL}/api/v1/news-to-video/preview/studio/${endpoint}`, {
       method: "POST",
     }).catch(() => {});
     if (!studioRunning) await new Promise((r) => setTimeout(r, 2000));
@@ -423,7 +423,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     if (!canRender || !audioFile || !transcriptFile) return;
     setIsStaging(true);
     try {
-      await fetch(`${APP_API_URL}/api/v1/text-to-video/preview/studio/start`, { method: "POST" });
+      await fetch(`${APP_API_URL}/api/v1/news-to-video/preview/studio/start`, { method: "POST" });
       await new Promise((r) => setTimeout(r, 3000));
 
       const configOverrides: Record<string, unknown> = {

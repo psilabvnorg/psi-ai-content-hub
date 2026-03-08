@@ -13,9 +13,12 @@ from ..services.news_to_video import (
     UploadedFileData,
     get_render_result,
     get_remotion_setup_status,
+    get_studio_status,
     render_progress_store,
     stage_preview,
     start_render_pipeline,
+    start_studio,
+    stop_studio,
     upload_user_asset,
 )
 
@@ -156,3 +159,21 @@ def upload_asset_endpoint(file: UploadFile = File(...)) -> dict:
 @router.get("/setup/status")
 def remotion_setup_status() -> dict:
     return get_remotion_setup_status()
+
+
+@router.get("/preview/studio/status")
+def studio_status() -> dict:
+    return get_studio_status()
+
+
+@router.post("/preview/studio/start")
+def studio_start() -> dict:
+    try:
+        return start_studio()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/preview/studio/stop")
+def studio_stop() -> dict:
+    return stop_studio()
