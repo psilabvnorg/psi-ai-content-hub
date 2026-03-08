@@ -86,7 +86,7 @@ def env_install(payload: dict = Body(None)) -> dict:
     # Get the venv Python executable
     venv_python = _get_venv_python()
     
-    # Install packages in the venv
-    subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *packages])
+    # Install packages in the venv (no -U: avoid upgrading already-loaded .pyd files on Windows)
+    subprocess.check_call([str(venv_python), "-m", "pip", "install", *packages])
     
     return {"status": "success", "installed": packages, "venv_path": str(VENV_DIR)}

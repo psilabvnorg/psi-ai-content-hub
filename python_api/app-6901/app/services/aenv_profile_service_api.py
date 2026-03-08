@@ -37,6 +37,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "whisper": "openai-whisper",
         "torch": "torch",
         "numpy": "numpy",
+        "stable_whisper": "stable-ts",
     },
     "translation": {
         "fastapi": "fastapi",

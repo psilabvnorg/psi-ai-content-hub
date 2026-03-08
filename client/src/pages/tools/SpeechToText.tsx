@@ -45,6 +45,9 @@ type ResultData = {
   duration?: number | null;
   segments_count?: number;
   segments?: Segment[];
+  srt?: string | null;
+  vtt?: string | null;
+  used_stable_ts?: boolean;
 };
 
 function formatTimestamp(seconds?: number) {
@@ -61,6 +64,7 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
   const [model, setModel] = useState<(typeof MODELS)[number]>("base");
   const [addPunctuation, setAddPunctuation] = useState(true);
   const [wordTimestamps, setWordTimestamps] = useState(true);
+  const [scriptText, setScriptText] = useState("");
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -102,6 +106,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     formData.append("language", language);
     formData.append("add_punctuation", String(addPunctuation));
     formData.append("word_timestamps", String(wordTimestamps));
+    if (wordTimestamps && scriptText.trim()) {
+      formData.append("script_text", scriptText.trim());
+    }
 
     try {
       const res = await fetch(`${APP_API_URL}/api/v1/whisper/transcribe`, {
@@ -163,6 +170,32 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
     const a = document.createElement("a");
     a.href = url;
     a.download = `transcript_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSrt = () => {
+    if (!result?.srt) return;
+    const blob = new Blob([result.srt], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `subtitles_${Date.now()}.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadVtt = () => {
+    if (!result?.vtt) return;
+    const blob = new Blob([result.vtt], { type: "text/vtt;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `subtitles_${Date.now()}.vtt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -259,6 +292,42 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
           </div>
         </div>
 
+        {wordTimestamps && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.original_text_label")}</label>
+              <label
+                htmlFor="script-upload"
+                className="text-xs text-accent cursor-pointer hover:underline"
+              >
+                {t("tool.stt.upload_script_file")}
+                <input
+                  id="script-upload"
+                  type="file"
+                  accept=".txt"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setScriptText((ev.target?.result as string) || "");
+                    reader.readAsText(file, "utf-8");
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            <textarea
+              value={scriptText}
+              onChange={(e) => setScriptText(e.target.value)}
+              placeholder={t("tool.stt.original_text_placeholder")}
+              rows={4}
+              className="w-full text-xs rounded-xl border border-border bg-card px-3 py-2 text-foreground/85 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+            />
+            <p className="text-xs text-muted-foreground/70">{t("tool.stt.original_text_hint")}</p>
+          </div>
+        )}
+
         <Button
           className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleTranscribe}
@@ -299,8 +368,15 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
           <div className="space-y-4">
             <div className="p-4 bg-emerald-500/12 rounded-xl border border-emerald-500/45">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold text-emerald-400">{t("tool.stt.transcription_ready")}</span>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-emerald-400">{t("tool.stt.transcription_ready")}</span>
+                  {result.used_stable_ts && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
+                      stable-ts
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2 flex-wrap justify-end">
                   <Button size="sm" variant="outline" onClick={handleDownloadText}>
                     <Download className="w-4 h-4 mr-2" />
                     TXT
@@ -309,6 +385,18 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
                     <Download className="w-4 h-4 mr-2" />
                     JSON
                   </Button>
+                  {result.srt && (
+                    <Button size="sm" variant="outline" onClick={handleDownloadSrt}>
+                      <Download className="w-4 h-4 mr-2" />
+                      SRT
+                    </Button>
+                  )}
+                  {result.vtt && (
+                    <Button size="sm" variant="outline" onClick={handleDownloadVtt}>
+                      <Download className="w-4 h-4 mr-2" />
+                      VTT
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="text-xs text-emerald-400 mb-2">

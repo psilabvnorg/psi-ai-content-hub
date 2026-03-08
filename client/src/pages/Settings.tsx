@@ -378,6 +378,7 @@ export default function Settings() {
   const serverStartTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [f5Status, setF5Status] = useState<F5StatusData | null>(null);
   const [f5ModelProgress, setF5ModelProgress] = useState<Partial<Record<F5Language, ProgressData>>>({});
+  const [f5EnvProgress, setF5EnvProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [logsServerUnreachable, setLogsServerUnreachable] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -821,6 +822,23 @@ export default function Settings() {
       });
     } catch {
       setF5Status({ server_unreachable: true });
+    }
+  };
+
+  const handleF5EnvInstall = async () => {
+    setF5EnvProgress({ status: "starting", percent: 0, message: t("settings.f5.env_installing") });
+    try {
+      const res = await fetch(`${F5_API_URL}/api/v1/env/install`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("env install failed");
+      setF5EnvProgress({ status: "complete", percent: 100, message: t("settings.f5.env_installed") });
+    } catch {
+      setF5EnvProgress({ status: "error", percent: 0, message: t("settings.f5.env_install_failed") });
+    } finally {
+      void fetchF5Status();
     }
   };
 
@@ -1520,7 +1538,7 @@ export default function Settings() {
                           size="sm"
                           variant="outline"
                           onClick={handleToggleF5Server}
-                          disabled={f5ServiceBusy || f5Service.status === "not_configured"}
+                          disabled={f5ServiceBusy}
                           className="ml-2"
                         >
                           {f5ServiceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
@@ -1536,22 +1554,50 @@ export default function Settings() {
                 <TableRow>
                   <TableCell className="font-medium">{t("tool.voice_clone.env_status")}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {f5Status?.env?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {f5Status?.env?.installed ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        )}
+                        <span className="text-sm">
+                          {f5Status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                        </span>
+                        {!f5Status?.env?.installed && !f5Status?.server_unreachable && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { void handleF5EnvInstall(); }}
+                            disabled={f5EnvProgress?.status === "starting"}
+                            className="ml-2"
+                          >
+                            {f5EnvProgress?.status === "starting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            {t("settings.f5.install_env")}
+                          </Button>
+                        )}
+                      </div>
+                      {!f5Status?.env?.installed && f5Status?.env?.missing && f5Status.env.missing.length > 0 && (
+                        <div className="text-xs text-red-400 font-mono">
+                          Missing: {f5Status.env.missing.join(", ")}
+                        </div>
                       )}
-                      <span className="text-sm">
-                        {f5Status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
+                      {f5EnvProgress && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{f5EnvProgress.message}</span>
+                            {f5EnvProgress.percent !== undefined && <span>{f5EnvProgress.percent}%</span>}
+                          </div>
+                          {f5EnvProgress.status === "starting" && (
+                            <Progress value={f5EnvProgress.percent ?? 0} className="h-1.5" />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono break-all">
                     {f5Status?.env?.installed_modules?.length
                       ? f5Status.env.installed_modules.join(", ")
-                      : f5Status?.env?.missing?.length
-                      ? f5Status.env.missing.join(", ")
                       : "--"}
                   </TableCell>
                 </TableRow>
