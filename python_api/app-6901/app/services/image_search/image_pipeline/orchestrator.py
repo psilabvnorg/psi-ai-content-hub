@@ -45,7 +45,7 @@ def run_pipeline(
     )
 
     analyzed_images, analysis_errors = analyze_images(downloaded_images, max_workers=10)
-    selected_images = select_top_images(analyzed_images, top_k=top_k, min_side=600)
+    selected_images = select_top_images(analyzed_images, top_k=top_k, min_side=369)
 
     if search_errors:
         LOGGER.warning("Image pipeline source errors: %s", search_errors)

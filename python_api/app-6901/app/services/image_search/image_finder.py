@@ -94,7 +94,7 @@ def find_images(
     pipeline_payload = run_pipeline(
         paragraph=cleaned_text,
         query_generator=lambda _: search_query,
-        per_source_limit=5,
+        per_source_limit=max(normalized_count, 10),
         top_k=normalized_count,
         timeout_seconds=timeout_seconds,
         enabled_sources=sources,

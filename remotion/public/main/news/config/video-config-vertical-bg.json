@@ -1,17 +1,10 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "templates/news-intro-vertical/bottom2.png",
+  "backgroundOverlayImage": "user-assets/thumbnail_31060294.png",
   "introProps": {
-    "image1": "templates/news-intro-vertical/top.png",
-    "image2": "templates/news-intro-vertical/bottom.png",
-    "heroImage": "templates/news-intro-vertical/hero.png"
-  },
-  "audioSrc": "main/news/audio/narration.wav",
-  "images": [
-    "main/news/image/01.png",
-    "main/news/image/02.png",
-    "main/news/image/image-finder-3.jpg",
-    "main/news/image/xx.webp"
-  ]
+    "image1": "user-assets/image-finder-4_f69d6b63.jpg",
+    "image2": "user-assets/intro_bg_5a4cd0f4.png",
+    "heroImage": "user-assets/thl2_af03b00b.png"
+  }
 }

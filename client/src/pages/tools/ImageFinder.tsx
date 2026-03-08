@@ -133,7 +133,6 @@ export default function ImageFinder({
   const [useLlm, setUseLlm] = useState(false);
   const [selectedSources, setSelectedSources] = useState<string[]>([
     "google",
-    "bing",
   ]);
 
   const [isSearching, setIsSearching] = useState(false);

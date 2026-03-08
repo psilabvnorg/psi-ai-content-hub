@@ -66,9 +66,69 @@ def search_google_images(
     seen: set[str] = set()
     driver = None
 
+    # Detect installed Chrome major version to avoid ChromeDriver mismatch.
+    def _get_chrome_major_version() -> int | None:
+        import re as _re
+
+        # 1. Try Windows registry (most reliable on Windows)
+        try:
+            import winreg
+            for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+                for key_path in (
+                    r"Software\Google\Chrome\BLBeacon",
+                    r"Software\Chromium\BLBeacon",
+                ):
+                    try:
+                        with winreg.OpenKey(hive, key_path) as k:
+                            version_str, _ = winreg.QueryValueEx(k, "version")
+                            m = _re.search(r"^(\d+)\.", str(version_str))
+                            if m:
+                                return int(m.group(1))
+                    except OSError:
+                        continue
+        except ImportError:
+            pass
+
+        # 2. Try reading file version info from chrome.exe (Windows)
+        chrome_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        ]
+        try:
+            import win32api  # type: ignore
+            for path in chrome_paths:
+                try:
+                    info = win32api.GetFileVersionInfo(path, "\\")
+                    ms = info["FileVersionMS"]
+                    major = ms >> 16
+                    if major:
+                        return major
+                except Exception:
+                    continue
+        except ImportError:
+            pass
+
+        # 3. Fallback: read version from chrome.exe parent directory (VERSION file)
+        import os
+        for path in chrome_paths:
+            try:
+                exe_dir = os.path.dirname(path)
+                # Chrome stores versions as sub-directories, e.g. 145.0.7632.160\
+                dirs = [d for d in os.listdir(exe_dir) if _re.match(r"^\d+\.\d+\.\d+\.\d+$", d)]
+                if dirs:
+                    m = _re.search(r"^(\d+)\.", sorted(dirs)[-1])
+                    if m:
+                        return int(m.group(1))
+            except Exception:
+                continue
+
+        return None
+
     try:
         LOGGER.warning("[GoogleSearch] Starting: query=%r, max_results=%d, timeout=%ds", query, max_results, timeout_seconds)
-        driver = uc.Chrome(options=options)
+        chrome_version = _get_chrome_major_version()
+        LOGGER.warning("[GoogleSearch] Detected Chrome major version: %s", chrome_version)
+        driver = uc.Chrome(options=options, version_main=chrome_version)
 
         encoded_query = quote_plus(query)
         driver.get(f"https://www.google.com/search?tbm=isch&q={encoded_query}")

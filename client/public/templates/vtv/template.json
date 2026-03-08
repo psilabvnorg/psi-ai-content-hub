@@ -9,9 +9,11 @@
   "color2": "#fdfcff",
   "opacity2": 100,
   "transparent2": false,
+  "canvasWidth": 338,
+  "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772555745274,
+      "id": 1772985658553.325,
       "x": 255,
       "y": 5,
       "w": 67,
@@ -20,16 +22,16 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772555767877,
-      "x": 3,
-      "y": 289,
+      "id": 1772985658553.3047,
+      "x": 27,
+      "y": 297,
       "w": 66,
       "h": 66,
       "opacity": 100,
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772555783257,
+      "id": 1772985658553.1345,
       "x": 191,
       "y": 155,
       "w": 407,
@@ -38,13 +40,26 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1772555798046,
+      "id": 1772985658553.4172,
       "x": -6,
       "y": 390,
       "w": 387,
       "h": 387,
       "opacity": 61,
       "file": "elements/el_3.png"
+    },
+    {
+      "id": 1772985674513,
+      "type": "placeholder",
+      "name": "title",
+      "placeholderType": "text",
+      "fontFamily": "Anton",
+      "textAlign": "left",
+      "textColor": "#000000",
+      "x": 32,
+      "y": 364,
+      "w": 292,
+      "h": 136
     }
   ]
 }

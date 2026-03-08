@@ -13,16 +13,16 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772701442873.79,
-      "x": 12,
-      "y": 304,
+      "id": 1772985632872.011,
+      "x": 31,
+      "y": 307,
       "w": 63,
       "h": 63,
       "opacity": 100,
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772701442873.1797,
+      "id": 1772985632872.9312,
       "x": -46,
       "y": 379,
       "w": 397,
@@ -31,7 +31,7 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772701442873.818,
+      "id": 1772985632872.3914,
       "x": 252,
       "y": 12,
       "w": 63,
@@ -40,7 +40,7 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1772701442873.8628,
+      "id": 1772985632872.344,
       "type": "placeholder",
       "name": "title",
       "placeholderType": "text",
@@ -53,20 +53,20 @@
       "h": 140.96428571428567
     },
     {
-      "id": 1772701442873.802,
+      "id": 1772985632872.2498,
       "type": "placeholder",
       "name": "date",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#ffffff",
-      "x": 11,
-      "y": 377,
+      "x": 31,
+      "y": 381,
       "w": 81,
       "h": 30
     },
     {
-      "id": 1772701442873.835,
+      "id": 1772985632872.9407,
       "type": "placeholder",
       "name": "idol_image",
       "placeholderType": "image",
@@ -79,15 +79,15 @@
       "h": 144.75
     },
     {
-      "id": 1772701442873.1677,
+      "id": 1772985632872.7664,
       "type": "placeholder",
       "name": "intro_image",
       "placeholderType": "image",
       "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#000000",
-      "x": 2,
-      "y": 0,
+      "x": 3,
+      "y": -1,
       "w": 341,
       "h": 369.25,
       "bottomLayer": true

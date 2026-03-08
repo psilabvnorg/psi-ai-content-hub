@@ -9,9 +9,11 @@
   "color2": "#162140",
   "opacity2": 100,
   "transparent2": false,
+  "canvasWidth": 338,
+  "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772556758085,
+      "id": 1772985606724.6018,
       "x": 152,
       "y": 441,
       "w": 188,
@@ -20,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772556776970,
+      "id": 1772985606724.4753,
       "x": -103,
       "y": 461,
       "w": 285,
@@ -29,7 +31,7 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1772557077790,
+      "id": 1772985606724.6135,
       "x": 245,
       "y": -7,
       "w": 78,
@@ -38,13 +40,26 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1772557108215,
-      "x": 2,
-      "y": 278,
+      "id": 1772985606724.322,
+      "x": 39,
+      "y": 302,
       "w": 78,
       "h": 78,
       "opacity": 100,
       "file": "elements/el_3.png"
+    },
+    {
+      "id": 1772985606724.8079,
+      "type": "placeholder",
+      "name": "title",
+      "placeholderType": "text",
+      "fontFamily": "Barlow Condensed",
+      "textAlign": "left",
+      "textColor": "#ffffff",
+      "x": 42,
+      "y": 365,
+      "w": 285,
+      "h": 144
     }
   ]
 }

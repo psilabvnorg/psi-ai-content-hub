@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1772718895609.6265,
+      "id": 1772985539198.0198,
       "x": 144,
       "y": 418,
       "w": 196,
@@ -22,26 +22,27 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1772718895609.4727,
-      "x": -27,
-      "y": 297,
-      "w": 120,
-      "h": 120,
-      "opacity": 100,
-      "file": "elements/el_1.png"
-    },
-    {
-      "id": 1772718895609.1892,
+      "id": 1772985539198.1743,
       "type": "placeholder",
       "name": "title",
       "placeholderType": "text",
       "fontFamily": "Anton",
       "textAlign": "left",
       "textColor": "#ffffff",
-      "x": 0,
-      "y": 381,
-      "w": 164,
-      "h": 146.42857142857144
+      "x": 44,
+      "y": 388,
+      "w": 150,
+      "h": 196.42857142857144
+    },
+    {
+      "id": 1772985539198.4783,
+      "type": "image",
+      "x": 31,
+      "y": 332,
+      "w": 105,
+      "h": 56.175000000000004,
+      "opacity": 100,
+      "file": "elements/el_2.png"
     }
   ]
 }
