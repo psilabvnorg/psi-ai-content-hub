@@ -1,12 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "user-assets/thumbnail_955d4a28.png",
+  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_223477b0.png",
   "introProps": {
-    "image1": "user-assets/image001-0101_8f36bb22.webp",
-    "image2": "user-assets/intro_bottom_1fe99177.png",
-    "heroImage": "user-assets/thl4_42084b1a.png"
+    "image1": "http://localhost:6901/user-assets/image-009_e0775cbd.png",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_d76f9c32.png",
+    "heroImage": "http://localhost:6901/user-assets/thl6_e359633b.png"
   },
-  "backgroundMusicVolume": 0.35,
-  "backgroundMusic": "background-music/news4.mp3"
+  "backgroundMusicVolume": 0.2,
+  "backgroundMusic": "background-music/news2.mp3"
 }

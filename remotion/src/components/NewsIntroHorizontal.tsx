@@ -1,4 +1,4 @@
-import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { z } from 'zod';
 import { ImageSlide } from './KenBurnsEffect';
 import { resolveAsset } from '../utils/resolveAsset';
@@ -56,13 +56,13 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
           overflow: 'hidden',
         }}
       >
-        <ImageSlide src={staticFile(leftImage)} durationInFrames={durationInFrames} />
+        <ImageSlide src={resolveAsset(leftImage)} durationInFrames={durationInFrames} />
       </div>
 
       {/* RIGHT OVERLAY: full-screen PNG, transparent left portion reveals left image */}
       <AbsoluteFill>
         <Img
-          src={staticFile(rightImage)}
+          src={resolveAsset(rightImage)}
           style={{ width: '100%', height: '100%', objectFit: 'fill' }}
         />
       </AbsoluteFill>

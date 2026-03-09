@@ -1,8 +1,7 @@
 .claude
 .kiro
 .vscode
-# remotion/public
-remotion/public/user-assets
+remotion/public
 
 # Dependencies
 **/node_modules/
