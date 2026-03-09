@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { z } from 'zod';
-import { AbsoluteFill, Html5Audio, Sequence, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Html5Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
 import { LoopingImageSlider } from './LoopingImageSlider';
 import { CaptionDisplay } from './CaptionDisplay';
 import { SectionSlider } from './SectionSlider';
@@ -44,6 +44,9 @@ export const newsVideoSchema = z.object({
   introDurationInFrames: z.number(),
   imageDurationInFrames: z.number(),
   sections: z.array(z.object({ title: z.string(), startMs: z.number() })).default([]),
+  // Background music — path relative to remotion/public (e.g. "background-music/news1.mp3")
+  backgroundMusic: z.string().optional(),
+  backgroundMusicVolume: z.number().default(0.2),
 });
 
 export type NewsVideoProps = z.infer<typeof newsVideoSchema>;
@@ -69,6 +72,10 @@ export type NewsVideoBaseProps = {
   intro: React.ReactNode;
   /** Optional post-intro overlay rendered after introDurationInFrames until end */
   postIntroOverlay?: React.ReactNode;
+  /** Optional background music (loops for the full video duration) */
+  backgroundMusic?: string;
+  /** Volume for background music 0–1 (default 0.2) */
+  backgroundMusicVolume?: number;
 };
 
 export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
@@ -84,6 +91,8 @@ export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
   captionBottomPercent = 20,
   intro,
   postIntroOverlay,
+  backgroundMusic,
+  backgroundMusicVolume = 0.2,
 }) => {
   const { durationInFrames: totalDuration } = useVideoConfig();
   const postIntroDurationInFrames = totalDuration - introDurationInFrames;
@@ -134,6 +143,11 @@ export const NewsVideoBase: React.FC<NewsVideoBaseProps> = ({
 
       {/* ── AUDIO: starts at frame 0 ──────────────────────────────────────── */}
       {audioSrc && <Html5Audio src={audioSrc} />}
+
+      {/* ── BACKGROUND MUSIC: loops at reduced volume ─────────────────────── */}
+      {backgroundMusic && (
+        <Html5Audio src={staticFile(backgroundMusic)} volume={backgroundMusicVolume} loop />
+      )}
 
       {/* ── CAPTIONS: visible from introDurationInFrames ──────────────────── */}
       {captions && captions.length > 0 && (

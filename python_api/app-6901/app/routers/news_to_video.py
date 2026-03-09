@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
 from ..services.news_to_video import (
+    REMOTION_ROOT,
     TEMPLATES,
     UploadedFileData,
     get_render_result,
@@ -154,6 +156,17 @@ def upload_asset_endpoint(file: UploadFile = File(...)) -> dict:
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"path": path}
+
+
+@router.get("/background-music/{filename}")
+def serve_background_music(filename: str) -> FileResponse:
+    """Serve a background music file from remotion/public/background-music/ for preview."""
+    # Only allow simple filenames (no path traversal)
+    safe_name = Path(filename).name
+    music_path = REMOTION_ROOT / "public" / "background-music" / safe_name
+    if not music_path.exists() or not music_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Music file '{safe_name}' not found")
+    return FileResponse(str(music_path), media_type="audio/mpeg")
 
 
 @router.get("/setup/status")

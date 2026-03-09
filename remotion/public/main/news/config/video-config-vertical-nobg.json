@@ -8,6 +8,8 @@
     "heroImage": "templates/news-intro-vertical/hero.png"
   },
   "audioSrc": "main/news/audio/narration.wav",
+  "backgroundMusic": "",
+  "backgroundMusicVolume": 0.2,
   "images": [
     "main/news/image/01.png",
     "main/news/image/02.png",

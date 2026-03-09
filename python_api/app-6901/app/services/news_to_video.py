@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -26,7 +27,8 @@ PREVIEW_STAGING_ROOT = REMOTION_PUBLIC_MAIN / "news"
 PREVIEW_IMAGE_DIR = REMOTION_PUBLIC_MAIN / "news" / "image"
 STUDIO_PORT = 3100
 
-USER_ASSETS_DIR = REMOTION_ROOT / "public" / "user-assets"
+USER_ASSETS_DIR = TEMP_DIR / "user-assets"
+USER_ASSETS_BASE_URL = "http://localhost:6901/user-assets"
 
 RENDER_CONCURRENCY = 4
 RETENTION_SECONDS = 60 * 60
@@ -49,11 +51,13 @@ def start_studio() -> dict[str, object]:
         if _studio_proc is not None and _studio_proc.poll() is None:
             return {"running": True, "message": "Studio already running"}
 
+        npx_cmd = shutil.which("npx") or ("npx.cmd" if sys.platform == "win32" else "npx")
         _studio_proc = subprocess.Popen(
-            ["npx", "remotion", "studio", "--port", str(STUDIO_PORT)],
+            [npx_cmd, "remotion", "studio", "--port", str(STUDIO_PORT)],
             cwd=str(REMOTION_ROOT),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            shell=(sys.platform == "win32"),
         )
         return {"running": True, "message": f"Studio started on port {STUDIO_PORT}"}
 
@@ -342,14 +346,14 @@ def cleanup_news_to_video_state() -> None:
 # ── User-asset upload ─────────────────────────────────────────────────────────
 
 def upload_user_asset(upload: UploadedFileData) -> str:
-    """Save an uploaded image to remotion/public/user-assets/ and return its relative path."""
+    """Save an uploaded image to TEMP_DIR/user-assets/ and return its HTTP URL."""
     _validate_image(upload, "file")
     suffix = _resolve_image_suffix(upload.filename)
     stem = Path(upload.filename).stem
     filename = f"{stem}_{uuid.uuid4().hex[:8]}{suffix}"
     USER_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     (USER_ASSETS_DIR / filename).write_bytes(upload.data)
-    return f"user-assets/{filename}"
+    return f"{USER_ASSETS_BASE_URL}/{filename}"
 
 
 # ── Preview staging ───────────────────────────────────────────────────────────

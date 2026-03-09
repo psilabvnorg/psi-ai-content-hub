@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { z } from 'zod';
-import { Img, staticFile } from 'remotion';
+import { Img } from 'remotion';
+import { resolveAsset } from '../utils/resolveAsset';
 import type { CalculateMetadataFunction } from 'remotion';
 import { newsVideoSchema, type NewsVideoProps, NewsVideoBase } from '../components/NewsVideo';
 import { calculateNewsVideoMetadata } from '../components/calculateNewsVideoMetadata';
@@ -34,6 +35,8 @@ export const NewsHorizontalBackgroundCNN: React.FC<Props> = ({
   imageDurationInFrames,
   captionBottomPercent,
   sections = [],
+  backgroundMusic,
+  backgroundMusicVolume,
 }) => (
   <NewsVideoBase
     images={images}
@@ -45,10 +48,12 @@ export const NewsHorizontalBackgroundCNN: React.FC<Props> = ({
     orientation="horizontal"
     isBackgroundMode={false}
     captionBottomPercent={captionBottomPercent}
+    backgroundMusic={backgroundMusic}
+    backgroundMusicVolume={backgroundMusicVolume}
     intro={<></>}
     postIntroOverlay={
       overlayImage
-        ? <Img src={staticFile(overlayImage)} style={fill} />
+        ? <Img src={resolveAsset(overlayImage)} style={fill} />
         : undefined
     }
   />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -9,9 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   BrainCircuit,
   Download,
+  FolderOpen,
   Image as ImageIcon,
   Loader2,
   Search,
@@ -56,6 +58,8 @@ type PreviewImage = {
   height?: number;
   resolution?: number;
 };
+
+type DownloadAllState = "idle" | "running" | "complete" | "error";
 
 const IMAGE_COUNTS = ["5", "6", "7", "8", "9", "10"];
 const ALL_SOURCE_IDS = [
@@ -146,6 +150,16 @@ export default function ImageFinder({
 
   const [serverUnreachable, setServerUnreachable] = useState(true);
 
+  // Download-all dialog state
+  const [downloadAllOpen, setDownloadAllOpen] = useState(false);
+  const [saveDir, setSaveDir] = useState("");
+  const [downloadAllState, setDownloadAllState] =
+    useState<DownloadAllState>("idle");
+  const [downloadAllProgress, setDownloadAllProgress] =
+    useState<ProgressData | null>(null);
+  const [downloadAllLogs, setDownloadAllLogs] = useState<string[]>([]);
+  const esRef = useRef<EventSource | null>(null);
+
   const statusReady = !serverUnreachable;
 
   const fetchStatus = async () => {
@@ -162,6 +176,12 @@ export default function ImageFinder({
     void fetchStatus();
   }, []);
 
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      esRef.current?.close();
+    };
+  }, []);
 
   const handleToggleSource = (sourceId: string, checked: boolean) => {
     setSelectedSources((previous) => {
@@ -234,6 +254,98 @@ export default function ImageFinder({
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleStartDownloadAll = async () => {
+    const dir = saveDir.trim();
+    if (!dir) return;
+
+    const urls = images
+      .map((img) => img.url)
+      .filter((u): u is string => typeof u === "string" && u.length > 0);
+
+    setDownloadAllState("running");
+    setDownloadAllLogs([]);
+    setDownloadAllProgress({ status: "starting", percent: 0, message: "Starting..." });
+
+    try {
+      const res = await fetch(
+        `${aimage_search_base_url}/image-finder/download-all`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls, save_dir: dir }),
+        },
+      );
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(err.detail || "Failed to start download");
+      }
+
+      const { task_id } = (await res.json()) as { task_id: string };
+
+      esRef.current?.close();
+      const es = new EventSource(
+        `${aimage_search_base_url}/image-finder/download-all/stream/${task_id}`,
+      );
+      esRef.current = es;
+
+      es.onmessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data as string) as {
+          status: string;
+          percent: number;
+          message: string;
+          logs?: string[];
+        };
+
+        setDownloadAllProgress({
+          status: data.status,
+          percent: data.percent,
+          message: data.message,
+        });
+
+        if (Array.isArray(data.logs)) {
+          setDownloadAllLogs(data.logs);
+        }
+
+        if (
+          data.status === "complete" ||
+          data.status === "error" ||
+          data.status === "failed"
+        ) {
+          es.close();
+          esRef.current = null;
+          setDownloadAllState(
+            data.status === "complete" ? "complete" : "error",
+          );
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        esRef.current = null;
+        setDownloadAllState("error");
+        setDownloadAllProgress({
+          status: "error",
+          percent: 0,
+          message: "Connection lost",
+        });
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Download failed";
+      setDownloadAllState("error");
+      setDownloadAllProgress({ status: "error", percent: 0, message });
+    }
+  };
+
+  const handleCloseDownloadAll = () => {
+    esRef.current?.close();
+    esRef.current = null;
+    setDownloadAllOpen(false);
+    setDownloadAllState("idle");
+    setDownloadAllProgress(null);
+    setDownloadAllLogs([]);
   };
 
   const handleDownloadImage = async (url: string, index: number) => {
@@ -436,8 +548,18 @@ export default function ImageFinder({
 
         {images.length > 0 && (
           <div className="space-y-3">
-            <div className="text-xs font-bold uppercase text-muted-foreground">
-              {t("tool.image_finder.output_images", { count: images.length })}
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold uppercase text-muted-foreground">
+                {t("tool.image_finder.output_images", { count: images.length })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDownloadAllOpen(true)}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download All
+              </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {images.map((image, index) => {
@@ -517,6 +639,99 @@ export default function ImageFinder({
           </div>
         )}
 
+        {/* Download All Dialog */}
+        <Dialog open={downloadAllOpen} onOpenChange={(open) => { if (!open) handleCloseDownloadAll(); }}>
+          <DialogContent className="w-[95vw] max-w-lg p-5">
+            <DialogTitle className="text-base font-bold">
+              Download All Images
+            </DialogTitle>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">
+                  Save to folder
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={saveDir}
+                    onChange={(e) => setSaveDir(e.target.value)}
+                    placeholder="Select a folder..."
+                    className="bg-card border-border font-mono text-sm"
+                    disabled={downloadAllState === "running"}
+                    readOnly
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={downloadAllState === "running"}
+                    onClick={async () => {
+                      const result = await window.electronAPI?.showOpenDialog({
+                        properties: ["openDirectory"],
+                        title: "Select download folder",
+                      }) as { canceled: boolean; filePaths: string[] } | undefined;
+                      if (result && !result.canceled && result.filePaths.length > 0) {
+                        setSaveDir(result.filePaths[0]);
+                      }
+                    }}
+                  >
+                    <FolderOpen className="w-4 h-4 mr-1" />
+                    Browse
+                  </Button>
+                </div>
+              </div>
+
+              {downloadAllProgress && (
+                <ProgressDisplay
+                  progress={downloadAllProgress}
+                  logs={downloadAllLogs}
+                  defaultMessage="Downloading..."
+                />
+              )}
+
+              {downloadAllState === "complete" && (
+                <div className="text-sm text-green-600 font-medium">
+                  All images downloaded successfully.
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCloseDownloadAll}
+                >
+                  {downloadAllState === "complete" || downloadAllState === "error"
+                    ? "Close"
+                    : "Cancel"}
+                </Button>
+                {downloadAllState !== "complete" && (
+                  <Button
+                    size="sm"
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                    onClick={() => void handleStartDownloadAll()}
+                    disabled={
+                      downloadAllState === "running" || !saveDir.trim()
+                    }
+                  >
+                    {downloadAllState === "running" ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <FolderOpen className="w-4 h-4 mr-2" />
+                    )}
+                    {downloadAllState === "running"
+                      ? "Downloading..."
+                      : downloadAllState === "error"
+                        ? "Retry"
+                        : "Start Download"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Image Preview Dialog */}
         <Dialog
           open={previewImage !== null}
           onOpenChange={(open) => {

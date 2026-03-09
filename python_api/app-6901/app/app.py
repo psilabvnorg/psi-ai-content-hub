@@ -5,8 +5,10 @@ import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .deps import job_store
+from python_api.common.paths import TEMP_DIR
 from .routers import env as env_router
 from .routers import edge_tts as edge_tts_router
 from .routers import files as files_router
@@ -81,6 +83,10 @@ def create_app() -> FastAPI:
     app.include_router(news_scraper_router.router)
     app.include_router(transparent_logo_router.router, prefix="/api/v1/transparent-logo")
     app.include_router(news_to_video_router.router)
+
+    user_assets_dir = TEMP_DIR / "user-assets"
+    user_assets_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/user-assets", StaticFiles(directory=str(user_assets_dir)), name="user-assets")
 
     threading.Thread(target=_cleanup_loop, daemon=True).start()
     return app

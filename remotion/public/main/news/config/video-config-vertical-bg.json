@@ -1,10 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "user-assets/thumbnail_31060294.png",
+  "backgroundOverlayImage": "user-assets/thumbnail_955d4a28.png",
   "introProps": {
-    "image1": "user-assets/image-finder-4_f69d6b63.jpg",
-    "image2": "user-assets/intro_bg_5a4cd0f4.png",
-    "heroImage": "user-assets/thl2_af03b00b.png"
-  }
+    "image1": "user-assets/image001-0101_8f36bb22.webp",
+    "image2": "user-assets/intro_bottom_1fe99177.png",
+    "heroImage": "user-assets/thl4_42084b1a.png"
+  },
+  "backgroundMusicVolume": 0.35,
+  "backgroundMusic": "background-music/news4.mp3"
 }

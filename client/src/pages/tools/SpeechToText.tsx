@@ -298,8 +298,9 @@ export default function SpeechToText({ onOpenSettings }: { onOpenSettings?: () =
               <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.stt.original_text_label")}</label>
               <label
                 htmlFor="script-upload"
-                className="text-xs text-accent cursor-pointer hover:underline"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/50 rounded-lg bg-accent/10 hover:bg-accent/20 hover:border-accent transition-all cursor-pointer shadow-sm"
               >
+                <FileText className="w-3.5 h-3.5" />
                 {t("tool.stt.upload_script_file")}
                 <input
                   id="script-upload"

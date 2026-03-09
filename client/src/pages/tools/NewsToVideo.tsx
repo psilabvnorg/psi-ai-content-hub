@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Eye, FileText, FolderOpen, ImagePlus, Loader2, Play, Upload, Video, X } from "lucide-react";
+import { Download, Eye, FileText, FolderOpen, ImagePlus, Loader2, Music, Pause, Play, Upload, Video, X } from "lucide-react";
 import { APP_API_URL } from "@/lib/api";
 import { ProgressDisplay, ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
@@ -113,6 +113,23 @@ const TEMPLATES: TemplateMeta[] = [
       heroImage: "templates/news-intro-horizontal/hero.png",
     },
   },
+];
+
+// ── Background music list ──────────────────────────────────────────────────────
+
+const BACKGROUND_MUSIC: { label: string; value: string }[] = [
+  { label: "News 1",       value: "background-music/news1.mp3" },
+  { label: "News 2",       value: "background-music/news2.mp3" },
+  { label: "News 3",       value: "background-music/news3.mp3" },
+  { label: "News 4",       value: "background-music/news4.mp3" },
+  { label: "Book 1",       value: "background-music/book1.mp3" },
+  { label: "Book 2",       value: "background-music/book2.mp3" },
+  { label: "Podcast 1",    value: "background-music/podcast1.mp3" },
+  { label: "Podcast 2",    value: "background-music/podcast2.mp3" },
+  { label: "Podcast 3",    value: "background-music/podcast3.mp3" },
+  { label: "Podcast 4",    value: "background-music/podcast4.mp3" },
+  { label: "Podcast 5",    value: "background-music/podcast5.mp3" },
+  { label: "Review Film Background Music", value: "background-music/review-film.mp3" },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -236,6 +253,25 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // ── Background music ──
+  const [backgroundMusic, setBackgroundMusic] = useState<string>("background-music/review-film.mp3");
+  const [backgroundMusicVolume, setBackgroundMusicVolume] = useState<number>(0.2);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [musicError, setMusicError] = useState<string | null>(null);
+  const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Ensure we have an Audio instance (created once)
+  const getMusicPlayer = (): HTMLAudioElement => {
+    if (!musicPlayerRef.current) {
+      const player = new Audio();
+      player.loop = true;
+      player.onended = () => setIsMusicPlaying(false);
+      player.onerror = () => setIsMusicPlaying(false);
+      musicPlayerRef.current = player;
+    }
+    return musicPlayerRef.current;
+  };
+
   const uploadConfigAsset = async (file: File, setter: (path: string) => void, field: string) => {
     setUploadingField(field);
     setUploadError(null);
@@ -254,6 +290,28 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       setUploadError("Upload failed — is the app server running?");
     } finally {
       setUploadingField(null);
+    }
+  };
+
+  const toggleMusicPreview = () => {
+    if (!backgroundMusic) return;
+    const player = getMusicPlayer();
+    if (isMusicPlaying) {
+      player.pause();
+      setIsMusicPlaying(false);
+    } else {
+      const filename = backgroundMusic.split("/").pop() ?? "";
+      const src = `${APP_API_URL}/api/v1/news-to-video/background-music/${filename}`;
+      player.src = src;
+      player.volume = backgroundMusicVolume;
+      setMusicError(null);
+      player.play()
+        .then(() => { setIsMusicPlaying(true); setMusicError(null); })
+        .catch((err: unknown) => {
+          console.error("Music preview failed:", err);
+          setIsMusicPlaying(false);
+          setMusicError("Playback failed — check the app server is running.");
+        });
     }
   };
 
@@ -278,6 +336,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       stopStudio();
+      musicPlayerRef.current?.pause();
     };
   }, [stopStudio]);
 
@@ -379,10 +438,12 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         introDurationInFrames: introDuration,
         imageDurationInFrames: imageDuration,
         introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+        backgroundMusicVolume,
       };
       if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
       else configOverrides.overlayImage = bgOverlay;
       if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
+      if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
 
       const form = new FormData();
       form.append("template", template);
@@ -430,10 +491,12 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         introDurationInFrames: introDuration,
         imageDurationInFrames: imageDuration,
         introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+        backgroundMusicVolume,
       };
       if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
       else configOverrides.overlayImage = bgOverlay;
       if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
+      if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
 
       const form = new FormData();
       form.append("template", template);
@@ -450,6 +513,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       }
 
       setStudioRunning(true);
+      await new Promise((r) => setTimeout(r, 10000));
       window.open("http://localhost:3100", "_blank");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Preview failed";
@@ -646,6 +710,61 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               </div>
             </div>
 
+            {/* Background Music */}
+            <div className="space-y-2 pt-1 border-t border-border">
+              <span className="font-semibold text-foreground">Background Music</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={backgroundMusic}
+                  onChange={(e) => {
+                    setBackgroundMusic(e.target.value);
+                    setIsMusicPlaying(false);
+                    setMusicError(null);
+                    if (musicPlayerRef.current) {
+                      musicPlayerRef.current.pause();
+                      musicPlayerRef.current.src = "";
+                    }
+                  }}
+                  className="flex-1 h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">— None —</option>
+                  {BACKGROUND_MUSIC.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={toggleMusicPreview}
+                  disabled={!backgroundMusic}
+                  title={isMusicPlaying ? "Pause preview" : "Play preview"}
+                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border transition-colors disabled:opacity-40 shrink-0 text-xs font-semibold"
+                  style={backgroundMusic ? { background: "#FF9900", borderColor: "#FF9900", color: "#000" } : undefined}
+                >
+                  {isMusicPlaying
+                    ? <><Pause className="w-3.5 h-3.5" /><span>Pause</span></>
+                    : <><Play className="w-3.5 h-3.5" /><span>Play</span></>}
+                </button>
+                <Music className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {Math.round(backgroundMusicVolume * 100)}%
+                </span>
+                <input
+                  type="range"
+                  min={0} max={1} step={0.01}
+                  value={backgroundMusicVolume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setBackgroundMusicVolume(v);
+                    if (musicPlayerRef.current) musicPlayerRef.current.volume = v;
+                  }}
+                  className="flex-1 accent-accent h-1"
+                />
+              </div>
+              {musicError && (
+                <p className="text-[10px] text-destructive">{musicError}</p>
+              )}
+            </div>
+
           </div>
           </details>
         </div>
@@ -810,21 +929,8 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
 
           <div className="flex gap-2">
             <Button
-              className="flex-1 h-10 bg-accent text-accent-foreground rounded-xl font-bold"
-              onClick={() => void handleRender()}
-              disabled={!canRender}
-            >
-              {isRendering ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Video className="w-4 h-4 mr-2" />
-              )}
-              {isRendering ? "Rendering…" : "Generate Video"}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="h-10 px-4 rounded-xl font-bold"
+              className="flex-1 h-10 rounded-xl font-bold"
+              style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
               onClick={() => void handlePreview()}
               disabled={!canRender}
               title="Preview in Remotion Studio"
@@ -835,6 +941,20 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
                 <Eye className="w-4 h-4 mr-2" />
               )}
               {isStaging ? "Staging…" : "Preview"}
+            </Button>
+
+            <Button
+              className="flex-1 h-10 rounded-xl font-bold"
+              style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+              onClick={() => void handleRender()}
+              disabled={!canRender}
+            >
+              {isRendering ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Video className="w-4 h-4 mr-2" />
+              )}
+              {isRendering ? "Rendering…" : "Generate Video"}
             </Button>
           </div>
 

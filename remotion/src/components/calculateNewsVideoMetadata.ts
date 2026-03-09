@@ -63,6 +63,10 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
     (videoConfig?.backgroundOverlayImage as string | undefined) ?? props.backgroundOverlayImage;
   const captionBottomPercent =
     (videoConfig?.captionBottomPercent as number | undefined) ?? props.captionBottomPercent ?? 20;
+  const backgroundMusic =
+    (videoConfig?.backgroundMusic as string | undefined) ?? props.backgroundMusic;
+  const backgroundMusicVolume =
+    (videoConfig?.backgroundMusicVolume as number | undefined) ?? props.backgroundMusicVolume ?? 0.2;
   const width = isHorizontal ? 1920 : 1080;
   const height = isHorizontal ? 1080 : 1920;
   console.log(`Orientation: ${orientation} (${width}x${height})`);
@@ -170,6 +174,8 @@ export const calculateNewsVideoMetadata: CalculateMetadataFunction<NewsVideoProp
       captions,
       imageDurationInFrames,
       sections,
+      backgroundMusic: backgroundMusic || undefined,
+      backgroundMusicVolume,
     },
   };
 };

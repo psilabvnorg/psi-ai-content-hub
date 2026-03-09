@@ -1,6 +1,7 @@
 import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { z } from 'zod';
 import { ImageSlide } from './KenBurnsEffect';
+import { resolveAsset } from '../utils/resolveAsset';
 
 export const newsIntroHorizontalSchema = z.object({
   leftImage: z.string().default('templates/news-intro-horizontal/left.png'),
@@ -18,20 +19,29 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
 
   const heroSize = (height / 4) * 1.8;
 
+  // 1 second static display before effects begin
+  const delayFrames = fps;
+  const isDelaying = frame < delayFrames;
+  const effectFrame = Math.max(0, frame - delayFrames);
+
   // Spring: overshoots → "make bigger then make smaller (settle)"
-  const heroScale = spring({
-    frame,
-    fps,
-    config: { mass: 1, damping: 8, stiffness: 180 },
-  });
+  const heroScale = isDelaying
+    ? 1
+    : spring({
+        frame: effectFrame,
+        fps,
+        config: { mass: 1, damping: 8, stiffness: 180 },
+      });
 
   // Pendulum: slow left-right sine wave
-  const pendulumX = Math.sin((frame / fps) * Math.PI * 0.5) * 30;
+  const pendulumX = isDelaying ? 0 : Math.sin((effectFrame / fps) * Math.PI * 0.5) * 30;
 
-  // Slow grow throughout the clip
-  const slowGrow = interpolate(frame, [0, durationInFrames], [1, 1.25], {
-    extrapolateRight: 'clamp',
-  });
+  // Slow grow throughout the clip (after delay)
+  const slowGrow = isDelaying
+    ? 1
+    : interpolate(effectFrame, [0, durationInFrames - delayFrames], [1, 1.25], {
+        extrapolateRight: 'clamp',
+      });
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#000' }}>
@@ -71,7 +81,7 @@ export const NewsIntroHorizontal: React.FC<NewsIntroHorizontalProps> = ({ leftIm
           }}
         >
           <Img
-            src={staticFile(heroImage)}
+            src={resolveAsset(heroImage)}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         </div>
