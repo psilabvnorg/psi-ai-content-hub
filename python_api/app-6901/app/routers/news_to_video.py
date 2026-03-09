@@ -11,6 +11,7 @@ from python_api.common.jobs import JobStore
 from ..deps import get_job_store
 from ..services.news_to_video import (
     REMOTION_ROOT,
+    RENDER_PROFILES,
     TEMPLATES,
     UploadedFileData,
     get_render_result,
@@ -56,6 +57,7 @@ def list_templates() -> dict:
 def create_render_task(
     template: str = Form(...),
     config_overrides: str | None = Form(default=None),
+    render_profile: str = Form(default="tiktok"),
     audio_file: UploadFile | None = File(default=None),
     transcript_file: UploadFile | None = File(default=None),
     images: list[UploadFile] = File(default=[]),
@@ -66,6 +68,11 @@ def create_render_task(
         raise HTTPException(
             status_code=400,
             detail=f"Unknown template '{template}'. Valid templates: {list(TEMPLATES.keys())}",
+        )
+    if render_profile not in RENDER_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown render_profile '{render_profile}'. Valid profiles: {list(RENDER_PROFILES.keys())}",
         )
     if not images or len(images) < 1 or len(images) > 10:
         raise HTTPException(status_code=400, detail="images must contain between 1 and 10 files")
@@ -89,6 +96,7 @@ def create_render_task(
             images=image_list,
             hero_image=hero,
             overrides=overrides,
+            render_profile=render_profile,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

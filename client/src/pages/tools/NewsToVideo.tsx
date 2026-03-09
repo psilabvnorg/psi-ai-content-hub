@@ -318,6 +318,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   // ── Render state ──
   const [isStaging, setIsStaging] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [showRenderOptions, setShowRenderOptions] = useState(false);
   const [renderProgress, setRenderProgress] = useState<ProgressData | null>(null);
   const [renderLogs, setRenderLogs] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -425,7 +426,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     !isRendering &&
     !isStaging;
 
-  const handleRender = async () => {
+  const handleRender = async (renderProfile: "tiktok" | "youtube") => {
     if (!canRender || !audioFile || !transcriptFile) return;
     setIsRendering(true);
     setRenderProgress({ status: "starting", percent: 0, message: "Submitting render job..." });
@@ -448,6 +449,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       const form = new FormData();
       form.append("template", template);
       form.append("config_overrides", JSON.stringify(configOverrides));
+      form.append("render_profile", renderProfile);
       form.append("audio_file", audioFile);
       form.append("transcript_file", transcriptFile);
       for (const img of images) form.append("images", img);
@@ -943,19 +945,61 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
               {isStaging ? "Staging…" : "Preview"}
             </Button>
 
-            <Button
-              className="flex-1 h-10 rounded-xl font-bold"
-              style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
-              onClick={() => void handleRender()}
-              disabled={!canRender}
-            >
-              {isRendering ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
+            {!showRenderOptions && !isRendering ? (
+              <Button
+                className="flex-1 h-10 rounded-xl font-bold"
+                style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+                onClick={() => setShowRenderOptions(true)}
+                disabled={!canRender}
+              >
                 <Video className="w-4 h-4 mr-2" />
-              )}
-              {isRendering ? "Rendering…" : "Generate Video"}
-            </Button>
+                Generate Video
+              </Button>
+            ) : (
+              <div className="flex-1 flex flex-col gap-1.5">
+                {isRendering ? (
+                  <Button
+                    className="w-full h-10 rounded-xl font-bold"
+                    style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+                    disabled
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Rendering…
+                  </Button>
+                ) : (
+                  <>
+                    <div className="flex gap-1.5">
+                      <Button
+                        className="flex-1 h-10 rounded-xl font-bold text-xs"
+                        style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+                        onClick={() => void handleRender("tiktok")}
+                        disabled={!canRender}
+                        title="TikTok — compressed (CRF 18, AAC 192k)"
+                      >
+                        <Video className="w-3.5 h-3.5 mr-1.5" />
+                        TikTok
+                      </Button>
+                      <Button
+                        className="flex-1 h-10 rounded-xl font-bold text-xs"
+                        style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+                        onClick={() => void handleRender("youtube")}
+                        disabled={!canRender}
+                        title="YouTube — high quality (CRF 16, AAC 320k)"
+                      >
+                        <Video className="w-3.5 h-3.5 mr-1.5" />
+                        YouTube
+                      </Button>
+                    </div>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
+                      onClick={() => setShowRenderOptions(false)}
+                    >
+                      ← back
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <ProgressDisplay

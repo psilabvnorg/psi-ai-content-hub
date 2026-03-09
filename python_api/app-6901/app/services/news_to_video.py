@@ -33,6 +33,21 @@ USER_ASSETS_BASE_URL = "http://localhost:6901/user-assets"
 RENDER_CONCURRENCY = 4
 RETENTION_SECONDS = 60 * 60
 
+RENDER_PROFILES: dict[str, dict[str, str | int]] = {
+    "tiktok": {
+        "crf": 18,
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "192k",
+    },
+    "youtube": {
+        "crf": 16,
+        "pixel_format": "yuv420p",
+        "audio_codec": "aac",
+        "audio_bitrate": "320k",
+    },
+}
+
 ALLOWED_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
 ALLOWED_AUDIO_SUFFIXES = {".wav"}
 
@@ -400,6 +415,7 @@ def start_render_pipeline(
     images: list[UploadedFileData],
     hero_image: UploadedFileData | None,
     overrides: dict | None = None,
+    render_profile: str = "tiktok",
 ) -> str:
     _cleanup_expired()
 
@@ -417,6 +433,8 @@ def start_render_pipeline(
     render_progress_store.set_progress(task_id, "starting", 0, "Starting News-to-Video render...")
 
     composition = TEMPLATES[template_key]["_composition"]
+
+    profile_flags = RENDER_PROFILES.get(render_profile, RENDER_PROFILES["tiktok"])
 
     def runner() -> None:
         content_dir_name = f"n2v_{task_id}"
@@ -445,6 +463,10 @@ def start_render_pipeline(
                 "--content", f"main/{content_dir_name}",
                 "--output", str(output_path),
                 "--concurrency", str(RENDER_CONCURRENCY),
+                "--crf", str(profile_flags["crf"]),
+                "--pixel-format", str(profile_flags["pixel_format"]),
+                "--audio-codec", str(profile_flags["audio_codec"]),
+                "--audio-bitrate", str(profile_flags["audio_bitrate"]),
             ]
 
             render_progress_store.set_progress(task_id, "processing", 15, "Starting Remotion render...")
