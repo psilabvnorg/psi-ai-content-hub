@@ -1,12 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_223477b0.png",
+  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_6bc79c93.png",
   "introProps": {
-    "image1": "http://localhost:6901/user-assets/image-009_e0775cbd.png",
-    "image2": "http://localhost:6901/user-assets/intro_bottom_d76f9c32.png",
-    "heroImage": "http://localhost:6901/user-assets/thl6_e359633b.png"
+    "image1": "http://localhost:6901/user-assets/photo-1773028131572-1773028132115528234950_46a699e3.png",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_614684a3.png",
+    "heroImage": "http://localhost:6901/user-assets/thl5_5eb78c6d.png"
   },
   "backgroundMusicVolume": 0.2,
-  "backgroundMusic": "background-music/news2.mp3"
+  "backgroundMusic": "background-music/news4.mp3"
 }

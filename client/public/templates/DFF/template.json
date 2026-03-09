@@ -3,9 +3,9 @@
   "pageSize": "tiktok",
   "mode": "normal-gradient",
   "split": 50,
-  "color1": "#00ff88",
-  "opacity1": 100,
-  "transparent1": true,
+  "color1": "#ffffff",
+  "opacity1": 20,
+  "transparent1": false,
   "color2": "#162140",
   "opacity2": 100,
   "transparent2": false,
@@ -13,7 +13,7 @@
   "canvasHeight": 602,
   "elements": [
     {
-      "id": 1773033949352.9556,
+      "id": 1773048264174.7195,
       "x": 152,
       "y": 441,
       "w": 188,
@@ -22,7 +22,7 @@
       "file": "elements/el_0.png"
     },
     {
-      "id": 1773033949352.797,
+      "id": 1773048264174.0906,
       "x": -103,
       "y": 461,
       "w": 285,
@@ -31,7 +31,7 @@
       "file": "elements/el_1.png"
     },
     {
-      "id": 1773033949352.8462,
+      "id": 1773048264174.2415,
       "x": 245,
       "y": -7,
       "w": 78,
@@ -40,7 +40,7 @@
       "file": "elements/el_2.png"
     },
     {
-      "id": 1773033949352.9612,
+      "id": 1773048264174.6196,
       "x": 24,
       "y": 302,
       "w": 78,
@@ -49,7 +49,7 @@
       "file": "elements/el_3.png"
     },
     {
-      "id": 1773033949352.078,
+      "id": 1773048264174.5269,
       "type": "placeholder",
       "name": "title",
       "placeholderType": "text",
