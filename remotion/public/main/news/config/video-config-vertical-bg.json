@@ -1,12 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_c511f123.png",
+  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_79966e62.png",
   "introProps": {
-    "image1": "http://localhost:6901/user-assets/chứng khoán_778f7c13.png",
-    "image2": "http://localhost:6901/user-assets/intro_bottom_5f5de5e1.png",
-    "heroImage": "http://localhost:6901/user-assets/thl6_0ee38f8f.png"
+    "image1": "http://localhost:6901/user-assets/gold-oil-trade-world-map-hands-p-17724198240621436977036_1a0b53c4.webp",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_5062b546.png",
+    "heroImage": "http://localhost:6901/user-assets/kha_banh_2eba44e9.png"
   },
-  "backgroundMusicVolume": 0.2,
+  "backgroundMusicVolume": 0.38,
   "backgroundMusic": "background-music/news4.mp3"
 }

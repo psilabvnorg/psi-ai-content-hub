@@ -18,7 +18,8 @@ import VoiceCloneCustom from "./tools/VoiceCloneCustom";
 import SpeechToText from "./tools/SpeechToText";
 import ThumbnailCreator from "./tools/ThumbnailCreator";
 import ThumbnailCreatorWorkflow from "./tools/ThumbnailCreatorWorkflow";
-import ThumbnailCreatorSimple from "./tools/ThumbnailCreatorSimple";
+import TransparentLogo from "./tools/TransparentLogo";
+import ImageBorderOutline from "./tools/ImageBorderOutline";
 import BackgroundRemoval from "./tools/BackgroundRemoval";
 import MergeOverlay from "./tools/MergeOverlay";
 import ReupYoutube from "./tools/ReupYoutube";
@@ -86,6 +87,7 @@ export default function FeaturePlaceholder({
       "logo-generator-prompt": "feature.tool.logo_generator_prompt.title",
       "text-generator": "feature.tool.text_generator.title",
       "image-editor": "feature.tool.image_editor.title",
+      "image-border": "feature.tool.image_border.title",
       "settings": "settings.title",
     };
     return titleMap[targetId] || "settings.title";
@@ -134,7 +136,9 @@ export default function FeaturePlaceholder({
       case "thumbnail-workflow":
         return <ThumbnailCreatorWorkflow />;
       case "thumbnail-simple":
-        return <ThumbnailCreatorSimple onOpenSettings={() => onSelectFeature("settings")} />;
+        return <TransparentLogo onOpenSettings={() => onSelectFeature("settings")} />;
+      case "image-border":
+        return <ImageBorderOutline onOpenSettings={() => onSelectFeature("settings")} />;
       case "background-removal":
         return <BackgroundRemoval onOpenSettings={() => onSelectFeature("settings")} />;
       case "merge-overlay":

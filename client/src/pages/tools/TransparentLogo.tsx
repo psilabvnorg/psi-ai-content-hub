@@ -14,7 +14,7 @@ type ProcessResult = {
   filename: string;
 };
 
-export default function ThumbnailCreatorSimple({ onOpenSettings }: { onOpenSettings?: () => void }) {
+export default function TransparentLogo({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

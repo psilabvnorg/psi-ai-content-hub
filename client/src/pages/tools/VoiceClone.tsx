@@ -202,14 +202,18 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!audioUrl) return;
+    const response = await fetch(audioUrl);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = audioUrl;
+    a.href = url;
     a.download = downloadName || "voice.wav";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const progressPercent = useMemo(() => {
