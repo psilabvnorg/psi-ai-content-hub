@@ -15,43 +15,24 @@ router = APIRouter(prefix="/api/v1/env", tags=["env"])
 # Path to the venv directory relative to this file
 VENV_DIR = Path(__file__).parent.parent.parent / "venv"
 
+_TORCH_INDEX_URL = "https://download.pytorch.org/whl/cu124"
+
 _MODULE_TO_PACKAGE: Dict[str, str] = {
     # FastAPI server
     "fastapi": "fastapi",
     "uvicorn": "uvicorn",
     "multipart": "python-multipart",
-    # f5-tts package
-    "f5_tts": "f5-tts==1.1.17",
-    # Dependencies from pyproject.toml
-    "accelerate": "accelerate>=0.33.0",
-    "bitsandbytes": "bitsandbytes>0.37.0",
-    "cached_path": "cached_path",
-    "click": "click",
-    "datasets": "datasets",
-    "ema_pytorch": "ema_pytorch>=0.5.2",
-    "gradio": "gradio>=6.0.0",
-    "hydra": "hydra-core>=1.3.0",
-    "librosa": "librosa",
-    "matplotlib": "matplotlib",
-    "numpy": "numpy<=1.26.4",
-    "pydub": "pydub",
-    "pypinyin": "pypinyin",
-    "rjieba": "rjieba",
-    "safetensors": "safetensors",
-    "soundfile": "soundfile",
-    "tomli": "tomli",
-    "torch": "torch>=2.0.0",
-    "torchaudio": "torchaudio>=2.0.0",
-    "torchcodec": "torchcodec",
-    "torchdiffeq": "torchdiffeq",
-    "tqdm": "tqdm>=4.65.0",
-    "transformers": "transformers",
-    "transformers_stream_generator": "transformers_stream_generator",
-    "unidecode": "unidecode",
-    "vocos": "vocos",
-    "wandb": "wandb",
-    "x_transformers": "x_transformers>=1.31.14",
+    # numpy
+    "numpy": "numpy==1.26.4",
+    # torch (CUDA build — installed with extra index url)
+    "torch": "torch==2.4.0+cu124",
+    "torchaudio": "torchaudio==2.4.0+cu124",
+    # F5-TTS core (pulls in all sub-dependencies)
+    "f5_tts": "f5-tts",
 }
+
+# Packages that require the PyTorch CUDA index to resolve
+_TORCH_PACKAGES = {"torch==2.4.0+cu124", "torchaudio==2.4.0+cu124"}
 
 
 def _missing_modules() -> List[str]:
@@ -116,7 +97,18 @@ def env_install(payload: dict = Body(None)) -> dict:
     # Upgrade pip first to ensure modern resolver and wheel support
     subprocess.check_call([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"])
 
-    # Install packages in the venv (no -U: avoid upgrading already-loaded .pyd files on Windows)
-    subprocess.check_call([str(venv_python), "-m", "pip", "install", *packages])
+    # Split packages: torch CUDA builds need an extra index URL
+    torch_pkgs = [p for p in packages if p in _TORCH_PACKAGES]
+    other_pkgs = [p for p in packages if p not in _TORCH_PACKAGES]
+
+    if other_pkgs:
+        subprocess.check_call([str(venv_python), "-m", "pip", "install", *other_pkgs])
+
+    if torch_pkgs:
+        subprocess.check_call([
+            str(venv_python), "-m", "pip", "install",
+            "--extra-index-url", _TORCH_INDEX_URL,
+            *torch_pkgs,
+        ])
 
     return {"status": "success", "installed": packages, "venv_path": str(VENV_DIR)}

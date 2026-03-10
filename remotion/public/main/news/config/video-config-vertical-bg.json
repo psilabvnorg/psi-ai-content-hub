@@ -1,11 +1,11 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_6bc79c93.png",
+  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_c511f123.png",
   "introProps": {
-    "image1": "http://localhost:6901/user-assets/photo-1773028131572-1773028132115528234950_46a699e3.png",
-    "image2": "http://localhost:6901/user-assets/intro_bottom_614684a3.png",
-    "heroImage": "http://localhost:6901/user-assets/thl5_5eb78c6d.png"
+    "image1": "http://localhost:6901/user-assets/chứng khoán_778f7c13.png",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_5f5de5e1.png",
+    "heroImage": "http://localhost:6901/user-assets/thl6_0ee38f8f.png"
   },
   "backgroundMusicVolume": 0.2,
   "backgroundMusic": "background-music/news4.mp3"
