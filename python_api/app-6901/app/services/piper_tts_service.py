@@ -14,9 +14,10 @@ import numpy as np
 from python_api.common.paths import TEMP_DIR
 
 _PIPER_DIR = Path(__file__).resolve().parent / "piper_tts"
-_MODEL_DIR = _PIPER_DIR / "tts-model"
+_FINETUNE_DIR = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "psi-ai-content-hub" / "models" / "piper-tts-finetune"
+_MODEL_DIR = _FINETUNE_DIR / "tts-model"
 _DEMO_DIR = _PIPER_DIR / "demo"
-_ESPEAK_DIR = _PIPER_DIR / "eSpeak NG"
+_ESPEAK_DIR = _FINETUNE_DIR / "eSpeak NG"
 
 # Point phonemizer at the bundled eSpeak NG before it is imported
 if _ESPEAK_DIR.exists():
