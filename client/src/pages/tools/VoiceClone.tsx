@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mic, Loader2, Download, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
-import { F5_API_URL } from "@/lib/api";
+import { APP_API_URL, F5_API_URL } from "@/lib/api";
 import { useManagedServices } from "@/hooks/useManagedServices";
 const MAX_CHARS = 500;
 
@@ -69,6 +69,7 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const [nfeStep, setNfeStep] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(false);
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
+  const [isNormalizing, setIsNormalizing] = useState(false);
   const { servicesById, start, stop, isBusy } = useManagedServices();
   const serviceStatus = servicesById.f5;
   const serviceRunning = serviceStatus?.status === "running";
@@ -108,6 +109,22 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     } catch {
       setStatus({ server_unreachable: true });
     }
+  };
+
+  const normalizeText = async () => {
+    if (!text.trim()) return;
+    setIsNormalizing(true);
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text/normalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, language }),
+      });
+      if (!res.ok) throw new Error("normalize failed");
+      const data = await res.json();
+      setText(data.normalized_text);
+    } catch {}
+    setIsNormalizing(false);
   };
 
   const fetchVoices = async (lang?: string) => {
@@ -400,6 +417,20 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
               className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
             >
               {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
+            </Button>
+          </div>
+          <div className="flex justify-center pt-1">
+            <Button
+              size="sm"
+              onClick={normalizeText}
+              disabled={isNormalizing || !text.trim()}
+              className="h-8 text-sm font-semibold px-4 bg-accent text-accent-foreground hover:bg-accent/90 border-0"
+            >
+              {isNormalizing ? (
+                <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{t("tool.voice_clone.normalizing")}</>
+              ) : (
+                t("tool.voice_clone.normalize_text")
+              )}
             </Button>
           </div>
         </div>

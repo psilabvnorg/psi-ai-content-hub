@@ -96,6 +96,7 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
   const [nfeStep, setNfeStep] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(false);
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
+  const [isNormalizing, setIsNormalizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateProgress, setGenerateProgress] = useState<ProgressData | null>(null);
   const [generateLogs, setGenerateLogs] = useState<string[]>([]);
@@ -136,6 +137,22 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
       }
     };
   }, [trimmedAudioUrl]);
+
+  const normalizeText = async () => {
+    if (!text.trim()) return;
+    setIsNormalizing(true);
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/text/normalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, language }),
+      });
+      if (!res.ok) throw new Error("normalize failed");
+      const data = await res.json();
+      setText(data.normalized_text);
+    } catch {}
+    setIsNormalizing(false);
+  };
 
   const fetchStatus = async () => {
     try {
@@ -705,6 +722,20 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
               className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
             >
               {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
+            </Button>
+          </div>
+          <div className="flex justify-center pt-1">
+            <Button
+              size="sm"
+              onClick={normalizeText}
+              disabled={isNormalizing || !text.trim()}
+              className="h-8 text-sm font-semibold px-4 bg-accent text-accent-foreground hover:bg-accent/90 border-0"
+            >
+              {isNormalizing ? (
+                <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{t("tool.voice_clone.normalizing")}</>
+              ) : (
+                t("tool.voice_clone.normalize_text")
+              )}
             </Button>
           </div>
         </div>

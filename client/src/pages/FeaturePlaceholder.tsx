@@ -13,6 +13,7 @@ import VideoTrimmer from "./tools/VideoTrimmer";
 import AudioTrimmer from "./tools/AudioTrimmer";
 import SpeedAdjuster from "./tools/SpeedAdjuster";
 import TTSFast from "./tools/TTSFast";
+import PiperTTS from "./tools/PiperTTS";
 import VoiceClone from "./tools/VoiceClone";
 import VoiceCloneCustom from "./tools/VoiceCloneCustom";
 import SpeechToText from "./tools/SpeechToText";
@@ -74,6 +75,7 @@ export default function FeaturePlaceholder({
       "background-removal": "feature.tool.background_removal.title",
       "merge-overlay": "feature.tool.merge_overlay.title",
       "tts-fast": "feature.tool.tts_fast.title",
+      "piper-tts": "feature.tool.piper_tts.title",
       "voice-clone": "feature.tool.voice_clone.title",
       "voice-clone-custom": "feature.tool.voice_clone_custom.title",
       "stt": "feature.tool.stt.title",
@@ -125,6 +127,8 @@ export default function FeaturePlaceholder({
         return <SpeedAdjuster onOpenSettings={() => onSelectFeature("settings")} />;
       case "tts-fast":
         return <TTSFast onOpenSettings={() => onSelectFeature("settings")} />;
+      case "piper-tts":
+        return <PiperTTS onOpenSettings={() => onSelectFeature("settings")} />;
       case "voice-clone":
         return <VoiceClone onOpenSettings={() => onSelectFeature("settings")} />;
       case "voice-clone-custom":

@@ -4,7 +4,7 @@ import {
   Video, FileText, Book, Film, Youtube,
   Music, FileAudio,
   Mic, Languages,
-  Play, Download,
+  Play, Download, Volume2,
   Image as ImageIcon, Scissors, Gauge, BrainCircuit, Settings, Newspaper, Palette, Wand2, Type, TableProperties, ListChecks
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ const basicToolSections: BasicToolSection[] = [
     label: "Voice Tool",
     tools: [
       { id: "tts-fast", titleKey: "feature.tool.tts_fast.title" as I18nKey, icon: Play, descriptionKey: "feature.tool.tts_fast.desc" as I18nKey },
+      { id: "piper-tts", titleKey: "feature.tool.piper_tts.title" as I18nKey, icon: Volume2, descriptionKey: "feature.tool.piper_tts.desc" as I18nKey },
       { id: "voice-clone", titleKey: "feature.tool.voice_clone.title" as I18nKey, icon: Mic, descriptionKey: "feature.tool.voice_clone.desc" as I18nKey },
       { id: "stt", titleKey: "feature.tool.stt.title" as I18nKey, icon: Languages, descriptionKey: "feature.tool.stt.desc" as I18nKey },
       { id: "mp3-to-wav", titleKey: "feature.tool.mp3_to_wav.title" as I18nKey, icon: FileAudio, descriptionKey: "feature.tool.mp3_to_wav.desc" as I18nKey },

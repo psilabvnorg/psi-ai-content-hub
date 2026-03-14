@@ -30,6 +30,10 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "yt_dlp": "yt-dlp",
         "edge_tts": "edge-tts",
     },
+    "piper-tts": {
+        "onnxruntime": "onnxruntime",
+        "numpy": "numpy",
+    },
     "whisper": {
         "fastapi": "fastapi",
         "uvicorn": "uvicorn",

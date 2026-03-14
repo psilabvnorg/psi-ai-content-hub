@@ -28,6 +28,8 @@ from .routers import get_news_web_content as news_scraper_router
 from .routers import transparent_logo as transparent_logo_router
 from .routers import news_to_video as news_to_video_router
 from .routers import image_border as image_border_router
+from .routers import text_normalizer as text_normalizer_router
+from .routers import piper_tts as piper_tts_router
 from .services.remove_overlay import (
     cleanup_results,
     cleanup_video_results,
@@ -85,6 +87,8 @@ def create_app() -> FastAPI:
     app.include_router(transparent_logo_router.router, prefix="/api/v1/transparent-logo")
     app.include_router(image_border_router.router, prefix="/api/v1/image-border")
     app.include_router(news_to_video_router.router)
+    app.include_router(text_normalizer_router.router)
+    app.include_router(piper_tts_router.router)
 
     user_assets_dir = TEMP_DIR / "user-assets"
     user_assets_dir.mkdir(parents=True, exist_ok=True)
