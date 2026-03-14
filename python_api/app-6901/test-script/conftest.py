@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 
 # Add app-6901 to sys.path so `import app.services.*` resolves.
-# parents[0]=test-script, [1]=app-6901, [2]=python_api, [3]=D:/AI/psi-ai-content-hub
+# parents[0]=test-script, [1]=app-6901, [2]=python_api, [3]=repo root
 _APP6901_DIR = Path(__file__).resolve().parents[1]   # app-6901
-_REPO_ROOT = Path(__file__).resolve().parents[3]     # D:/AI/psi-ai-content-hub
+_REPO_ROOT = Path(__file__).resolve().parents[3]     # repo root
 
 for _p in (_APP6901_DIR, _REPO_ROOT):
     if str(_p) not in sys.path:

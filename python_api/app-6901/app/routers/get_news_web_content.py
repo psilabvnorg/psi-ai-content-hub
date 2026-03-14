@@ -23,7 +23,6 @@ import json
 import os
 import queue
 import shutil
-import tempfile
 import threading
 import time
 import uuid
@@ -33,6 +32,7 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import Response, StreamingResponse
 
+from python_api.common.paths import TEMP_DIR
 from ..services.get_news_web_content.vnexpress import (
     fetch_article_urls as _vne_fetch_urls,
     scrape_article as _vne_scrape,
@@ -58,7 +58,7 @@ def _scrape_for(source: str, url: str, prefix: str, out_dir: str) -> tuple[str, 
 
 router = APIRouter(prefix="/api/v1/news-scraper", tags=["news-scraper"])
 
-_DEFAULT_OUT_DIR = Path(tempfile.gettempdir()) / "psi_ai_content_hub" / "news_scraper"
+_DEFAULT_OUT_DIR = TEMP_DIR / "news_scraper"
 
 # ---------------------------------------------------------------------------
 # Source registry

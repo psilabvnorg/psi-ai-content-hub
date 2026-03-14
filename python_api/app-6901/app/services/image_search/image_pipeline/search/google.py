@@ -127,7 +127,15 @@ def search_google_images(
     try:
         LOGGER.warning("[GoogleSearch] Starting: query=%r, max_results=%d, timeout=%ds", query, max_results, timeout_seconds)
         chrome_version = _get_chrome_major_version()
-        LOGGER.warning("[GoogleSearch] Detected Chrome major version: %s", chrome_version)
+        if chrome_version is None:
+            LOGGER.warning(
+                "[GoogleSearch] Could not detect Chrome version. "
+                "Google Chrome may not be installed. "
+                "Please install Google Chrome from https://www.google.com/chrome/ "
+                "to enable Google Image search."
+            )
+        else:
+            LOGGER.warning("[GoogleSearch] Detected Chrome major version: %s", chrome_version)
         driver = uc.Chrome(options=options, version_main=chrome_version)
 
         encoded_query = quote_plus(query)
@@ -177,7 +185,15 @@ def search_google_images(
                     results.append(ImageResult(source="google", url=url))
 
     except (TimeoutException, WebDriverException) as exc:
-        LOGGER.warning("[GoogleSearch] Failed: %s", exc)
+        exc_msg = str(exc)
+        if "cannot find Chrome binary" in exc_msg or "chrome not reachable" in exc_msg.lower():
+            LOGGER.warning(
+                "[GoogleSearch] Chrome browser not found. "
+                "Please install Google Chrome from https://www.google.com/chrome/ "
+                "to enable Google Image search."
+            )
+        else:
+            LOGGER.warning("[GoogleSearch] Failed: %s", exc)
     except Exception as exc:
         LOGGER.warning("[GoogleSearch] Unexpected error: %s", exc)
     finally:

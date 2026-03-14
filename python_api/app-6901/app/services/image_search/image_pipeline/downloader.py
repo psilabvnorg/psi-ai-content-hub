@@ -4,7 +4,6 @@ import hashlib
 import imghdr
 import logging
 import ssl
-import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import urlparse
@@ -12,6 +11,7 @@ from urllib.parse import urlparse
 import requests
 from requests.adapters import HTTPAdapter
 
+from python_api.common.paths import TEMP_DIR
 from .models import ImageResult
 
 
@@ -33,7 +33,7 @@ def _build_download_root(download_root: Path | None) -> Path:
     if download_root is not None:
         root = download_root
     else:
-        root = Path(tempfile.gettempdir()) / "psi_ai_content_hub" / "image_finder"
+        root = TEMP_DIR / "image_finder"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
