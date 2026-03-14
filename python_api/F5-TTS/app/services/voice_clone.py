@@ -11,12 +11,15 @@ import unicodedata
 import uuid
 from pathlib import Path
 from typing import List
-from urllib.request import urlopen
 
 from python_api.common.logging import log
 from python_api.common.paths import MODEL_F5_VN_DIR, MODEL_F5_EN_DIR, TEMP_DIR
 from python_api.common.progress import ProgressStore
 from python_api.common.jobs import JobStore
+from python_api.common.model_download_service import (
+    download_model as central_download_model,
+    is_model_downloaded,
+)
 
 
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
@@ -40,16 +43,7 @@ VOCAB_FILE_EN = MODEL_F5_EN_DIR / "vocab.txt"
 MODEL_FILE = MODEL_FILE_VN
 VOCAB_FILE = VOCAB_FILE_VN
 
-MODEL_DOWNLOAD_SOURCES: dict[str, dict[str, str]] = {
-    "vi": {
-        "model_url": "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/model_last.pt",
-        "vocab_url": "https://huggingface.co/hynt/F5-TTS-Vietnamese-ViVoice/resolve/main/config.json",
-    },
-    "en": {
-        "model_url": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/model_1200000.safetensors",
-        "vocab_url": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/vocab.txt",
-    },
-}
+_SUPPORTED_LANGUAGES = {"vi", "en"}
 
 progress_store = ProgressStore()
 task_files: dict[str, str] = {}
@@ -76,14 +70,15 @@ def _get_voices_config(language: str) -> tuple[Path, Path]:
 
 
 def _model_ready(language: str = "vi") -> bool:
-    model_file, vocab_file = _get_model_paths(language)
-    return model_file.exists() and vocab_file.exists()
+    key = "f5-tts-vn" if language == "vi" else "f5-tts-en"
+    return is_model_downloaded(key)
 
 
 def model_status(language: str = "vi") -> dict:
+    key = "f5-tts-vn" if language == "vi" else "f5-tts-en"
     model_file, vocab_file = _get_model_paths(language)
     return {
-        "installed": model_file.exists() and vocab_file.exists(),
+        "installed": is_model_downloaded(key),
         "model_dir": str(model_file.parent),
         "model_file": str(model_file) if model_file.exists() else None,
         "vocab_file": str(vocab_file) if vocab_file.exists() else None,
@@ -129,29 +124,9 @@ def _ensure_unique_voice_id(base_id: str, existing_ids: set[str]) -> str:
     return f"{base_id}_{index}"
 
 
-def _download_file(url: str, target: Path, task_id: str, start_percent: int, end_percent: int) -> None:
-    progress_store.add_log(task_id, f"Downloading {url}")
-    with urlopen(url) as response:
-        total = int(response.headers.get("Content-Length") or 0)
-        downloaded = 0
-        chunk_size = 1024 * 1024
-        with target.open("wb") as handle:
-            while True:
-                chunk = response.read(chunk_size)
-                if not chunk:
-                    break
-                handle.write(chunk)
-                downloaded += len(chunk)
-                if total > 0:
-                    percent = start_percent + int((downloaded / total) * (end_percent - start_percent))
-                else:
-                    percent = start_percent
-                progress_store.set_progress(task_id, "downloading", min(end_percent, percent), "Downloading model files...")
-
-
 def _normalize_language(language: str) -> str:
     normalized = (language or "vi").strip().lower()
-    if normalized not in MODEL_DOWNLOAD_SOURCES:
+    if normalized not in _SUPPORTED_LANGUAGES:
         raise ValueError(f"Unsupported language: {language}")
     return normalized
 
@@ -223,24 +198,15 @@ def register_voice(
 
 def download_model(job_store: JobStore, language: str = "vi") -> str:
     selected_language = _normalize_language(language)
+    key = "f5-tts-vn" if selected_language == "vi" else "f5-tts-en"
     model_label = "English" if selected_language == "en" else "Vietnamese"
-    sources = MODEL_DOWNLOAD_SOURCES[selected_language]
-    model_file, vocab_file = _get_model_paths(selected_language)
 
     task_id = f"voice_model_{uuid.uuid4().hex}"
     progress_store.set_progress(task_id, "starting", 0, f"Starting {model_label} model download...")
 
     def runner() -> None:
-        try:
-            _ensure_dirs()
-            _download_file(sources["model_url"], model_file, task_id, 5, 70)
-            _download_file(sources["vocab_url"], vocab_file, task_id, 70, 95)
-            model_marker = model_file.parent / "model_ready.json"
-            model_marker.write_text(json.dumps({"ready": True, "time": time.time()}))
-            progress_store.set_progress(task_id, "complete", 100, f"{model_label} model ready")
-        except Exception as exc:
-            progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"Voice clone model download failed: {exc}", "error", log_name="f5-tts.log")
+        _ensure_dirs()
+        central_download_model(key, task_id, progress_store)
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id

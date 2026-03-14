@@ -48,9 +48,13 @@ from python_api.common.jobs import JobStore
 from python_api.common.logging import log
 from python_api.common.paths import MODEL_BIREFNET_DIR, TEMP_DIR
 from python_api.common.progress import ProgressStore
+from python_api.common.model_download_service import (
+    download_model as central_download_model,
+    is_model_downloaded,
+)
 
 
-MODEL_ID = "ZhengPeng7/BiRefNet"
+MODEL_ID = "psilab/BiRefNet"
 RESULT_RETENTION_SECONDS = 60 * 60
 SUPPORTED_VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv"}
 SUPPORTED_AUDIO_EXTS = {".mp3", ".wav", ".aac", ".m4a", ".ogg", ".flac"}
@@ -69,15 +73,6 @@ _download_lock = threading.Lock()
 
 _task_results: Dict[str, Dict[str, Any]] = {}
 _result_lock = threading.Lock()
-
-
-def _is_model_on_disk() -> bool:
-    repo_dir = MODEL_BIREFNET_DIR / f"models--{MODEL_ID.replace('/', '--')}"
-    snapshots_dir = repo_dir / "snapshots"
-    try:
-        return snapshots_dir.exists() and any(snapshots_dir.iterdir())
-    except Exception:
-        return False
 
 
 def _new_task_id(prefix: str) -> str:
@@ -159,7 +154,7 @@ def _ensure_model_loaded(task_id: Optional[str] = None) -> bool:
             progress_store.add_log(task_id, "Loading segmentation model...")
             progress_store.set_progress(task_id, "loading_model", 10, "Downloading model files...")
             threading.Thread(target=_tick_progress, daemon=True).start()
-        loaded_model = AutoModelForImageSegmentation.from_pretrained(MODEL_ID, trust_remote_code=True, cache_dir=str(MODEL_BIREFNET_DIR))
+        loaded_model = AutoModelForImageSegmentation.from_pretrained(str(MODEL_BIREFNET_DIR), trust_remote_code=True)
         loading_done.set()
         loaded_model.to(_device)
         loaded_model.float()  # Ensure float32 to avoid float/half type mismatch
@@ -194,7 +189,7 @@ def start_model_download() -> Optional[str]:
     with _download_lock:
         if _model_downloading:
             return None
-        if _is_model_on_disk():
+        if is_model_downloaded("birefnet"):
             return None
         _model_downloading = True
         _model_download_error = None
@@ -204,27 +199,12 @@ def start_model_download() -> Optional[str]:
 
     def runner() -> None:
         global _model_downloading, _model_download_error
-        loading_done = threading.Event()
-
-        def _tick() -> None:
-            percent = 5
-            while not loading_done.is_set() and percent < 90:
-                loading_done.wait(timeout=4)
-                if not loading_done.is_set():
-                    percent = min(percent + 2, 90)
-                    progress_store.set_progress(task_id, "downloading", percent, "Downloading model files...")
-
         try:
-            threading.Thread(target=_tick, daemon=True).start()
-            from huggingface_hub import snapshot_download
-            snapshot_download(MODEL_ID, cache_dir=str(MODEL_BIREFNET_DIR))
-            loading_done.set()
+            central_download_model("birefnet", task_id, progress_store)
             with _download_lock:
                 _model_downloading = False
                 _model_download_error = None
-            progress_store.set_progress(task_id, "complete", 100, "Download complete. Click 'Load Model' to load into memory.")
         except Exception as exc:
-            loading_done.set()
             err = str(exc)
             with _download_lock:
                 _model_downloading = False
@@ -264,7 +244,7 @@ def model_status() -> dict:
                 "model_loaded": _model is not None,
                 "model_loading": _model_loading,
                 "model_error": _model_error if _deps_available else "torch/torchvision/transformers not installed",
-                "model_downloaded": _is_model_on_disk(),
+                "model_downloaded": is_model_downloaded("birefnet"),
                 "model_downloading": _model_downloading,
                 "model_download_error": _model_download_error,
                 "device": _device,

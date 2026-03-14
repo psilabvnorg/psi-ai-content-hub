@@ -15,15 +15,12 @@ TEMP_DIR = Path(tempfile.gettempdir()) / "psi_ai_content_hub"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_ROOT = BASE_APP_DIR / "models"
-MODEL_ROOT.mkdir(parents=True, exist_ok=True)
 
 MODEL_F5_DIR = MODEL_ROOT / "f5-tts"
 MODEL_F5_VN_DIR = MODEL_ROOT / "f5-tts-vn"
 MODEL_F5_EN_DIR = MODEL_ROOT / "f5-tts-en"
 MODEL_VIENEU_DIR = MODEL_ROOT / "vieneu-tts"
 MODEL_WHISPER_DIR = MODEL_ROOT / "whisper"
-MODEL_TRANSLATION_DIR = MODEL_ROOT / "translation"
+MODEL_TRANSLATION_DIR = MODEL_ROOT / "nllb-200-1.3B"
 MODEL_BIREFNET_DIR = MODEL_ROOT / "birefnet"
-
-MODEL_TRANSLATION_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_BIREFNET_DIR.mkdir(parents=True, exist_ok=True)
+MODEL_PIPER_TTS_DIR = MODEL_ROOT / "piper-tts-finetune"

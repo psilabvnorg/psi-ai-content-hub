@@ -13,6 +13,7 @@ from python_api.common.logging import log
 from python_api.common.paths import MODEL_WHISPER_DIR, TEMP_DIR
 from python_api.common.progress import ProgressStore
 from python_api.common.jobs import JobStore
+from python_api.common.model_download_service import download_model as central_download_model
 
 
 progress_store = ProgressStore()
@@ -101,22 +102,13 @@ def save_upload(filename: str, content: bytes) -> Path:
     return target
 
 
-def download_model(job_store: JobStore, model_name: str) -> str:
+def download_model(job_store: JobStore, model_name: str = "large-v3") -> str:
     task_id = f"stt_model_{uuid.uuid4().hex}"
     progress_store.set_progress(task_id, "starting", 0, f"Downloading model {model_name}")
 
     def runner() -> None:
-        try:
-            _ensure_dirs()
-            import whisper
-
-            progress_store.set_progress(task_id, "downloading", 20, "Downloading model...")
-            model = whisper.load_model(model_name, download_root=str(MODEL_WHISPER_DIR))
-            del model
-            progress_store.set_progress(task_id, "complete", 100, "Model download complete")
-        except Exception as exc:
-            progress_store.set_progress(task_id, "error", 0, str(exc))
-            log(f"STT model download failed: {exc}", "error", log_name="whisper-stt.log")
+        _ensure_dirs()
+        central_download_model("whisper", task_id, progress_store)
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id

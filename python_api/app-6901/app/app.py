@@ -30,6 +30,7 @@ from .routers import news_to_video as news_to_video_router
 from .routers import image_border as image_border_router
 from .routers import text_normalizer as text_normalizer_router
 from .routers import piper_tts as piper_tts_router
+from .routers import model_download as model_download_router
 from .services.remove_overlay import (
     cleanup_results,
     cleanup_video_results,
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
     app.include_router(news_to_video_router.router)
     app.include_router(text_normalizer_router.router)
     app.include_router(piper_tts_router.router)
+    app.include_router(model_download_router.router)
 
     user_assets_dir = TEMP_DIR / "user-assets"
     user_assets_dir.mkdir(parents=True, exist_ok=True)

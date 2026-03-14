@@ -9,6 +9,10 @@ from python_api.common.jobs import JobStore
 from python_api.common.logging import log
 from python_api.common.progress import ProgressStore
 from python_api.common.paths import MODEL_TRANSLATION_DIR
+from python_api.common.model_download_service import (
+    download_model as central_download_model,
+    is_model_downloaded,
+)
 
 
 translation_progress = ProgressStore()
@@ -18,8 +22,8 @@ _tokenizer = None
 _current_device: Optional[str] = None
 _model_lock = threading.Lock()
 
-MODEL_ID = "facebook/nllb-200-1.3B"
-MODEL_DIR = MODEL_TRANSLATION_DIR / "nllb-200-1.3B"
+MODEL_ID = "psilab/nllb-200-1.3B"
+MODEL_DIR = MODEL_TRANSLATION_DIR
 
 LANGUAGE_MAP: Dict[str, str] = {
     "vi": "Vietnamese",
@@ -57,28 +61,6 @@ def _detect_runtime_device() -> tuple[str, str | None]:
     return "cpu", None
 
 
-def _model_downloaded() -> bool:
-    """Check if model files are already present in MODEL_DIR."""
-    if not MODEL_DIR.exists():
-        return False
-    has_config = (MODEL_DIR / "config.json").exists()
-    weight_extensions = {".bin", ".safetensors", ".pt", ".msgpack", ".ckpt"}
-    has_model = any(f.suffix in weight_extensions for f in MODEL_DIR.iterdir() if f.is_file())
-    return has_config or has_model
-
-
-def _download_model_files(task_id: str) -> None:
-    """Download model snapshot from Hugging Face Hub to MODEL_DIR."""
-    from huggingface_hub import snapshot_download
-
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    translation_progress.set_progress(task_id, "downloading", 10, f"Downloading {MODEL_ID}...")
-    log(f"Downloading translation model {MODEL_ID} to {MODEL_DIR}...", "info", log_name="translation.log")
-    snapshot_download(repo_id=MODEL_ID, local_dir=str(MODEL_DIR), local_dir_use_symlinks=False)
-    log(f"Translation model downloaded to {MODEL_DIR}", "info", log_name="translation.log")
-    translation_progress.set_progress(task_id, "downloaded", 90, "Model files downloaded.")
-
-
 def _ensure_model_loaded(task_id: str, preferred_device: str) -> None:
     """Lazy-load NLLB-200 model into module-level cache."""
     global _model, _tokenizer, _current_device
@@ -99,13 +81,9 @@ def _ensure_model_loaded(task_id: str, preferred_device: str) -> None:
 
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-        model_path = str(MODEL_DIR) if _model_downloaded() else MODEL_ID
-
-        _tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-        )
+        _tokenizer = AutoTokenizer.from_pretrained(str(MODEL_DIR))
         _model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_path,
+            str(MODEL_DIR),
             torch_dtype=torch.float16 if effective_device == "cuda" else torch.float32,
             low_cpu_mem_usage=True,
         )
@@ -189,7 +167,7 @@ def load_model() -> str:
 
     def runner() -> None:
         try:
-            if not _model_downloaded():
+            if not is_model_downloaded("translation"):
                 translation_progress.set_progress(task_id, "error", 0, "Model not downloaded. Please download it first.")
                 return
             preferred_device, _ = _detect_runtime_device()
@@ -209,16 +187,7 @@ def download_model(job_store: JobStore) -> str:
     translation_progress.set_progress(task_id, "starting", 0, "Starting model download...")
 
     def runner() -> None:
-        try:
-            if _model_downloaded():
-                translation_progress.set_progress(task_id, "complete", 100, "Model already downloaded.")
-                log(f"Translation model already present at {MODEL_DIR}", "info", log_name="translation.log")
-                return
-            _download_model_files(task_id)
-            translation_progress.set_progress(task_id, "complete", 100, "Model downloaded successfully.")
-        except Exception as exc:
-            translation_progress.set_progress(task_id, "error", 0, str(exc))
-            log(f"Translation model download failed: {exc}", "error", log_name="translation.log")
+        central_download_model("translation", task_id, translation_progress)
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id
@@ -343,7 +312,7 @@ def get_model_status() -> dict:
     """Return current translation model state."""
     return {
         "loaded": _model is not None and _tokenizer is not None,
-        "downloaded": _model_downloaded(),
+        "downloaded": is_model_downloaded("translation"),
         "model_id": MODEL_ID,
         "model_dir": str(MODEL_DIR),
         "device": _current_device,

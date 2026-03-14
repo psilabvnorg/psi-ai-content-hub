@@ -11,10 +11,10 @@ from uuid import uuid4
 
 import numpy as np
 
-from python_api.common.paths import TEMP_DIR
+from python_api.common.paths import MODEL_PIPER_TTS_DIR, TEMP_DIR
 
 _PIPER_DIR = Path(__file__).resolve().parent / "piper_tts"
-_FINETUNE_DIR = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "psi-ai-content-hub" / "models" / "piper-tts-finetune"
+_FINETUNE_DIR = MODEL_PIPER_TTS_DIR
 _MODEL_DIR = _FINETUNE_DIR / "tts-model"
 _DEMO_DIR = _PIPER_DIR / "demo"
 _ESPEAK_DIR = _FINETUNE_DIR / "eSpeak NG"
