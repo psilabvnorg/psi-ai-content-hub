@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Play, Volume2 } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL } from "@/lib/api";
-import { ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
-import type { ProgressData } from "@/components/common/tool-page-ui";
+import { ServiceStatusTable, ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
+import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 
 const MAX_CHARS = 3000;
 
@@ -52,6 +52,16 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
 
   const charCount = text.length;
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=${language}`);
+      if (!res.ok) throw new Error("unreachable");
+      setServerUnreachable(false);
+    } catch {
+      setServerUnreachable(true);
+    }
+  };
 
   const fetchVoices = async (lang: string) => {
     try {
@@ -160,9 +170,22 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
     }
   };
 
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.piper_tts.server_status"),
+      isReady: !serverUnreachable,
+      path: APP_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+  ];
+
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
+        <ServiceStatusTable serverUnreachable={serverUnreachable} rows={statusRows} onRefresh={fetchStatus} onOpenSettings={onOpenSettings} />
 
         {/* Language tabs */}
         <div className="space-y-2">
