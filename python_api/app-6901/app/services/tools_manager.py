@@ -160,5 +160,16 @@ def _install_ytdlp(task_id: str) -> None:
 
 def _install_torch(task_id: str) -> None:
     progress_store.set_progress(task_id, "installing", 20, "Installing PyTorch...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio"])
+    # Try CUDA build first; fall back to CPU-only if no NVIDIA GPU is present.
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install",
+             "torch==2.4.0+cu124", "torchvision", "torchaudio",
+             "--extra-index-url", "https://download.pytorch.org/whl/cu124"]
+        )
+    except subprocess.CalledProcessError:
+        progress_store.add_log(task_id, "CUDA wheel failed, falling back to CPU-only PyTorch")
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio"]
+        )
     progress_store.set_progress(task_id, "complete", 100, "PyTorch installed")

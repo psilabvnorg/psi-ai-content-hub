@@ -1,4 +1,14 @@
 import torch
-print("CUDA available:", torch.cuda.is_available())
-print("CUDA version (PyTorch):", torch.version.cuda)
-print("cuDNN version:", torch.backends.cudnn.version())
+
+print(f"PyTorch version: {torch.__version__}")
+print(f"CUDA available:  {torch.cuda.is_available()}")
+
+if torch.cuda.is_available():
+    print(f"CUDA version:    {torch.version.cuda}")
+    print(f"Device count:    {torch.cuda.device_count()}")
+    print(f"Current device:  {torch.cuda.current_device()}")
+    print(f"Device name:     {torch.cuda.get_device_name(0)}")
+    x = torch.rand(3, 3).cuda()
+    print(f"Tensor on GPU:   {x.device}")
+else:
+    print("CUDA is NOT available. Running on CPU only.")

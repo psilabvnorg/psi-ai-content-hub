@@ -39,7 +39,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "uvicorn": "uvicorn",
         "multipart": "python-multipart",
         "whisper": "openai-whisper",
-        "torch": "torch",
+        "torch": "torch==2.4.0+cu124",
         "numpy": "numpy",
         "stable_whisper": "stable-ts",
     },
@@ -48,7 +48,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "uvicorn": "uvicorn",
         "multipart": "python-multipart",
         "transformers": "transformers>=4.40.0",
-        "torch": "torch",
+        "torch": "torch==2.4.0+cu124",
         "accelerate": "accelerate>=0.27.0",
         "tokenizers": "tokenizers>=0.22.0",
         "safetensors": "safetensors>=0.4.3",
@@ -74,7 +74,7 @@ aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
         "fastapi": "fastapi",
         "uvicorn": "uvicorn",
         "multipart": "python-multipart",
-        "torch": "torch",
+        "torch": "torch==2.4.0+cu124",
         "torchvision": "torchvision",
         "PIL": "pillow",
         "numpy": "numpy",
@@ -157,7 +157,22 @@ def aenv_install_profile_data(profile_id: str, packages: list[str] | None = None
 
     aenv_ensure_venv_ready_data()
     venv_python = aenv_get_venv_python_path_data()
-    subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *packages_to_install])
+
+    # Add PyTorch CUDA index URL when any package requires a +cu build.
+    # If the CUDA install fails (e.g. no NVIDIA GPU), fall back to CPU-only packages.
+    _PYTORCH_CUDA_INDEX = "https://download.pytorch.org/whl/cu124"
+    needs_cuda_index = any("+cu" in pkg for pkg in packages_to_install)
+    extra_args = ["--extra-index-url", _PYTORCH_CUDA_INDEX] if needs_cuda_index else []
+
+    try:
+        subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *extra_args, *packages_to_install])
+    except subprocess.CalledProcessError:
+        if needs_cuda_index:
+            # Strip +cu version pins and retry without the CUDA index
+            cpu_packages = [pkg.split("+")[0] if "+cu" in pkg else pkg for pkg in packages_to_install]
+            subprocess.check_call([str(venv_python), "-m", "pip", "install", "-U", *cpu_packages])
+        else:
+            raise
 
     # Invalidate importlib caches so find_spec() picks up newly installed
     # packages without requiring a server restart.

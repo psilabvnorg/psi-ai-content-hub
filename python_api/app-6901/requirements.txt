@@ -5,7 +5,8 @@ requests>=2.31.0
 yt-dlp
 edge-tts
 openai-whisper
-torch
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.4.0+cu124
 torchvision
 numpy
 pillow
