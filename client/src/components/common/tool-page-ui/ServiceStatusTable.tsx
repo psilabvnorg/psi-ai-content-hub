@@ -104,7 +104,7 @@ export function ServiceStatusTable({
                     {serverRow.showActionButton && serverRow.onAction && (
                       <Button
                         size="sm"
-                        variant={!serverUnreachable ? "destructive" : "default"}
+                        variant={serverRow.actionButtonVariant ?? (!serverUnreachable ? "destructive" : "default")}
                         onClick={serverRow.onAction}
                         className="ml-2"
                         disabled={serverRow.actionDisabled || serverRow.actionLoading}
@@ -172,7 +172,7 @@ export function ServiceStatusTable({
                     {row.showActionButton && row.onAction && (
                       <Button
                         size="sm"
-                        variant="default"
+                        variant={row.actionButtonVariant ?? "default"}
                         onClick={row.onAction}
                         className="ml-2"
                         disabled={row.actionDisabled || row.actionLoading}
@@ -190,7 +190,7 @@ export function ServiceStatusTable({
                     {row.showSecondaryAction && row.onSecondaryAction && (
                       <Button
                         size="sm"
-                        variant="default"
+                        variant={row.secondaryActionButtonVariant ?? "default"}
                         onClick={row.onSecondaryAction}
                         className="ml-2"
                       >

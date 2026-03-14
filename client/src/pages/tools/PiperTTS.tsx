@@ -31,6 +31,13 @@ type GenerateResponse = {
   normalized_text: string;
 };
 
+type PiperModelStatus = {
+  installed: boolean;
+  espeak_ng?: { exists: boolean; path: string };
+  tts_model?: { exists: boolean; path: string };
+  model_dir?: string;
+};
+
 export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { t } = useI18n();
 
@@ -47,6 +54,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string | null>(null);
   const [serverUnreachable, setServerUnreachable] = useState(false);
+  const [piperModelStatus, setPiperModelStatus] = useState<PiperModelStatus | null>(null);
   const [playingDemo, setPlayingDemo] = useState<string | null>(null);
   const demoAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -55,9 +63,13 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=${language}`);
-      if (!res.ok) throw new Error("unreachable");
+      const [voicesRes, modelRes] = await Promise.all([
+        fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=${language}`),
+        fetch(`${APP_API_URL}/api/v1/piper-tts/model-status`),
+      ]);
+      if (!voicesRes.ok) throw new Error("unreachable");
       setServerUnreachable(false);
+      if (modelRes.ok) setPiperModelStatus(await modelRes.json());
     } catch {
       setServerUnreachable(true);
     }
@@ -82,6 +94,13 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   useEffect(() => {
     fetchVoices(language);
   }, [language]);
+
+  useEffect(() => {
+    fetch(`${APP_API_URL}/api/v1/piper-tts/model-status`)
+      .then((r) => r.json())
+      .then((d) => setPiperModelStatus(d as PiperModelStatus))
+      .catch(() => {});
+  }, []);
 
   const handlePlayDemo = (voice: Voice) => {
     if (!voice.demo_url) return;
@@ -179,6 +198,16 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
       showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
       secondaryActionLabel: t("tool.common.open_settings"),
       onSecondaryAction: onOpenSettings,
+    },
+    {
+      id: "piper-model",
+      label: "Piper TTS Model",
+      isReady: piperModelStatus?.installed === true,
+      path: piperModelStatus?.model_dir || "--",
+      showActionButton: !serverUnreachable && piperModelStatus?.installed === false && Boolean(onOpenSettings),
+      actionButtonLabel: t("tool.common.open_settings"),
+      actionButtonVariant: "outline",
+      onAction: onOpenSettings,
     },
   ];
 

@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL, F5_API_URL } from "@/lib/api";
 import { useManagedServices } from "@/hooks/useManagedServices";
-import { CheckCircle, Download, Loader2, Mic, RefreshCw, Upload, XCircle } from "lucide-react";
+import { Download, Loader2, Mic, RefreshCw, Upload } from "lucide-react";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 
 const MAX_CHARS = 500;
 
@@ -106,10 +107,8 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
   const setupLogRef = useRef<HTMLDivElement>(null);
   const generateLogRef = useRef<HTMLDivElement>(null);
 
-  const { servicesById, start, stop, restart, isBusy } = useManagedServices();
+  const { servicesById, restart } = useManagedServices();
   const serviceStatus = servicesById.f5;
-  const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("f5");
 
   const charCount = text.length;
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
@@ -209,18 +208,6 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
       void fetchRegisteredVoices(language);
     }
   }, [serviceStatus?.status]);
-
-  const handleToggleServer = async () => {
-    if (!serviceStatus) return;
-    if (serviceRunning) {
-      await stop("f5");
-      setStatus({ server_unreachable: true });
-      return;
-    }
-    await start("f5");
-    await fetchStatus();
-    await fetchRegisteredVoices(language);
-  };
 
   const handleSampleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
@@ -500,85 +487,40 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
     [generateProgress]
   );
 
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.voice_clone.server_status"),
+      isReady: !serverUnreachable,
+      path: F5_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+    {
+      id: "env",
+      label: t("tool.voice_clone.env_status"),
+      isReady: status?.env?.installed === true,
+      path: status?.env?.installed_modules?.length
+        ? status.env.installed_modules.join(", ")
+        : status?.env?.missing?.length
+        ? status.env.missing.join(", ")
+        : "--",
+      showActionButton: !serverUnreachable && !status?.env?.installed && !!onOpenSettings,
+      actionButtonLabel: t("tool.common.open_settings"),
+      actionButtonVariant: "outline",
+      onAction: onOpenSettings,
+    },
+  ];
+
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.voice_clone.service_status")}</h3>
-            <Button size="sm" variant="outline" onClick={() => { void fetchStatus(); }}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
-                  <TableHead>{t("settings.tools.table.status")}</TableHead>
-                  <TableHead>{t("settings.tools.table.path")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.server_status")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {!serverUnreachable ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {serviceStatus && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { void handleToggleServer(); }}
-                          disabled={serviceBusy || serviceStatus.status === "not_configured"}
-                          className="ml-2"
-                        >
-                          {serviceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                          {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">{F5_API_URL}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.env_status")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {status?.env?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {!serverUnreachable && !status?.env?.installed && onOpenSettings && (
-                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                          {t("tool.common.open_settings")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">
-                    {status?.env?.installed_modules?.length
-                      ? status.env.installed_modules.join(", ")
-                      : status?.env?.missing?.length
-                        ? status.env.missing.join(", ")
-                        : "--"}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <ServiceStatusTable
+          serverUnreachable={serverUnreachable}
+          rows={statusRows}
+          onRefresh={fetchStatus}
+        />
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.select_mode")}</label>

@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, Loader2, Download, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Mic, Loader2, Download } from "lucide-react";
 import { useI18n } from "@/i18n/i18n";
 import { APP_API_URL, F5_API_URL } from "@/lib/api";
-import { useManagedServices } from "@/hooks/useManagedServices";
+import { ServiceStatusTable } from "@/components/common/tool-page-ui";
+import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 const MAX_CHARS = 500;
 
 type Voice = {
@@ -70,11 +70,6 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
   const [removeSilence, setRemoveSilence] = useState(false);
   const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const [isNormalizing, setIsNormalizing] = useState(false);
-  const { servicesById, start, stop, isBusy } = useManagedServices();
-  const serviceStatus = servicesById.f5;
-  const serviceRunning = serviceStatus?.status === "running";
-  const serviceBusy = isBusy("f5");
-
   const charCount = text.length;
   const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
@@ -147,26 +142,6 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     fetchVoices(language);
   }, [language]);
 
-  useEffect(() => {
-    if (!serviceStatus) return;
-    if (serviceStatus.status === "running" || serviceStatus.status === "stopped") {
-      fetchStatus();
-      fetchVoices(language);
-    }
-  }, [serviceStatus?.status]);
-
-  const handleToggleServer = async () => {
-    if (!serviceStatus) return;
-    if (serviceRunning) {
-      await stop("f5");
-      setStatus({ server_unreachable: true });
-      return;
-    }
-    await start("f5");
-    await fetchStatus();
-    await fetchVoices(language);
-  };
-
   const handleGenerate = async () => {
     if (!text.trim() || !selectedVoice || overLimit) return;
     setIsGenerating(true);
@@ -237,135 +212,62 @@ export default function VoiceClone({ onOpenSettings }: { onOpenSettings?: () => 
     return Math.max(0, Math.min(100, progress?.percent || 0));
   }, [progress]);
 
+  const statusRows: StatusRowConfig[] = [
+    {
+      id: "server",
+      label: t("tool.voice_clone.server_status"),
+      isReady: !serverUnreachable,
+      path: F5_API_URL,
+      showSecondaryAction: serverUnreachable && Boolean(onOpenSettings),
+      secondaryActionLabel: t("tool.common.open_settings"),
+      onSecondaryAction: onOpenSettings,
+    },
+    {
+      id: "env",
+      label: t("tool.voice_clone.env_status"),
+      isReady: status?.env?.installed === true,
+      path: status?.env?.installed_modules?.length
+        ? status.env.installed_modules.join(", ")
+        : status?.env?.missing?.length
+        ? status.env.missing.join(", ")
+        : "--",
+      showActionButton: !serverUnreachable && !status?.env?.installed && !!onOpenSettings,
+      actionButtonLabel: t("tool.common.open_settings"),
+      actionButtonVariant: "outline",
+      onAction: onOpenSettings,
+    },
+    {
+      id: "model-vi",
+      label: t("tool.voice_clone.model_status_vn"),
+      isReady: status?.models?.vi?.installed === true,
+      path: status?.models?.vi?.model_file || "--",
+      showActionButton: !serverUnreachable && !status?.models?.vi?.installed && !!onOpenSettings,
+      actionButtonLabel: t("tool.common.open_settings"),
+      actionButtonVariant: "outline",
+      onAction: onOpenSettings,
+    },
+    {
+      id: "model-en",
+      label: t("tool.voice_clone.model_status_en"),
+      isReady: status?.models?.en?.installed === true,
+      path: status?.models?.en?.model_file || "--",
+      showActionButton: !serverUnreachable && !status?.models?.en?.installed && !!onOpenSettings,
+      actionButtonLabel: t("tool.common.open_settings"),
+      actionButtonVariant: "outline",
+      onAction: onOpenSettings,
+    },
+  ];
+
   return (
     <Card className="w-full border-none shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-card">
       <CardContent className="p-8 space-y-6">
         
         {/* Status Table */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground/85">{t("tool.voice_clone.service_status")}</h3>
-            <Button size="sm" variant="outline" onClick={fetchStatus}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("settings.tools.table.tool")}</TableHead>
-                  <TableHead>{t("settings.tools.table.status")}</TableHead>
-                  <TableHead>{t("settings.tools.table.path")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.server_status")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {!serverUnreachable ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {!serverUnreachable ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {serviceStatus && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleToggleServer}
-                          disabled={serviceBusy || serviceStatus.status === "not_configured"}
-                          className="ml-2"
-                        >
-                          {serviceBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                          {serviceRunning ? t("tool.common.stop_server") : t("tool.common.start_server")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">
-                    {F5_API_URL}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.env_status")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {status?.env?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {status?.env?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {!serverUnreachable && !status?.env?.installed && onOpenSettings && (
-                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                          {t("tool.common.open_settings")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">
-                    {status?.env?.installed_modules?.length
-                      ? status.env.installed_modules.join(", ")
-                      : status?.env?.missing?.length
-                      ? status.env.missing.join(", ")
-                      : "--"}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_vn")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {status?.models?.vi?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {status?.models?.vi?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {!serverUnreachable && !status?.models?.vi?.installed && onOpenSettings && (
-                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                          {t("tool.common.open_settings")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">
-                    {status?.models?.vi?.model_file || "--"}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">{t("tool.voice_clone.model_status_en")}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {status?.models?.en?.installed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {status?.models?.en?.installed ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
-                      </span>
-                      {!serverUnreachable && !status?.models?.en?.installed && onOpenSettings && (
-                        <Button size="sm" variant="outline" onClick={onOpenSettings} className="ml-2">
-                          {t("tool.common.open_settings")}
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono break-all">
-                    {status?.models?.en?.model_file || "--"}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <ServiceStatusTable
+          serverUnreachable={serverUnreachable}
+          rows={statusRows}
+          onRefresh={fetchStatus}
+        />
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.voice_clone.select_mode")}</label>

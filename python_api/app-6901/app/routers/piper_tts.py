@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import List
+from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from python_api.common.jobs import JobStore
+from python_api.common.progress import ProgressStore
 from ..deps import get_job_store
 from ..services import piper_tts_service as svc
 from ..services.text_normalizer.text_processor import (
@@ -18,6 +21,8 @@ from ..services.text_normalizer.text_processor import (
 )
 
 router = APIRouter(prefix="/api/v1/piper-tts", tags=["piper-tts"])
+
+_download_progress = ProgressStore()
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "services" / "text_normalizer" / "data"
 _acronym_map = _load_csv_map(str(_DATA_DIR / "acronyms.csv"))
@@ -47,7 +52,50 @@ def _normalize_and_chunk(text: str, language: str) -> List[str]:
         return chunk_text_i18n(normalized)
 
 
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+def _download_models_worker(task_id: str) -> None:
+    try:
+        _download_progress.set_progress(task_id, "starting", 0, "Starting download from HuggingFace...")
+        from huggingface_hub import snapshot_download  # type: ignore
+        svc._FINETUNE_DIR.mkdir(parents=True, exist_ok=True)
+        _download_progress.set_progress(task_id, "downloading", 10, "Downloading eSpeak NG...")
+        snapshot_download(
+            repo_id="psilab/piper-tts-finetune",
+            local_dir=str(svc._FINETUNE_DIR),
+            allow_patterns=["eSpeak NG/**"],
+        )
+        _download_progress.set_progress(task_id, "downloading", 60, "Downloading TTS models...")
+        snapshot_download(
+            repo_id="psilab/piper-tts-finetune",
+            local_dir=str(svc._FINETUNE_DIR),
+            allow_patterns=["tts-model/**"],
+        )
+        _download_progress.set_progress(task_id, "complete", 100, "Models downloaded successfully.")
+    except Exception as exc:
+        _download_progress.set_progress(task_id, "error", 0, str(exc))
+
+
 # ── endpoints ────────────────────────────────────────────────────────────────
+
+@router.get("/model-status")
+def get_model_status() -> dict:
+    espeak_ok = svc._ESPEAK_DIR.exists()
+    model_ok = svc._MODEL_DIR.exists()
+    return {
+        "installed": espeak_ok and model_ok,
+        "espeak_ng": {"exists": espeak_ok, "path": str(svc._ESPEAK_DIR)},
+        "tts_model": {"exists": model_ok, "path": str(svc._MODEL_DIR)},
+        "model_dir": str(svc._FINETUNE_DIR),
+    }
+
+
+@router.post("/download-models")
+def download_models() -> StreamingResponse:
+    task_id = uuid4().hex
+    threading.Thread(target=_download_models_worker, args=(task_id,), daemon=True).start()
+    return StreamingResponse(_download_progress.sse_stream(task_id), media_type="text/event-stream")
+
 
 @router.get("/voices")
 def get_voices(language: str | None = Query(default=None)) -> dict:

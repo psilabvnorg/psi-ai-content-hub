@@ -29,11 +29,13 @@ export type StatusRowConfig = {
   path?: string;
   showActionButton?: boolean;
   actionButtonLabel?: string;
+  actionButtonVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   actionDisabled?: boolean;
   actionLoading?: boolean;
   onAction?: () => void;
   showSecondaryAction?: boolean;
   secondaryActionLabel?: string;
+  secondaryActionButtonVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   onSecondaryAction?: () => void;
 };
 

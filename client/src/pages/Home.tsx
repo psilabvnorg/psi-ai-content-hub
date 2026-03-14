@@ -32,6 +32,7 @@ const basicToolSections: BasicToolSection[] = [
       { id: "tts-fast", titleKey: "feature.tool.tts_fast.title" as I18nKey, icon: Play, descriptionKey: "feature.tool.tts_fast.desc" as I18nKey },
       { id: "piper-tts", titleKey: "feature.tool.piper_tts.title" as I18nKey, icon: Volume2, descriptionKey: "feature.tool.piper_tts.desc" as I18nKey },
       { id: "voice-clone", titleKey: "feature.tool.voice_clone.title" as I18nKey, icon: Mic, descriptionKey: "feature.tool.voice_clone.desc" as I18nKey },
+      { id: "voice-clone-custom", titleKey: "feature.tool.voice_clone_custom.title" as I18nKey, icon: Mic, descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey },
       { id: "stt", titleKey: "feature.tool.stt.title" as I18nKey, icon: Languages, descriptionKey: "feature.tool.stt.desc" as I18nKey },
       { id: "mp3-to-wav", titleKey: "feature.tool.mp3_to_wav.title" as I18nKey, icon: FileAudio, descriptionKey: "feature.tool.mp3_to_wav.desc" as I18nKey },
       { id: "trim-audio", titleKey: "feature.tool.trim_audio.title" as I18nKey, icon: Scissors, descriptionKey: "feature.tool.trim_audio.desc" as I18nKey },
@@ -82,12 +83,6 @@ const basicToolSections: BasicToolSection[] = [
 ];
 
 const advancedTools = [
-  {
-    id: "voice-clone-custom",
-    titleKey: "feature.tool.voice_clone_custom.title" as I18nKey,
-    icon: Mic,
-    descriptionKey: "feature.tool.voice_clone_custom.desc" as I18nKey,
-  },
   {
     id: "reup-youtube",
     titleKey: "feature.workflow.reup_youtube.title" as I18nKey,

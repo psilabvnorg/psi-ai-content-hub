@@ -379,6 +379,8 @@ export default function Settings() {
   const [f5Status, setF5Status] = useState<F5StatusData | null>(null);
   const [f5ModelProgress, setF5ModelProgress] = useState<Partial<Record<F5Language, ProgressData>>>({});
   const [f5EnvProgress, setF5EnvProgress] = useState<ProgressData | null>(null);
+  const [piperTtsModelStatus, setPiperTtsModelStatus] = useState<{ installed: boolean; espeak_ng?: { exists: boolean; path: string }; tts_model?: { exists: boolean; path: string }; model_dir?: string } | null>(null);
+  const [piperTtsDownloadProgress, setPiperTtsDownloadProgress] = useState<ProgressData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [logsServerUnreachable, setLogsServerUnreachable] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -878,6 +880,30 @@ export default function Settings() {
     }
   };
 
+  const fetchPiperTtsModelStatus = async () => {
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/piper-tts/model-status`);
+      if (!res.ok) throw new Error("piper tts status failed");
+      setPiperTtsModelStatus(await res.json());
+    } catch {
+      setPiperTtsModelStatus(null);
+    }
+  };
+
+  const handlePiperTtsDownloadModels = async () => {
+    setPiperTtsDownloadProgress({ status: "starting", percent: 0, message: "Downloading Piper TTS models..." });
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/piper-tts/download-models`, { method: "POST" });
+      if (!res.ok) throw new Error("Download request failed");
+      await consumeSseStream(res, (data) => setPiperTtsDownloadProgress(data));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Download failed";
+      setPiperTtsDownloadProgress({ status: "error", percent: 0, message });
+    } finally {
+      void fetchPiperTtsModelStatus();
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
     fetchWhisperStatus();
@@ -886,6 +912,7 @@ export default function Settings() {
     fetchImageFinderStatus();
     fetchToolsStatus();
     fetchF5Status();
+    fetchPiperTtsModelStatus();
     refreshServices();
     fetchLogTail();
   }, []);
@@ -932,6 +959,7 @@ export default function Settings() {
     fetchTranslationStatus();
     fetchImageFinderStatus();
     fetchToolsStatus();
+    fetchPiperTtsModelStatus();
     refreshServices();
   };
 
@@ -946,6 +974,7 @@ export default function Settings() {
   const translationModelLoaded = Boolean(translationModelStatus?.loaded);
   const bgRemoveModelDownloaded = Boolean(bgRemoveStatus?.model_downloaded);
   const bgRemoveModelLoaded = Boolean(bgRemoveStatus?.model_loaded);
+  const piperTtsModelInstalled = Boolean(piperTtsModelStatus?.installed);
 
   const prevAppServiceRunning = useRef<boolean | null>(null);
   useEffect(() => {
@@ -1058,7 +1087,8 @@ export default function Settings() {
                         !bgRemoveEnv?.installed ||
                         !whisperModelDownloaded ||
                         !translationModelDownloaded ||
-                        !bgRemoveModelDownloaded
+                        !bgRemoveModelDownloaded ||
+                        !piperTtsModelInstalled
                       );
                       return (
                         <div className="flex items-center gap-2">
@@ -1431,6 +1461,59 @@ export default function Settings() {
                             <span>{bgRemoveProgress.percent ?? 0}%</span>
                           </div>
                           <Progress value={bgRemoveProgress.percent ?? 0} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell className="font-medium">Piper TTS Model</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {piperTtsModelInstalled ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className="text-sm">
+                        {piperTtsModelInstalled ? t("settings.tools.status.ready") : t("settings.tools.status.not_ready")}
+                      </span>
+                      {!piperTtsModelInstalled && piperTtsModelStatus && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ({[
+                            !piperTtsModelStatus.espeak_ng?.exists && "eSpeak NG",
+                            !piperTtsModelStatus.tts_model?.exists && "tts-model",
+                          ].filter(Boolean).join(", ")} missing)
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono break-all">
+                    {piperTtsModelStatus?.model_dir || "--"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2">
+                      {appServiceRunning && !piperTtsModelInstalled && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { void handlePiperTtsDownloadModels(); }}
+                          disabled={Boolean(piperTtsDownloadProgress?.status && !["complete", "error"].includes(piperTtsDownloadProgress.status))}
+                        >
+                          {piperTtsDownloadProgress?.status && !["complete", "error"].includes(piperTtsDownloadProgress.status) ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : null}
+                          Download Model
+                        </Button>
+                      )}
+                      {piperTtsDownloadProgress && (
+                        <div className="space-y-1 min-w-[160px]">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{piperTtsDownloadProgress.message}</span>
+                            <span>{piperTtsDownloadProgress.percent ?? 0}%</span>
+                          </div>
+                          <Progress value={piperTtsDownloadProgress.percent ?? 0} className="h-1.5" />
                         </div>
                       )}
                     </div>
