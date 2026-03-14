@@ -736,6 +736,9 @@ def clean_text_for_tts(text: str, lang: str = 'vi') -> str:
         text = re.sub(r'\b_\b', ' ', text)
         text = re.sub(r'(?<!\d)-(?!\d)', ' ', text)
         text = re.sub(r'[^\u0000-\u024F\u1E00-\u1EFF]', '', text)
+    # Replace commas with periods so chunk_text / chunk_text_i18n splits
+    # at every comma boundary → shorter chunks → better per-sentence prosody.
+    text = text.replace(',', '.')
     return text.strip()
 
 
