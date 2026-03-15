@@ -185,6 +185,18 @@ const a_render_batch_payload_data = async (a_payload_data) => {
   const a_batch_directory_path_data = path.join(a_temp_directory_path_data, `thumbnail_bridge_batch_${Date.now()}`);
   fs.mkdirSync(a_batch_directory_path_data, { recursive: true });
 
+  // Throwaway warm-up render — fonts render incorrectly on the very first
+  // canvas draw after being loaded. This sacrificial render absorbs that hit
+  // so all real renders below are effectively "second runs".
+  try {
+    const a_warmup_placeholder_map_data = {};
+    const a_first_row_data = a_row_list_data[0] || {};
+    Object.keys(a_first_row_data).forEach((a_key_text_data) => {
+      a_warmup_placeholder_map_data[String(a_key_text_data)] = String(a_first_row_data[a_key_text_data] ?? '');
+    });
+    await a_render_thumbnail_data_url_via_hidden_window_data(a_template_data, a_warmup_placeholder_map_data);
+  } catch (_a_warmup_error_data) { /* ignore — warm-up failure must not abort the batch */ }
+
   const a_success_item_list_data = [];
   const a_failure_item_list_data = [];
 

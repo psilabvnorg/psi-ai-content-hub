@@ -3,9 +3,9 @@
   "imageDurationInFrames": 170,
   "backgroundOverlayImage": "main/news/template-vertical-background/theanh-28/bg-overlay.png",
   "introProps": {
-    "image1": "https://i1-kinhdoanh.vnecdn.net/2026/03/15/huy-0453-1773550815-4646-1773550916.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=UWHm8FuKW1yllatPAr_IEQ",
+    "image1": "https://i2-vnexpress.vnecdn.net/2026/03/15/Iran-1773591368-5036-1773591739.png?w=1200&h=0&q=100&dpr=1&fit=crop&s=5i-AmM6uTqy141dD78Q3Gg",
     "heroImage": "main/news/template-vertical-background/theanh-28/hero.png",
-    "image2": "http://127.0.0.1:6901/api/v1/files/file_3d49d0827578429bbb44463729f064cf"
+    "image2": "http://127.0.0.1:6901/api/v1/files/file_817ab85342204254b64476af82fad1b9"
   },
   "backgroundMusicVolume": 0.36,
   "backgroundMusic": "background-music/review-film.mp3"

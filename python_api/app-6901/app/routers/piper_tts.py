@@ -90,20 +90,13 @@ def generate(
     voice_id = str(payload.get("voice_id") or "").strip()
     language = str(payload.get("language") or "vi").strip().lower()
     speed = float(payload.get("speed") or 1.0)
-    normalize = bool(payload.get("normalize", True))
 
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
     if not voice_id:
         raise HTTPException(status_code=400, detail="voice_id is required")
 
-    if normalize:
-        chunks = _normalize_and_chunk(text, language)
-    else:
-        # No normalization: treat the raw text as a single chunk,
-        # still force a trailing period so the model gets a clean EOS.
-        raw = text if text[-1] in ".!?" else text + "."
-        chunks = [raw]
+    chunks = _normalize_and_chunk(text, language)
 
     if not chunks:
         raise HTTPException(status_code=400, detail="text is empty after normalization")

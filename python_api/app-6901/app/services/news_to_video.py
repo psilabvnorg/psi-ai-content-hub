@@ -671,6 +671,12 @@ def start_quick_generate(
             raw_text = "\n".join(paragraphs)
             quick_generate_progress_store.set_progress(task_id, "scraping", 10, f"Scraped: {title[:60]}")
 
+            # ── Debug: save article JSON and raw text ────────────────────────
+            (work_dir / "article.json").write_text(
+                json.dumps(article, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            (work_dir / "raw_text.txt").write_text(raw_text, encoding="utf-8")
+
             # ── Step 2: Generate thumbnail ───────────────────────────────────
             tmpl = QUICK_TEMPLATES[template_id]
             thumbnail_template_name = tmpl.get("thumbnail_template")
@@ -719,6 +725,15 @@ def start_quick_generate(
                     quick_generate_progress_store.set_progress(
                         task_id, "generating_thumbnail", 18, "Thumbnail generated."
                     )
+                    # ── Debug: save thumbnail image ──────────────────────────
+                    if image2:
+                        (work_dir / "thumbnail_url.txt").write_text(image2, encoding="utf-8")
+                        try:
+                            img_resp = httpx.get(image2, timeout=30.0)
+                            img_resp.raise_for_status()
+                            (work_dir / "thumbnail.png").write_bytes(img_resp.content)
+                        except Exception as dl_exc:
+                            log(f"Thumbnail debug save failed: {dl_exc}", "warn", log_name="app-service.log")
                 except Exception as thumb_exc:
                     log(f"Thumbnail generation skipped: {thumb_exc}", "warn", log_name="app-service.log")
 
@@ -735,11 +750,14 @@ def start_quick_generate(
                 raise RuntimeError("Text normalization produced empty result")
             quick_generate_progress_store.set_progress(task_id, "normalizing", 20, "Text normalized.")
 
-            # ── Step 3: TTS ──────────────────────────────────────────────────
+            # ── Debug: save normalized text ──────────────────────────────────
+            (work_dir / "normalized_text.txt").write_text(normalized_text, encoding="utf-8")
+
+            # ── Step 4: TTS ──────────────────────────────────────────────────
             quick_generate_progress_store.set_progress(task_id, "tts", 25, "Generating TTS audio...")
             resp = httpx.post(
                 f"{BASE}/api/v1/piper-tts/generate",
-                json={"text": normalized_text, "voice_id": voice_id, "language": "vi", "normalize": False},
+                json={"text": normalized_text, "voice_id": voice_id, "language": "vi"},
                 timeout=300.0,
             )
             resp.raise_for_status()
@@ -870,7 +888,7 @@ def start_quick_generate(
                 task_id, "downloading_images", 88, f"Downloaded {len(saved_images)} images."
             )
 
-            # ── Step 8: Build config ─────────────────────────────────────────
+            # ── Step 7: Build config ─────────────────────────────────────────
             quick_generate_progress_store.set_progress(task_id, "building_config", 93, "Building video config...")
             intro_props: dict[str, str] = {
                 "image1": image1,
@@ -892,10 +910,11 @@ def start_quick_generate(
             }
             quick_generate_progress_store.set_progress(task_id, "building_config", 97, "Config assembled.")
 
-            # ── Step 8: Store result ─────────────────────────────────────────
+            # ── Step 8: Store result ────────────────────────────────────────
             _set_quick_generate_result(task_id, {
                 "status": "complete",
                 "created_at": time.time(),
+                "render_profile": render_profile,
                 "config": config,
                 "audio_path": str(audio_path),
                 "transcript_path": str(transcript_path),

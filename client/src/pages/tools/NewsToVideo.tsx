@@ -287,7 +287,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // ── Config mode: "ui" uses UI fields, "json" uses textarea directly ──
-  const [configMode, setConfigMode] = useState<"ui" | "json">("ui");
+  const [configMode, setConfigMode] = useState<"ui" | "json">("json");
 
   // ── JSON Config (independent from UI fields) ──
   const [jsonConfigText, setJsonConfigText] = useState(() => {
@@ -444,28 +444,20 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   // ── Quick Generate state ──
   const [quickTemplate, setQuickTemplate] = useState<QuickTemplateId>("dff");
   const [quickUrl, setQuickUrl] = useState("");
-  const [quickVoiceId, setQuickVoiceId] = useState("");
-  const [quickVoices, setQuickVoices] = useState<PiperVoice[]>([]);
+  const QUICK_VOICES = [
+    { id: "vi/mytam2",        name: "Mỹ Tâm" },
+    { id: "vi/ngochuyen",     name: "Ngọc Huyền - Review Film" },
+    { id: "vi/minhkhang",     name: "Minh Khang - Thời Sự" },
+    { id: "vi/tranthanh3870", name: "Trấn Thành" },
+  ];
+
+  const [quickVoiceId, setQuickVoiceId] = useState("vi/ngochuyen");
   const [isQuickGenerating, setIsQuickGenerating] = useState(false);
   const [quickCurrentStep, setQuickCurrentStep] = useState<string | null>(null);
   const [quickPercent, setQuickPercent] = useState(0);
   const [quickMessage, setQuickMessage] = useState("");
   const [quickResult, setQuickResult] = useState<QuickGenerateResult | null>(null);
   const [quickError, setQuickError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=vi`)
-      .then((r) => r.json())
-      .then((data: { voices?: PiperVoice[] }) => {
-        const voices = data.voices ?? [];
-        setQuickVoices(voices);
-        if (voices.length > 0) {
-          const first = voices[0];
-          setQuickVoiceId((typeof first === "string" ? first : first.id ?? "") as string);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const handleQuickGenerate = async () => {
     if (!quickUrl.trim() || !quickVoiceId || isQuickGenerating) return;
@@ -501,6 +493,8 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
       if (!resultRes.ok) throw new Error("Failed to fetch quick generate result");
       const result = (await resultRes.json()) as QuickGenerateResult;
       setQuickResult(result);
+      setJsonConfigText(JSON.stringify(result.config, null, 2));
+      setConfigMode("json");
       setQuickCurrentStep("complete");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Quick generate failed";
@@ -931,22 +925,16 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           {/* Voice selector */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase text-muted-foreground">Piper TTS Voice</label>
-            {quickVoices.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Loading voices...</p>
-            ) : (
-              <Select value={quickVoiceId} onValueChange={setQuickVoiceId} disabled={isQuickGenerating}>
-                <SelectTrigger className="border-border bg-card">
-                  <SelectValue placeholder="Select a voice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {quickVoices.map((v, i) => {
-                    const vid = (typeof v === "string" ? v : v.id ?? String(i)) as string;
-                    const vname = (typeof v === "string" ? v : v.name ?? vid) as string;
-                    return <SelectItem key={vid} value={vid}>{vname}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            )}
+            <Select value={quickVoiceId} onValueChange={setQuickVoiceId} disabled={isQuickGenerating}>
+              <SelectTrigger className="border-border bg-card">
+                <SelectValue placeholder="Select a voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {QUICK_VOICES.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Generate button */}
@@ -1040,6 +1028,13 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           )}
         </div>
 
+        {/* Advanced Config */}
+        <details className="rounded-xl border border-border bg-muted/10">
+          <summary className="cursor-pointer select-none px-4 py-3 font-bold text-sm uppercase tracking-wide text-foreground hover:bg-muted/30 rounded-xl">
+            Advanced Config
+          </summary>
+          <div className="px-4 pb-4 pt-3 space-y-6 border-t border-border">
+
         {/* Step 1 — Template */}
         <div className="space-y-3">
           <h3 className="text-sm font-bold uppercase">Step 1 — Select Template</h3>
@@ -1056,11 +1051,7 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">{selectedTemplate.desc}</p>
-          <details className="rounded-lg border border-border bg-muted/30 text-xs">
-            <summary className="cursor-pointer select-none px-3 py-2 font-semibold text-foreground hover:bg-muted/50 rounded-lg">
-              Details Config
-            </summary>
-          <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
+          <div className="space-y-3 text-xs">
 
             {/* Hidden file inputs for config asset uploads */}
             <input ref={bgOverlayFileRef} type="file" accept="image/*" className="hidden"
@@ -1229,7 +1220,6 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             </div>
 
           </div>
-          </details>
         </div>
 
         {/* Step 2 — Audio + Transcript */}
@@ -1376,6 +1366,9 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             </>
           )}
         </div>
+
+          </div>
+        </details>
 
         {/* JSON Config */}
         <div className="space-y-3">
