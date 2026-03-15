@@ -1,11 +1,11 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "main/news/template-vertical-background/dff/bg-overlay.png",
+  "backgroundOverlayImage": "main/news/template-vertical-background/theanh-28/bg-overlay.png",
   "introProps": {
-    "image1": "https://i1-kinhdoanh.vnecdn.net/2026/03/14/viathantai-18-8366-1773456658.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=K79uqIfZ0bkMzRxmdSZswg",
-    "heroImage": "main/news/template-vertical-background/dff/hero.png",
-    "image2": "http://127.0.0.1:6901/api/v1/files/file_595e6c8d31944a19903f23271241dd5a"
+    "image1": "https://i1-kinhdoanh.vnecdn.net/2026/03/15/huy-0453-1773550815-4646-1773550916.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=UWHm8FuKW1yllatPAr_IEQ",
+    "heroImage": "main/news/template-vertical-background/theanh-28/hero.png",
+    "image2": "http://127.0.0.1:6901/api/v1/files/file_3d49d0827578429bbb44463729f064cf"
   },
   "backgroundMusicVolume": 0.36,
   "backgroundMusic": "background-music/review-film.mp3"

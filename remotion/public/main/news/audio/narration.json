@@ -1,229 +1,8704 @@
 {
   "segments": [
     {
-      "start": 0.08,
-      "end": 1.83,
-      "text": " mỗi lượng vàng miếng hôm nay giảm hai.hai"
+      "start": 0.06,
+      "end": 2.48,
+      "text": " thủ đô dự kiến hình thành trung tâm tài chính với hai hợp phần.",
+      "seek": null,
+      "tokens": [
+        258,
+        28903,
+        2934,
+        2851,
+        274,
+        14522,
+        6315,
+        16240,
+        276,
+        10116,
+        39953,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        18916,
+        21822,
+        276,
+        27836,
+        79,
+        903,
+        18241,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thủ",
+          "start": 0.06,
+          "end": 0.06,
+          "probability": 0.5073273964226246,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 0.06,
+          "end": 0.22,
+          "probability": 0.9950340688228607,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " dự",
+          "start": 0.22,
+          "end": 0.4,
+          "probability": 0.9973671436309814,
+          "tokens": [
+            274,
+            14522
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 0.4,
+          "end": 0.54,
+          "probability": 0.9995751976966858,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " hình",
+          "start": 0.54,
+          "end": 0.74,
+          "probability": 0.9995742440223694,
+          "tokens": [
+            276,
+            10116
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 0.74,
+          "end": 0.86,
+          "probability": 0.9957385063171387,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 0.86,
+          "end": 1.1,
+          "probability": 0.9772632122039795,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 1.1,
+          "end": 1.3,
+          "probability": 0.9963959455490112,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 1.3,
+          "end": 1.48,
+          "probability": 0.9971286058425903,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 1.48,
+          "end": 1.68,
+          "probability": 0.9991175532341003,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " với",
+          "start": 1.68,
+          "end": 1.9,
+          "probability": 0.9801192283630371,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 1.9,
+          "end": 2.06,
+          "probability": 0.2838113009929657,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " hợp",
+          "start": 2.06,
+          "end": 2.22,
+          "probability": 0.9979504148165385,
+          "tokens": [
+            276,
+            27836,
+            79
+          ]
+        },
+        {
+          "word": " phần.",
+          "start": 2.22,
+          "end": 2.48,
+          "probability": 0.6629974735042197,
+          "tokens": [
+            903,
+            18241,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 2.0,
-      "end": 4.18,
-      "text": " triệu đồng về một trăm tám mươi hai.sáu triệu."
+      "start": 2.54,
+      "end": 5.22,
+      "text": " gồm trung tâm tài chính hoàn kiếm và tại trục nhật tân nội bài.",
+      "seek": null,
+      "tokens": [
+        290,
+        11057,
+        76,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        1106,
+        22476,
+        6315,
+        6115,
+        76,
+        10274,
+        37773,
+        504,
+        37664,
+        6245,
+        25296,
+        256,
+        9667,
+        297,
+        38555,
+        272,
+        21971,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " gồm",
+          "start": 2.54,
+          "end": 2.68,
+          "probability": 0.7641715010007223,
+          "tokens": [
+            290,
+            11057,
+            76
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 2.68,
+          "end": 2.88,
+          "probability": 0.9620292782783508,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 2.88,
+          "end": 3.08,
+          "probability": 0.9997771382331848,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 3.08,
+          "end": 3.22,
+          "probability": 0.9994601309299469,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 3.22,
+          "end": 3.46,
+          "probability": 0.9998884201049805,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " hoàn",
+          "start": 3.46,
+          "end": 3.66,
+          "probability": 0.8866211175918579,
+          "tokens": [
+            1106,
+            22476
+          ]
+        },
+        {
+          "word": " kiếm",
+          "start": 3.66,
+          "end": 3.94,
+          "probability": 0.992004911104838,
+          "tokens": [
+            6315,
+            6115,
+            76
+          ]
+        },
+        {
+          "word": " và",
+          "start": 3.94,
+          "end": 4.08,
+          "probability": 0.9911419153213501,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 4.08,
+          "end": 4.24,
+          "probability": 0.14096225798130035,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " trục",
+          "start": 4.24,
+          "end": 4.44,
+          "probability": 0.8994719684123993,
+          "tokens": [
+            504,
+            37664
+          ]
+        },
+        {
+          "word": " nhật",
+          "start": 4.44,
+          "end": 4.64,
+          "probability": 0.8935455083847046,
+          "tokens": [
+            6245,
+            25296
+          ]
+        },
+        {
+          "word": " tân",
+          "start": 4.64,
+          "end": 4.86,
+          "probability": 0.8515762090682983,
+          "tokens": [
+            256,
+            9667
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 4.86,
+          "end": 5.0,
+          "probability": 0.9921767115592957,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " bài.",
+          "start": 5.0,
+          "end": 5.22,
+          "probability": 0.35162175881365937,
+          "tokens": [
+            272,
+            21971,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 4.3,
-      "end": 5.56,
-      "text": " theo đà đi xuống của thế giới."
+      "start": 5.3,
+      "end": 7.82,
+      "text": " thông tin này được nêu tại báo cáo thuyết minh quy hoạch tổng thể",
+      "seek": null,
+      "tokens": [
+        258,
+        8217,
+        15935,
+        12542,
+        15832,
+        297,
+        28310,
+        37773,
+        272,
+        45202,
+        6476,
+        78,
+        258,
+        7493,
+        13888,
+        923,
+        71,
+        44088,
+        1106,
+        5890,
+        339,
+        256,
+        20950,
+        872,
+        24491
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thông",
+          "start": 5.3,
+          "end": 5.36,
+          "probability": 0.6740028858184814,
+          "tokens": [
+            258,
+            8217
+          ]
+        },
+        {
+          "word": " tin",
+          "start": 5.42,
+          "end": 5.52,
+          "probability": 0.9995713829994202,
+          "tokens": [
+            15935
+          ]
+        },
+        {
+          "word": " này",
+          "start": 5.52,
+          "end": 5.7,
+          "probability": 0.9986296892166138,
+          "tokens": [
+            12542
+          ]
+        },
+        {
+          "word": " được",
+          "start": 5.7,
+          "end": 5.9,
+          "probability": 0.9991487264633179,
+          "tokens": [
+            15832
+          ]
+        },
+        {
+          "word": " nêu",
+          "start": 5.9,
+          "end": 6.12,
+          "probability": 0.9940593242645264,
+          "tokens": [
+            297,
+            28310
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 6.12,
+          "end": 6.26,
+          "probability": 0.9793710708618164,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " báo",
+          "start": 6.26,
+          "end": 6.5,
+          "probability": 0.9879231452941895,
+          "tokens": [
+            272,
+            45202
+          ]
+        },
+        {
+          "word": " cáo",
+          "start": 6.5,
+          "end": 6.76,
+          "probability": 0.9995502531528473,
+          "tokens": [
+            6476,
+            78
+          ]
+        },
+        {
+          "word": " thuyết",
+          "start": 6.76,
+          "end": 6.9,
+          "probability": 0.8801212906837463,
+          "tokens": [
+            258,
+            7493,
+            13888
+          ]
+        },
+        {
+          "word": " minh",
+          "start": 6.9,
+          "end": 7.1,
+          "probability": 0.9856234192848206,
+          "tokens": [
+            923,
+            71
+          ]
+        },
+        {
+          "word": " quy",
+          "start": 7.1,
+          "end": 7.28,
+          "probability": 0.9350978136062622,
+          "tokens": [
+            44088
+          ]
+        },
+        {
+          "word": " hoạch",
+          "start": 7.3,
+          "end": 7.56,
+          "probability": 0.9998828371365865,
+          "tokens": [
+            1106,
+            5890,
+            339
+          ]
+        },
+        {
+          "word": " tổng",
+          "start": 7.6,
+          "end": 7.7,
+          "probability": 0.8980888724327087,
+          "tokens": [
+            256,
+            20950,
+            872
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 7.7,
+          "end": 7.82,
+          "probability": 0.9943581223487854,
+          "tokens": [
+            24491
+          ]
+        }
+      ]
     },
     {
-      "start": 5.68,
-      "end": 6.52,
-      "text": " sáng mười bốn tháng ba."
+      "start": 7.82,
+      "end": 10.3,
+      "text": " thủ đô hà nội tầm nhìn một trăm năm đang lấy ý kiến người dân.",
+      "seek": null,
+      "tokens": [
+        258,
+        28903,
+        2934,
+        2851,
+        276,
+        1467,
+        297,
+        38555,
+        256,
+        11161,
+        76,
+        6245,
+        41320,
+        15486,
+        504,
+        21434,
+        38098,
+        30723,
+        287,
+        13417,
+        49291,
+        6315,
+        16240,
+        15898,
+        274,
+        9667,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thủ",
+          "start": 7.82,
+          "end": 7.98,
+          "probability": 0.984869658946991,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 7.98,
+          "end": 8.12,
+          "probability": 0.9995028972625732,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 8.12,
+          "end": 8.3,
+          "probability": 0.49982191366143525,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 8.3,
+          "end": 8.44,
+          "probability": 0.9945732951164246,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " tầm",
+          "start": 8.44,
+          "end": 8.6,
+          "probability": 0.883140762646993,
+          "tokens": [
+            256,
+            11161,
+            76
+          ]
+        },
+        {
+          "word": " nhìn",
+          "start": 8.6,
+          "end": 8.74,
+          "probability": 0.6497624218463898,
+          "tokens": [
+            6245,
+            41320
+          ]
+        },
+        {
+          "word": " một",
+          "start": 8.74,
+          "end": 8.88,
+          "probability": 0.014927146025002003,
+          "tokens": [
+            15486
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 8.88,
+          "end": 9.1,
+          "probability": 0.9947229325771332,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 9.1,
+          "end": 9.26,
+          "probability": 0.996435284614563,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " đang",
+          "start": 9.26,
+          "end": 9.38,
+          "probability": 0.002974847564473748,
+          "tokens": [
+            30723
+          ]
+        },
+        {
+          "word": " lấy",
+          "start": 9.38,
+          "end": 9.58,
+          "probability": 0.07885311134850781,
+          "tokens": [
+            287,
+            13417
+          ]
+        },
+        {
+          "word": " ý",
+          "start": 9.58,
+          "end": 9.68,
+          "probability": 0.9929710030555725,
+          "tokens": [
+            49291
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 9.82,
+          "end": 9.94,
+          "probability": 0.9979659914970398,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " người",
+          "start": 9.94,
+          "end": 10.04,
+          "probability": 0.9616756439208984,
+          "tokens": [
+            15898
+          ]
+        },
+        {
+          "word": " dân.",
+          "start": 10.04,
+          "end": 10.3,
+          "probability": 0.6665785096101899,
+          "tokens": [
+            274,
+            9667,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 6.64,
-      "end": 9.98,
-      "text": " công ty vàng bạc đá quý sài gòn xdk niêm yết giá vàng miếng một trăm"
+      "start": 10.38,
+      "end": 12.96,
+      "text": " hà nội lựa chọn thương mại dịch vụ là một trong ba ngành quan trọng",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        287,
+        14522,
+        64,
+        417,
+        47246,
+        258,
+        24605,
+        275,
+        12745,
+        274,
+        46829,
+        371,
+        17740,
+        3684,
+        15486,
+        18826,
+        4773,
+        6415,
+        24449,
+        19068,
+        504,
+        12935,
+        872
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 10.38,
+          "end": 10.42,
+          "probability": 0.49401519959792495,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 10.42,
+          "end": 10.56,
+          "probability": 0.9268515408039093,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " lựa",
+          "start": 10.56,
+          "end": 10.82,
+          "probability": 0.9644904732704163,
+          "tokens": [
+            287,
+            14522,
+            64
+          ]
+        },
+        {
+          "word": " chọn",
+          "start": 10.82,
+          "end": 11.0,
+          "probability": 0.9980677962303162,
+          "tokens": [
+            417,
+            47246
+          ]
+        },
+        {
+          "word": " thương",
+          "start": 11.0,
+          "end": 11.18,
+          "probability": 0.9348592460155487,
+          "tokens": [
+            258,
+            24605
+          ]
+        },
+        {
+          "word": " mại",
+          "start": 11.18,
+          "end": 11.32,
+          "probability": 0.9937857687473297,
+          "tokens": [
+            275,
+            12745
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 11.32,
+          "end": 11.52,
+          "probability": 0.9729883968830109,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " vụ",
+          "start": 11.52,
+          "end": 11.68,
+          "probability": 0.9990120828151703,
+          "tokens": [
+            371,
+            17740
+          ]
+        },
+        {
+          "word": " là",
+          "start": 11.68,
+          "end": 11.8,
+          "probability": 0.9535420536994934,
+          "tokens": [
+            3684
+          ]
+        },
+        {
+          "word": " một",
+          "start": 11.8,
+          "end": 11.94,
+          "probability": 0.8196439743041992,
+          "tokens": [
+            15486
+          ]
+        },
+        {
+          "word": " trong",
+          "start": 11.94,
+          "end": 12.14,
+          "probability": 0.9970792531967163,
+          "tokens": [
+            18826
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 12.14,
+          "end": 12.3,
+          "probability": 0.03120337426662445,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " ngành",
+          "start": 12.3,
+          "end": 12.48,
+          "probability": 0.9834524393081665,
+          "tokens": [
+            6415,
+            24449
+          ]
+        },
+        {
+          "word": " quan",
+          "start": 12.56,
+          "end": 12.66,
+          "probability": 0.9812220931053162,
+          "tokens": [
+            19068
+          ]
+        },
+        {
+          "word": " trọng",
+          "start": 12.66,
+          "end": 12.96,
+          "probability": 0.9980640411376953,
+          "tokens": [
+            504,
+            12935,
+            872
+          ]
+        }
+      ]
     },
     {
-      "start": 9.98,
-      "end": 13.32,
-      "text": " bảy mươi chín.sáu một trăm tám mươi hai.sáu triệu đồng một lượng."
-    },
-    {
-      "start": 13.4,
-      "end": 15.7,
-      "text": " giảm hai.hai triệu đồng so với cuối ngày hôm qua."
+      "start": 12.96,
+      "end": 15.72,
+      "text": " để phát triển kinh tế thủ đô cùng công nghiệp xây dựng và nông nghiệp.",
+      "seek": null,
+      "tokens": [
+        20081,
+        903,
+        7656,
+        1376,
+        38197,
+        350,
+        10085,
+        256,
+        6115,
+        258,
+        28903,
+        2934,
+        2851,
+        45701,
+        35451,
+        46889,
+        8471,
+        79,
+        2031,
+        12108,
+        274,
+        14522,
+        872,
+        10274,
+        297,
+        8217,
+        46889,
+        8471,
+        79,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " để",
+          "start": 12.96,
+          "end": 13.1,
+          "probability": 0.9632055163383484,
+          "tokens": [
+            20081
+          ]
+        },
+        {
+          "word": " phát",
+          "start": 13.1,
+          "end": 13.32,
+          "probability": 0.9957977533340454,
+          "tokens": [
+            903,
+            7656
+          ]
+        },
+        {
+          "word": " triển",
+          "start": 13.32,
+          "end": 13.48,
+          "probability": 0.9988023936748505,
+          "tokens": [
+            1376,
+            38197
+          ]
+        },
+        {
+          "word": " kinh",
+          "start": 13.48,
+          "end": 13.74,
+          "probability": 0.944930374622345,
+          "tokens": [
+            350,
+            10085
+          ]
+        },
+        {
+          "word": " tế",
+          "start": 13.74,
+          "end": 13.96,
+          "probability": 0.997269332408905,
+          "tokens": [
+            256,
+            6115
+          ]
+        },
+        {
+          "word": " thủ",
+          "start": 13.96,
+          "end": 14.12,
+          "probability": 0.9514513611793518,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 14.12,
+          "end": 14.28,
+          "probability": 0.9966533482074738,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " cùng",
+          "start": 14.28,
+          "end": 14.42,
+          "probability": 0.9747626185417175,
+          "tokens": [
+            45701
+          ]
+        },
+        {
+          "word": " công",
+          "start": 14.42,
+          "end": 14.58,
+          "probability": 0.9630100131034851,
+          "tokens": [
+            35451
+          ]
+        },
+        {
+          "word": " nghiệp",
+          "start": 14.58,
+          "end": 14.84,
+          "probability": 0.9883654117584229,
+          "tokens": [
+            46889,
+            8471,
+            79
+          ]
+        },
+        {
+          "word": " xây",
+          "start": 14.84,
+          "end": 14.94,
+          "probability": 0.988953560590744,
+          "tokens": [
+            2031,
+            12108
+          ]
+        },
+        {
+          "word": " dựng",
+          "start": 14.94,
+          "end": 15.18,
+          "probability": 0.9994198083877563,
+          "tokens": [
+            274,
+            14522,
+            872
+          ]
+        },
+        {
+          "word": " và",
+          "start": 15.18,
+          "end": 15.32,
+          "probability": 0.9814513325691223,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " nông",
+          "start": 15.34,
+          "end": 15.48,
+          "probability": 0.9913957417011261,
+          "tokens": [
+            297,
+            8217
+          ]
+        },
+        {
+          "word": " nghiệp.",
+          "start": 15.48,
+          "end": 15.72,
+          "probability": 0.7639429364353418,
+          "tokens": [
+            46889,
+            8471,
+            79,
+            13
+          ]
+        }
+      ]
     },
     {
       "start": 15.8,
-      "end": 17.73,
-      "text": " các thương hiệu khác cũng điều chỉnh tương tự xdk."
+      "end": 16.98,
+      "text": " tại lĩnh vực dịch vụ tài chính.",
+      "seek": null,
+      "tokens": [
+        37773,
+        287,
+        28490,
+        5728,
+        371,
+        27951,
+        274,
+        46829,
+        371,
+        17740,
+        256,
+        21971,
+        42178,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tại",
+          "start": 15.8,
+          "end": 15.8,
+          "probability": 0.6724361181259155,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " lĩnh",
+          "start": 15.8,
+          "end": 16.04,
+          "probability": 0.9935181140899658,
+          "tokens": [
+            287,
+            28490,
+            5728
+          ]
+        },
+        {
+          "word": " vực",
+          "start": 16.04,
+          "end": 16.18,
+          "probability": 0.9990833699703217,
+          "tokens": [
+            371,
+            27951
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 16.18,
+          "end": 16.44,
+          "probability": 0.9683353006839752,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " vụ",
+          "start": 16.46,
+          "end": 16.56,
+          "probability": 0.9975843131542206,
+          "tokens": [
+            371,
+            17740
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 16.56,
+          "end": 16.76,
+          "probability": 0.7804862260818481,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính.",
+          "start": 16.76,
+          "end": 16.98,
+          "probability": 0.5384384728968143,
+          "tokens": [
+            42178,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 17.94,
-      "end": 18.2,
-      "text": " như vậy."
+      "start": 17.08,
+      "end": 19.4,
+      "text": " hà nội đặt mục tiêu trở thành trung tâm tài chính quốc gia.",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        2934,
+        38248,
+        275,
+        37664,
+        8757,
+        28310,
+        504,
+        13755,
+        39953,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        421,
+        24426,
+        39689,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 17.08,
+          "end": 17.08,
+          "probability": 0.7990169525146484,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 17.08,
+          "end": 17.28,
+          "probability": 0.9972129464149475,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " đặt",
+          "start": 17.28,
+          "end": 17.46,
+          "probability": 0.8821773827075958,
+          "tokens": [
+            2934,
+            38248
+          ]
+        },
+        {
+          "word": " mục",
+          "start": 17.46,
+          "end": 17.66,
+          "probability": 0.9976601600646973,
+          "tokens": [
+            275,
+            37664
+          ]
+        },
+        {
+          "word": " tiêu",
+          "start": 17.66,
+          "end": 17.8,
+          "probability": 0.9981564581394196,
+          "tokens": [
+            8757,
+            28310
+          ]
+        },
+        {
+          "word": " trở",
+          "start": 17.8,
+          "end": 18.04,
+          "probability": 0.9738117456436157,
+          "tokens": [
+            504,
+            13755
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 18.04,
+          "end": 18.18,
+          "probability": 0.9980161190032959,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 18.36,
+          "end": 18.44,
+          "probability": 0.5318375416100025,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 18.44,
+          "end": 18.56,
+          "probability": 0.9990353286266327,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 18.56,
+          "end": 18.8,
+          "probability": 0.9848508536815643,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 18.8,
+          "end": 18.96,
+          "probability": 0.9995388984680176,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " quốc",
+          "start": 18.96,
+          "end": 19.18,
+          "probability": 0.9916766881942749,
+          "tokens": [
+            421,
+            24426
+          ]
+        },
+        {
+          "word": " gia.",
+          "start": 19.18,
+          "end": 19.4,
+          "probability": 0.4978679541818565,
+          "tokens": [
+            39689,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 18.34,
-      "end": 18.98,
-      "text": " trong ba ngày qua."
+      "start": 19.5,
+      "end": 20.94,
+      "text": " hướng tới phát triển các dịch vụ tài",
+      "seek": null,
+      "tokens": [
+        276,
+        17059,
+        872,
+        47679,
+        903,
+        7656,
+        1376,
+        38197,
+        13250,
+        274,
+        46829,
+        371,
+        17740,
+        256,
+        21971
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hướng",
+          "start": 19.5,
+          "end": 19.58,
+          "probability": 0.7217825601498286,
+          "tokens": [
+            276,
+            17059,
+            872
+          ]
+        },
+        {
+          "word": " tới",
+          "start": 19.58,
+          "end": 19.74,
+          "probability": 0.994860053062439,
+          "tokens": [
+            47679
+          ]
+        },
+        {
+          "word": " phát",
+          "start": 19.76,
+          "end": 19.98,
+          "probability": 0.9969548881053925,
+          "tokens": [
+            903,
+            7656
+          ]
+        },
+        {
+          "word": " triển",
+          "start": 20.08,
+          "end": 20.18,
+          "probability": 0.9992244243621826,
+          "tokens": [
+            1376,
+            38197
+          ]
+        },
+        {
+          "word": " các",
+          "start": 20.18,
+          "end": 20.36,
+          "probability": 0.9699580073356628,
+          "tokens": [
+            13250
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 20.46,
+          "end": 20.56,
+          "probability": 0.9884428381919861,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " vụ",
+          "start": 20.56,
+          "end": 20.74,
+          "probability": 0.9997414648532867,
+          "tokens": [
+            371,
+            17740
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 20.74,
+          "end": 20.94,
+          "probability": 0.9929675161838531,
+          "tokens": [
+            256,
+            21971
+          ]
+        }
+      ]
     },
     {
-      "start": 19.08,
-      "end": 21.54,
-      "text": " vàng miếng đã hạ tổng cộng bốn.sáu triệu đồng."
+      "start": 20.98,
+      "end": 22.44,
+      "text": " chính mang tầm khu vực và quốc tế.",
+      "seek": null,
+      "tokens": [
+        42178,
+        32432,
+        256,
+        11161,
+        76,
+        7168,
+        84,
+        371,
+        27951,
+        10274,
+        421,
+        24426,
+        256,
+        6115,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " chính",
+          "start": 20.98,
+          "end": 21.08,
+          "probability": 0.9986112117767334,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " mang",
+          "start": 21.08,
+          "end": 21.26,
+          "probability": 0.956301748752594,
+          "tokens": [
+            32432
+          ]
+        },
+        {
+          "word": " tầm",
+          "start": 21.26,
+          "end": 21.48,
+          "probability": 0.8314313491185507,
+          "tokens": [
+            256,
+            11161,
+            76
+          ]
+        },
+        {
+          "word": " khu",
+          "start": 21.48,
+          "end": 21.72,
+          "probability": 0.9927726984024048,
+          "tokens": [
+            7168,
+            84
+          ]
+        },
+        {
+          "word": " vực",
+          "start": 21.72,
+          "end": 21.86,
+          "probability": 0.9985886216163635,
+          "tokens": [
+            371,
+            27951
+          ]
+        },
+        {
+          "word": " và",
+          "start": 21.94,
+          "end": 22.04,
+          "probability": 0.9531893730163574,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " quốc",
+          "start": 22.04,
+          "end": 22.28,
+          "probability": 0.9958178997039795,
+          "tokens": [
+            421,
+            24426
+          ]
+        },
+        {
+          "word": " tế.",
+          "start": 22.28,
+          "end": 22.44,
+          "probability": 0.8388548692067465,
+          "tokens": [
+            256,
+            6115,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 21.54,
-      "end": 24.44,
-      "text": " vàng nhẫn trơn sáng nay cũng được xdk giảm hai.hai triệu đồng."
+      "start": 22.54,
+      "end": 22.78,
+      "text": " theo đó.",
+      "seek": null,
+      "tokens": [
+        40594,
+        17647,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " theo",
+          "start": 22.54,
+          "end": 22.54,
+          "probability": 0.4704723060131073,
+          "tokens": [
+            40594
+          ]
+        },
+        {
+          "word": " đó.",
+          "start": 22.54,
+          "end": 22.78,
+          "probability": 0.5014588567428291,
+          "tokens": [
+            17647,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 24.56,
-      "end": 26.36,
-      "text": " về một trăm bảy mươi chín.ba một trăm"
+      "start": 22.84,
+      "end": 25.42,
+      "text": " trung tâm tài chính tại hà nội sẽ được hình thành với hai hợp phần.",
+      "seek": null,
+      "tokens": [
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        37773,
+        276,
+        1467,
+        297,
+        38555,
+        17208,
+        15832,
+        276,
+        10116,
+        39953,
+        18916,
+        21822,
+        276,
+        27836,
+        79,
+        903,
+        18241,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trung",
+          "start": 22.84,
+          "end": 22.94,
+          "probability": 0.9420701563358307,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 22.94,
+          "end": 23.12,
+          "probability": 0.9973278045654297,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 23.12,
+          "end": 23.32,
+          "probability": 0.9946094751358032,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 23.32,
+          "end": 23.48,
+          "probability": 0.9988961219787598,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 23.48,
+          "end": 23.68,
+          "probability": 0.9449520707130432,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 23.68,
+          "end": 23.86,
+          "probability": 0.496882944367826,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 23.86,
+          "end": 24.0,
+          "probability": 0.9846179783344269,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " sẽ",
+          "start": 24.04,
+          "end": 24.14,
+          "probability": 0.8862206339836121,
+          "tokens": [
+            17208
+          ]
+        },
+        {
+          "word": " được",
+          "start": 24.22,
+          "end": 24.32,
+          "probability": 0.9656763076782227,
+          "tokens": [
+            15832
+          ]
+        },
+        {
+          "word": " hình",
+          "start": 24.32,
+          "end": 24.56,
+          "probability": 0.8580016493797302,
+          "tokens": [
+            276,
+            10116
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 24.56,
+          "end": 24.7,
+          "probability": 0.968387246131897,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " với",
+          "start": 24.7,
+          "end": 24.86,
+          "probability": 0.8097938299179077,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 24.88,
+          "end": 25.0,
+          "probability": 0.4148828387260437,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " hợp",
+          "start": 25.0,
+          "end": 25.18,
+          "probability": 0.945327361424764,
+          "tokens": [
+            276,
+            27836,
+            79
+          ]
+        },
+        {
+          "word": " phần.",
+          "start": 25.18,
+          "end": 25.42,
+          "probability": 0.6765496929486593,
+          "tokens": [
+            903,
+            18241,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 26.36,
-      "end": 28.02,
-      "text": " tám mươi hai.ba triệu đồng mỗi lượng."
+      "start": 25.46,
+      "end": 27.48,
+      "text": " hợp phần thứ nhất là trung tâm tài chính hoàn kiếm",
+      "seek": null,
+      "tokens": [
+        276,
+        27836,
+        79,
+        903,
+        18241,
+        47269,
+        41081,
+        3684,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        1106,
+        22476,
+        6315,
+        6115,
+        76
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hợp",
+          "start": 25.46,
+          "end": 25.58,
+          "probability": 0.8939753969510397,
+          "tokens": [
+            276,
+            27836,
+            79
+          ]
+        },
+        {
+          "word": " phần",
+          "start": 25.58,
+          "end": 25.72,
+          "probability": 0.9912463128566742,
+          "tokens": [
+            903,
+            18241
+          ]
+        },
+        {
+          "word": " thứ",
+          "start": 25.72,
+          "end": 25.86,
+          "probability": 0.9684716463088989,
+          "tokens": [
+            47269
+          ]
+        },
+        {
+          "word": " nhất",
+          "start": 25.86,
+          "end": 26.04,
+          "probability": 0.9687073230743408,
+          "tokens": [
+            41081
+          ]
+        },
+        {
+          "word": " là",
+          "start": 26.04,
+          "end": 26.22,
+          "probability": 0.9028569459915161,
+          "tokens": [
+            3684
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 26.22,
+          "end": 26.4,
+          "probability": 0.9280360639095306,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 26.4,
+          "end": 26.6,
+          "probability": 0.9945389926433563,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 26.6,
+          "end": 26.78,
+          "probability": 0.9929011762142181,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 26.78,
+          "end": 26.96,
+          "probability": 0.9959203004837036,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " hoàn",
+          "start": 27.2,
+          "end": 27.2,
+          "probability": 0.4999288592953235,
+          "tokens": [
+            1106,
+            22476
+          ]
+        },
+        {
+          "word": " kiếm",
+          "start": 27.2,
+          "end": 27.48,
+          "probability": 0.9881347815195719,
+          "tokens": [
+            6315,
+            6115,
+            76
+          ]
+        }
+      ]
     },
     {
-      "start": 28.12,
-      "end": 28.44,
-      "text": " pnd."
+      "start": 27.48,
+      "end": 29.5,
+      "text": " và hệ sinh thái giao dịch hàng hóa cho trung tâm",
+      "seek": null,
+      "tokens": [
+        10274,
+        276,
+        8471,
+        3343,
+        71,
+        258,
+        28249,
+        290,
+        7648,
+        274,
+        46829,
+        48373,
+        276,
+        812,
+        64,
+        1586,
+        504,
+        1063,
+        256,
+        24484
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " và",
+          "start": 27.48,
+          "end": 27.62,
+          "probability": 0.9806952476501465,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " hệ",
+          "start": 27.62,
+          "end": 27.8,
+          "probability": 0.9952815175056458,
+          "tokens": [
+            276,
+            8471
+          ]
+        },
+        {
+          "word": " sinh",
+          "start": 27.8,
+          "end": 27.94,
+          "probability": 0.9996916055679321,
+          "tokens": [
+            3343,
+            71
+          ]
+        },
+        {
+          "word": " thái",
+          "start": 27.94,
+          "end": 28.12,
+          "probability": 0.9954757392406464,
+          "tokens": [
+            258,
+            28249
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 28.12,
+          "end": 28.32,
+          "probability": 0.9859332144260406,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 28.32,
+          "end": 28.5,
+          "probability": 0.997496098279953,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 28.5,
+          "end": 28.7,
+          "probability": 0.9689457416534424,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " hóa",
+          "start": 28.7,
+          "end": 28.94,
+          "probability": 0.8369886676470438,
+          "tokens": [
+            276,
+            812,
+            64
+          ]
+        },
+        {
+          "word": " cho",
+          "start": 28.94,
+          "end": 29.1,
+          "probability": 0.9971866011619568,
+          "tokens": [
+            1586
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 29.1,
+          "end": 29.3,
+          "probability": 0.8035028576850891,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 29.3,
+          "end": 29.5,
+          "probability": 0.9998300075531006,
+          "tokens": [
+            256,
+            24484
+          ]
+        }
+      ]
     },
     {
-      "start": 29.04,
-      "end": 29.06,
-      "text": " đo-di."
+      "start": 29.56,
+      "end": 31.82,
+      "text": " tài chính từ nay đến hai nghìn không trăm ba mươi.",
+      "seek": null,
+      "tokens": [
+        256,
+        21971,
+        42178,
+        26834,
+        34227,
+        26353,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tài",
+          "start": 29.56,
+          "end": 29.66,
+          "probability": 0.9948090314865112,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 29.66,
+          "end": 29.82,
+          "probability": 0.9996088147163391,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " từ",
+          "start": 29.82,
+          "end": 30.04,
+          "probability": 0.9573385119438171,
+          "tokens": [
+            26834
+          ]
+        },
+        {
+          "word": " nay",
+          "start": 30.04,
+          "end": 30.2,
+          "probability": 0.9989175796508789,
+          "tokens": [
+            34227
+          ]
+        },
+        {
+          "word": " đến",
+          "start": 30.2,
+          "end": 30.4,
+          "probability": 0.9997623562812805,
+          "tokens": [
+            26353
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 30.4,
+          "end": 30.56,
+          "probability": 0.004143524449318647,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 30.56,
+          "end": 30.72,
+          "probability": 0.4215513523668051,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 30.72,
+          "end": 30.98,
+          "probability": 0.0014146169414743781,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 30.98,
+          "end": 31.4,
+          "probability": 0.9863974153995514,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 31.4,
+          "end": 31.58,
+          "probability": 0.9594683647155762,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi.",
+          "start": 31.58,
+          "end": 31.82,
+          "probability": 0.7624855497851968,
+          "tokens": [
+            275,
+            4228,
+            21537,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 29.14,
-      "end": 29.8,
-      "text": " bảo tín minh châu."
+      "start": 31.82,
+      "end": 32.12,
+      "text": " cụ thể.",
+      "seek": null,
+      "tokens": [
+        9613,
+        98,
+        24491,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " cụ",
+          "start": 31.82,
+          "end": 31.9,
+          "probability": 0.6269773244857788,
+          "tokens": [
+            9613,
+            98
+          ]
+        },
+        {
+          "word": " thể.",
+          "start": 31.9,
+          "end": 32.12,
+          "probability": 0.5058805402368307,
+          "tokens": [
+            24491,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 29.88,
-      "end": 31.5,
-      "text": " bảo tín mạnh hải mua bán mặt hàng này"
+      "start": 32.16,
+      "end": 34.82,
+      "text": " phường hoàn kiếm sẽ là trung tâm của trung tâm tài chính hà nội.",
+      "seek": null,
+      "tokens": [
+        903,
+        24280,
+        1106,
+        22476,
+        6315,
+        6115,
+        76,
+        17208,
+        3684,
+        504,
+        1063,
+        256,
+        24484,
+        11990,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        276,
+        1467,
+        297,
+        38555,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " phường",
+          "start": 32.16,
+          "end": 32.24,
+          "probability": 0.5955961719155312,
+          "tokens": [
+            903,
+            24280
+          ]
+        },
+        {
+          "word": " hoàn",
+          "start": 32.24,
+          "end": 32.46,
+          "probability": 0.8471166491508484,
+          "tokens": [
+            1106,
+            22476
+          ]
+        },
+        {
+          "word": " kiếm",
+          "start": 32.46,
+          "end": 32.7,
+          "probability": 0.9979702035586039,
+          "tokens": [
+            6315,
+            6115,
+            76
+          ]
+        },
+        {
+          "word": " sẽ",
+          "start": 32.7,
+          "end": 32.84,
+          "probability": 0.9613592028617859,
+          "tokens": [
+            17208
+          ]
+        },
+        {
+          "word": " là",
+          "start": 32.84,
+          "end": 33.04,
+          "probability": 0.994988739490509,
+          "tokens": [
+            3684
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 33.04,
+          "end": 33.24,
+          "probability": 0.9881799519062042,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 33.24,
+          "end": 33.5,
+          "probability": 0.9989410936832428,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " của",
+          "start": 33.5,
+          "end": 33.62,
+          "probability": 0.9932524561882019,
+          "tokens": [
+            11990
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 33.78,
+          "end": 33.9,
+          "probability": 0.9137555658817291,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 33.9,
+          "end": 34.04,
+          "probability": 0.9972330927848816,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 34.04,
+          "end": 34.22,
+          "probability": 0.9874313473701477,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 34.22,
+          "end": 34.38,
+          "probability": 0.9990046620368958,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 34.38,
+          "end": 34.64,
+          "probability": 0.5158358067274094,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội.",
+          "start": 34.64,
+          "end": 34.82,
+          "probability": 0.6909159421920776,
+          "tokens": [
+            297,
+            38555,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 31.5,
-      "end": 33.45,
-      "text": " cao hơn ba trăm nghìn đồng so với xdk."
+      "start": 34.92,
+      "end": 36.06,
+      "text": " thành phố sẽ ưu tiên không gian.",
+      "seek": null,
+      "tokens": [
+        39953,
+        903,
+        7863,
+        17208,
+        220,
+        4228,
+        84,
+        8757,
+        5050,
+        11415,
+        290,
+        952,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thành",
+          "start": 34.92,
+          "end": 34.92,
+          "probability": 0.9454978108406067,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " phố",
+          "start": 34.92,
+          "end": 35.12,
+          "probability": 0.999494194984436,
+          "tokens": [
+            903,
+            7863
+          ]
+        },
+        {
+          "word": " sẽ",
+          "start": 35.2,
+          "end": 35.3,
+          "probability": 0.9497430324554443,
+          "tokens": [
+            17208
+          ]
+        },
+        {
+          "word": " ưu",
+          "start": 35.3,
+          "end": 35.5,
+          "probability": 0.9859359463055929,
+          "tokens": [
+            220,
+            4228,
+            84
+          ]
+        },
+        {
+          "word": " tiên",
+          "start": 35.5,
+          "end": 35.62,
+          "probability": 0.9988082945346832,
+          "tokens": [
+            8757,
+            5050
+          ]
+        },
+        {
+          "word": " không",
+          "start": 35.62,
+          "end": 35.78,
+          "probability": 0.9095578193664551,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " gian.",
+          "start": 35.78,
+          "end": 36.06,
+          "probability": 0.6704810947800676,
+          "tokens": [
+            290,
+            952,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 33.76,
-      "end": 36.9,
-      "text": " quanh một trăm bảy mươi chín.sáu một trăm tám mươi hai.sáu triệu."
+      "start": 36.14,
+      "end": 37.88,
+      "text": " địa điểm phù hợp thu hút các tổ chức tài chính",
+      "seek": null,
+      "tokens": [
+        42063,
+        64,
+        13264,
+        47119,
+        903,
+        5035,
+        276,
+        27836,
+        79,
+        40295,
+        276,
+        32852,
+        13250,
+        256,
+        20950,
+        417,
+        27138,
+        256,
+        21971,
+        42178
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " địa",
+          "start": 36.14,
+          "end": 36.22,
+          "probability": 0.8559327125549316,
+          "tokens": [
+            42063,
+            64
+          ]
+        },
+        {
+          "word": " điểm",
+          "start": 36.22,
+          "end": 36.36,
+          "probability": 0.9993868768215179,
+          "tokens": [
+            13264,
+            47119
+          ]
+        },
+        {
+          "word": " phù",
+          "start": 36.36,
+          "end": 36.56,
+          "probability": 0.9760767221450806,
+          "tokens": [
+            903,
+            5035
+          ]
+        },
+        {
+          "word": " hợp",
+          "start": 36.56,
+          "end": 36.66,
+          "probability": 0.9990180929501852,
+          "tokens": [
+            276,
+            27836,
+            79
+          ]
+        },
+        {
+          "word": " thu",
+          "start": 36.66,
+          "end": 36.8,
+          "probability": 0.9546314477920532,
+          "tokens": [
+            40295
+          ]
+        },
+        {
+          "word": " hút",
+          "start": 36.8,
+          "end": 37.0,
+          "probability": 0.9999017119407654,
+          "tokens": [
+            276,
+            32852
+          ]
+        },
+        {
+          "word": " các",
+          "start": 37.0,
+          "end": 37.14,
+          "probability": 0.9838962554931641,
+          "tokens": [
+            13250
+          ]
+        },
+        {
+          "word": " tổ",
+          "start": 37.28,
+          "end": 37.38,
+          "probability": 0.9996585547924042,
+          "tokens": [
+            256,
+            20950
+          ]
+        },
+        {
+          "word": " chức",
+          "start": 37.38,
+          "end": 37.52,
+          "probability": 0.9999268651008606,
+          "tokens": [
+            417,
+            27138
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 37.62,
+          "end": 37.72,
+          "probability": 0.9992164969444275,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 37.72,
+          "end": 37.88,
+          "probability": 0.9996910095214844,
+          "tokens": [
+            42178
+          ]
+        }
+      ]
     },
     {
-      "start": 36.98,
-      "end": 38.7,
-      "text": " vàng trong nước đi xuống theo giá quốc tế."
+      "start": 37.88,
+      "end": 39.96,
+      "text": " lớn tiếp tục đặt trụ sở chính tại khu vực này.",
+      "seek": null,
+      "tokens": [
+        47864,
+        77,
+        48667,
+        256,
+        37664,
+        2934,
+        38248,
+        504,
+        17740,
+        262,
+        13755,
+        42178,
+        37773,
+        7168,
+        84,
+        371,
+        27951,
+        12542,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " lớn",
+          "start": 37.88,
+          "end": 38.12,
+          "probability": 0.9956938028335571,
+          "tokens": [
+            47864,
+            77
+          ]
+        },
+        {
+          "word": " tiếp",
+          "start": 38.12,
+          "end": 38.28,
+          "probability": 0.9959782361984253,
+          "tokens": [
+            48667
+          ]
+        },
+        {
+          "word": " tục",
+          "start": 38.28,
+          "end": 38.48,
+          "probability": 0.9999404549598694,
+          "tokens": [
+            256,
+            37664
+          ]
+        },
+        {
+          "word": " đặt",
+          "start": 38.54,
+          "end": 38.64,
+          "probability": 0.981917530298233,
+          "tokens": [
+            2934,
+            38248
+          ]
+        },
+        {
+          "word": " trụ",
+          "start": 38.64,
+          "end": 38.82,
+          "probability": 0.9463430941104889,
+          "tokens": [
+            504,
+            17740
+          ]
+        },
+        {
+          "word": " sở",
+          "start": 38.92,
+          "end": 39.02,
+          "probability": 0.9997718930244446,
+          "tokens": [
+            262,
+            13755
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 39.02,
+          "end": 39.2,
+          "probability": 0.9992678761482239,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 39.2,
+          "end": 39.38,
+          "probability": 0.9581148624420166,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " khu",
+          "start": 39.38,
+          "end": 39.6,
+          "probability": 0.9996498227119446,
+          "tokens": [
+            7168,
+            84
+          ]
+        },
+        {
+          "word": " vực",
+          "start": 39.6,
+          "end": 39.76,
+          "probability": 0.9999485015869141,
+          "tokens": [
+            371,
+            27951
+          ]
+        },
+        {
+          "word": " này.",
+          "start": 39.76,
+          "end": 39.96,
+          "probability": 0.7683441638946533,
+          "tokens": [
+            12542,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 38.78,
-      "end": 40.04,
-      "text": " đóng cửa phiên giao dịch cuối tuần."
+      "start": 40.08,
+      "end": 40.34,
+      "text": " hiện tại.",
+      "seek": null,
+      "tokens": [
+        48079,
+        37773,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hiện",
+          "start": 40.08,
+          "end": 40.08,
+          "probability": 0.04732806608080864,
+          "tokens": [
+            48079
+          ]
+        },
+        {
+          "word": " tại.",
+          "start": 40.08,
+          "end": 40.34,
+          "probability": 0.49747306684730574,
+          "tokens": [
+            37773,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 40.12,
-      "end": 42.3,
-      "text": " mỗi ao-xơ vàng thế giới giao ngay giảm sáu mươi"
+      "start": 40.46,
+      "end": 42.76,
+      "text": " hoàn kiếm cũng là nơi đặt trụ sở của ngân hàng nhà nước.",
+      "seek": null,
+      "tokens": [
+        1106,
+        22476,
+        6315,
+        6115,
+        76,
+        22747,
+        3684,
+        297,
+        21537,
+        2934,
+        38248,
+        504,
+        17740,
+        262,
+        13755,
+        11990,
+        6415,
+        9667,
+        48373,
+        35398,
+        30728,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hoàn",
+          "start": 40.46,
+          "end": 40.54,
+          "probability": 0.5482776425778866,
+          "tokens": [
+            1106,
+            22476
+          ]
+        },
+        {
+          "word": " kiếm",
+          "start": 40.54,
+          "end": 40.78,
+          "probability": 0.9768628080685934,
+          "tokens": [
+            6315,
+            6115,
+            76
+          ]
+        },
+        {
+          "word": " cũng",
+          "start": 40.78,
+          "end": 40.94,
+          "probability": 0.9350495338439941,
+          "tokens": [
+            22747
+          ]
+        },
+        {
+          "word": " là",
+          "start": 41.02,
+          "end": 41.12,
+          "probability": 0.9963979721069336,
+          "tokens": [
+            3684
+          ]
+        },
+        {
+          "word": " nơi",
+          "start": 41.12,
+          "end": 41.32,
+          "probability": 0.9987840056419373,
+          "tokens": [
+            297,
+            21537
+          ]
+        },
+        {
+          "word": " đặt",
+          "start": 41.32,
+          "end": 41.48,
+          "probability": 0.9899221062660217,
+          "tokens": [
+            2934,
+            38248
+          ]
+        },
+        {
+          "word": " trụ",
+          "start": 41.48,
+          "end": 41.66,
+          "probability": 0.9921285808086395,
+          "tokens": [
+            504,
+            17740
+          ]
+        },
+        {
+          "word": " sở",
+          "start": 41.66,
+          "end": 41.92,
+          "probability": 0.9994001686573029,
+          "tokens": [
+            262,
+            13755
+          ]
+        },
+        {
+          "word": " của",
+          "start": 41.92,
+          "end": 42.04,
+          "probability": 0.9885557293891907,
+          "tokens": [
+            11990
+          ]
+        },
+        {
+          "word": " ngân",
+          "start": 42.06,
+          "end": 42.2,
+          "probability": 0.895712673664093,
+          "tokens": [
+            6415,
+            9667
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 42.2,
+          "end": 42.34,
+          "probability": 0.9904217720031738,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " nhà",
+          "start": 42.34,
+          "end": 42.5,
+          "probability": 0.8818001747131348,
+          "tokens": [
+            35398
+          ]
+        },
+        {
+          "word": " nước.",
+          "start": 42.5,
+          "end": 42.76,
+          "probability": 0.786046028137207,
+          "tokens": [
+            30728,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 42.3,
-      "end": 44.34,
-      "text": " đô la xuống năm nghìn không trăm mười bảy đô la."
+      "start": 42.82,
+      "end": 43.34,
+      "text": " nhiều ngân hàng.",
+      "seek": null,
+      "tokens": [
+        28272,
+        6415,
+        9667,
+        48373,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " nhiều",
+          "start": 42.82,
+          "end": 42.9,
+          "probability": 0.6436240673065186,
+          "tokens": [
+            28272
+          ]
+        },
+        {
+          "word": " ngân",
+          "start": 42.9,
+          "end": 43.16,
+          "probability": 0.9944323897361755,
+          "tokens": [
+            6415,
+            9667
+          ]
+        },
+        {
+          "word": " hàng.",
+          "start": 43.16,
+          "end": 43.34,
+          "probability": 0.5010925102978945,
+          "tokens": [
+            48373,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 44.42,
-      "end": 45.88,
-      "text": " quy đổi theo tỷ giá bán việt-com-banh."
+      "start": 43.44,
+      "end": 45.3,
+      "text": " công ty chứng khoán hàng đầu thị trường trong nước.",
+      "seek": null,
+      "tokens": [
+        35451,
+        1104,
+        417,
+        44555,
+        49627,
+        7200,
+        48373,
+        32573,
+        258,
+        11708,
+        504,
+        24280,
+        18826,
+        30728,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " công",
+          "start": 43.44,
+          "end": 43.44,
+          "probability": 0.9242952466011047,
+          "tokens": [
+            35451
+          ]
+        },
+        {
+          "word": " ty",
+          "start": 43.44,
+          "end": 43.68,
+          "probability": 0.9897388815879822,
+          "tokens": [
+            1104
+          ]
+        },
+        {
+          "word": " chứng",
+          "start": 43.68,
+          "end": 43.88,
+          "probability": 0.7593556940555573,
+          "tokens": [
+            417,
+            44555
+          ]
+        },
+        {
+          "word": " khoán",
+          "start": 43.88,
+          "end": 44.12,
+          "probability": 0.9823768436908722,
+          "tokens": [
+            49627,
+            7200
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 44.12,
+          "end": 44.32,
+          "probability": 0.9882028698921204,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " đầu",
+          "start": 44.32,
+          "end": 44.46,
+          "probability": 0.16596131026744843,
+          "tokens": [
+            32573
+          ]
+        },
+        {
+          "word": " thị",
+          "start": 44.46,
+          "end": 44.62,
+          "probability": 0.9963532388210297,
+          "tokens": [
+            258,
+            11708
+          ]
+        },
+        {
+          "word": " trường",
+          "start": 44.62,
+          "end": 44.86,
+          "probability": 0.9986802041530609,
+          "tokens": [
+            504,
+            24280
+          ]
+        },
+        {
+          "word": " trong",
+          "start": 44.94,
+          "end": 45.04,
+          "probability": 0.9321836829185486,
+          "tokens": [
+            18826
+          ]
+        },
+        {
+          "word": " nước.",
+          "start": 45.04,
+          "end": 45.3,
+          "probability": 0.8915428221225739,
+          "tokens": [
+            30728,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 45.98,
-      "end": 47.18,
-      "text": " vàng thế giới tương đương một trăm"
+      "start": 45.36,
+      "end": 45.76,
+      "text": " cùng với đó.",
+      "seek": null,
+      "tokens": [
+        45701,
+        18916,
+        17647,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " cùng",
+          "start": 45.36,
+          "end": 45.4,
+          "probability": 0.8498838543891907,
+          "tokens": [
+            45701
+          ]
+        },
+        {
+          "word": " với",
+          "start": 45.4,
+          "end": 45.54,
+          "probability": 0.9897083640098572,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " đó.",
+          "start": 45.54,
+          "end": 45.76,
+          "probability": 0.6143728122115135,
+          "tokens": [
+            17647,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 47.18,
-      "end": 48.52,
-      "text": " năm mươi chín triệu đồng một lượng."
+      "start": 45.84,
+      "end": 48.34,
+      "text": " hà nội dự kiến phát triển sàn giao dịch trung tâm tài chính",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        274,
+        14522,
+        6315,
+        16240,
+        903,
+        7656,
+        1376,
+        38197,
+        262,
+        22476,
+        290,
+        7648,
+        274,
+        46829,
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 45.84,
+          "end": 45.9,
+          "probability": 0.49920516181737185,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 45.9,
+          "end": 46.06,
+          "probability": 0.9418831765651703,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " dự",
+          "start": 46.06,
+          "end": 46.26,
+          "probability": 0.9811138808727264,
+          "tokens": [
+            274,
+            14522
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 46.38,
+          "end": 46.48,
+          "probability": 0.9968569576740265,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " phát",
+          "start": 46.48,
+          "end": 46.66,
+          "probability": 0.9501778781414032,
+          "tokens": [
+            903,
+            7656
+          ]
+        },
+        {
+          "word": " triển",
+          "start": 46.66,
+          "end": 46.92,
+          "probability": 0.9999322891235352,
+          "tokens": [
+            1376,
+            38197
+          ]
+        },
+        {
+          "word": " sàn",
+          "start": 46.92,
+          "end": 47.16,
+          "probability": 0.5051724873483181,
+          "tokens": [
+            262,
+            22476
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 47.16,
+          "end": 47.4,
+          "probability": 0.9726073145866394,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 47.4,
+          "end": 47.58,
+          "probability": 0.9962801337242126,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " trung",
+          "start": 47.66,
+          "end": 47.76,
+          "probability": 0.8399081230163574,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 47.76,
+          "end": 47.98,
+          "probability": 0.998780220746994,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 47.98,
+          "end": 48.16,
+          "probability": 0.9621045589447021,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 48.16,
+          "end": 48.34,
+          "probability": 0.998569130897522,
+          "tokens": [
+            42178
+          ]
+        }
+      ]
     },
     {
-      "start": 48.64,
-      "end": 50.2,
-      "text": " chênh hai mươi ba triệu so với trong nước."
+      "start": 48.38,
+      "end": 50.86,
+      "text": " hà nội thành sàn giao dịch hàng hóa với hệ thống thông tin.",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        39953,
+        262,
+        22476,
+        290,
+        7648,
+        274,
+        46829,
+        48373,
+        276,
+        812,
+        64,
+        18916,
+        276,
+        8471,
+        258,
+        21092,
+        258,
+        8217,
+        15935,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 48.38,
+          "end": 48.56,
+          "probability": 0.6008724644780159,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 48.56,
+          "end": 48.72,
+          "probability": 0.9993095695972443,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 48.72,
+          "end": 48.84,
+          "probability": 0.9770765900611877,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " sàn",
+          "start": 48.84,
+          "end": 49.14,
+          "probability": 0.9901942014694214,
+          "tokens": [
+            262,
+            22476
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 49.14,
+          "end": 49.42,
+          "probability": 0.9989021420478821,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 49.42,
+          "end": 49.6,
+          "probability": 0.9994145035743713,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 49.6,
+          "end": 49.76,
+          "probability": 0.9862650036811829,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " hóa",
+          "start": 49.76,
+          "end": 49.96,
+          "probability": 0.9776310920715332,
+          "tokens": [
+            276,
+            812,
+            64
+          ]
+        },
+        {
+          "word": " với",
+          "start": 49.96,
+          "end": 50.14,
+          "probability": 0.9282572865486145,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " hệ",
+          "start": 50.14,
+          "end": 50.34,
+          "probability": 0.9992817342281342,
+          "tokens": [
+            276,
+            8471
+          ]
+        },
+        {
+          "word": " thống",
+          "start": 50.36,
+          "end": 50.46,
+          "probability": 0.9997967779636383,
+          "tokens": [
+            258,
+            21092
+          ]
+        },
+        {
+          "word": " thông",
+          "start": 50.46,
+          "end": 50.66,
+          "probability": 0.9979114830493927,
+          "tokens": [
+            258,
+            8217
+          ]
+        },
+        {
+          "word": " tin.",
+          "start": 50.66,
+          "end": 50.86,
+          "probability": 0.4999943818038446,
+          "tokens": [
+            15935,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 50.28,
-      "end": 52.12,
-      "text": " thị trường đi xuống do đồng u mạnh lên và"
+      "start": 50.96,
+      "end": 53.92,
+      "text": " kết nối đăng ký giao dịch được kiểm soát và cơ chế vận hành phù hợp.",
+      "seek": null,
+      "tokens": [
+        350,
+        13888,
+        297,
+        24273,
+        2934,
+        34705,
+        350,
+        11822,
+        290,
+        7648,
+        274,
+        46829,
+        15832,
+        6315,
+        47119,
+        370,
+        7656,
+        10274,
+        269,
+        9621,
+        417,
+        6115,
+        371,
+        27410,
+        276,
+        24449,
+        903,
+        5035,
+        276,
+        27836,
+        79,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " kết",
+          "start": 50.96,
+          "end": 51.06,
+          "probability": 0.8697853684425354,
+          "tokens": [
+            350,
+            13888
+          ]
+        },
+        {
+          "word": " nối",
+          "start": 51.12,
+          "end": 51.24,
+          "probability": 0.9986785650253296,
+          "tokens": [
+            297,
+            24273
+          ]
+        },
+        {
+          "word": " đăng",
+          "start": 51.24,
+          "end": 51.4,
+          "probability": 0.9981435835361481,
+          "tokens": [
+            2934,
+            34705
+          ]
+        },
+        {
+          "word": " ký",
+          "start": 51.4,
+          "end": 51.6,
+          "probability": 0.999380886554718,
+          "tokens": [
+            350,
+            11822
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 51.6,
+          "end": 51.78,
+          "probability": 0.9962497651576996,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 51.78,
+          "end": 52.02,
+          "probability": 0.999838799238205,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " được",
+          "start": 52.02,
+          "end": 52.16,
+          "probability": 0.9975711703300476,
+          "tokens": [
+            15832
+          ]
+        },
+        {
+          "word": " kiểm",
+          "start": 52.16,
+          "end": 52.38,
+          "probability": 0.999207615852356,
+          "tokens": [
+            6315,
+            47119
+          ]
+        },
+        {
+          "word": " soát",
+          "start": 52.38,
+          "end": 52.66,
+          "probability": 0.9998544156551361,
+          "tokens": [
+            370,
+            7656
+          ]
+        },
+        {
+          "word": " và",
+          "start": 52.66,
+          "end": 52.8,
+          "probability": 0.9942019581794739,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " cơ",
+          "start": 52.88,
+          "end": 52.98,
+          "probability": 0.9987176656723022,
+          "tokens": [
+            269,
+            9621
+          ]
+        },
+        {
+          "word": " chế",
+          "start": 52.98,
+          "end": 53.2,
+          "probability": 0.9996626377105713,
+          "tokens": [
+            417,
+            6115
+          ]
+        },
+        {
+          "word": " vận",
+          "start": 53.2,
+          "end": 53.36,
+          "probability": 0.9467775225639343,
+          "tokens": [
+            371,
+            27410
+          ]
+        },
+        {
+          "word": " hành",
+          "start": 53.36,
+          "end": 53.54,
+          "probability": 0.9995927214622498,
+          "tokens": [
+            276,
+            24449
+          ]
+        },
+        {
+          "word": " phù",
+          "start": 53.54,
+          "end": 53.72,
+          "probability": 0.9978570938110352,
+          "tokens": [
+            903,
+            5035
+          ]
+        },
+        {
+          "word": " hợp.",
+          "start": 53.72,
+          "end": 53.92,
+          "probability": 0.7654330804944038,
+          "tokens": [
+            276,
+            27836,
+            79,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 52.12,
-      "end": 54.06,
-      "text": " lo ngại lạm phát từ xung đột tại trung đông."
+      "start": 53.98,
+      "end": 56.22,
+      "text": " trụ sở ngân hàng nhà nước việt nam tại phường hoàn kiếm.",
+      "seek": null,
+      "tokens": [
+        504,
+        17740,
+        262,
+        13755,
+        6415,
+        9667,
+        48373,
+        35398,
+        30728,
+        1932,
+        21931,
+        8835,
+        37773,
+        903,
+        24280,
+        1106,
+        22476,
+        6315,
+        6115,
+        76,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trụ",
+          "start": 53.98,
+          "end": 54.04,
+          "probability": 0.8248736560344696,
+          "tokens": [
+            504,
+            17740
+          ]
+        },
+        {
+          "word": " sở",
+          "start": 54.14,
+          "end": 54.24,
+          "probability": 0.9993228912353516,
+          "tokens": [
+            262,
+            13755
+          ]
+        },
+        {
+          "word": " ngân",
+          "start": 54.24,
+          "end": 54.42,
+          "probability": 0.9868694245815277,
+          "tokens": [
+            6415,
+            9667
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 54.42,
+          "end": 54.56,
+          "probability": 0.9900887608528137,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " nhà",
+          "start": 54.56,
+          "end": 54.76,
+          "probability": 0.6651610136032104,
+          "tokens": [
+            35398
+          ]
+        },
+        {
+          "word": " nước",
+          "start": 54.76,
+          "end": 54.88,
+          "probability": 0.9973983764648438,
+          "tokens": [
+            30728
+          ]
+        },
+        {
+          "word": " việt",
+          "start": 54.88,
+          "end": 55.12,
+          "probability": 0.4815049798198743,
+          "tokens": [
+            1932,
+            21931
+          ]
+        },
+        {
+          "word": " nam",
+          "start": 55.18,
+          "end": 55.28,
+          "probability": 0.9551945924758911,
+          "tokens": [
+            8835
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 55.28,
+          "end": 55.48,
+          "probability": 0.9760839343070984,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " phường",
+          "start": 55.68,
+          "end": 55.78,
+          "probability": 0.945365846157074,
+          "tokens": [
+            903,
+            24280
+          ]
+        },
+        {
+          "word": " hoàn",
+          "start": 55.78,
+          "end": 55.94,
+          "probability": 0.5775653645396233,
+          "tokens": [
+            1106,
+            22476
+          ]
+        },
+        {
+          "word": " kiếm.",
+          "start": 55.94,
+          "end": 56.22,
+          "probability": 0.4822108315893274,
+          "tokens": [
+            6315,
+            6115,
+            76,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 54.16,
-      "end": 54.28,
-      "text": " đxi."
+      "start": 56.34,
+      "end": 56.58,
+      "text": " hà nội.",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 56.34,
+          "end": 56.34,
+          "probability": 0.422002209816128,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội.",
+          "start": 56.34,
+          "end": 56.58,
+          "probability": 0.6231139389177164,
+          "tokens": [
+            297,
+            38555,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 54.44,
-      "end": 56.14,
-      "text": " chỉ số đo lường sức mạnh của đồng bạc xanh."
+      "start": 56.68,
+      "end": 58.6,
+      "text": " ảnh: giang huy từ sau hai nghìn không trăm ba mươi.",
+      "seek": null,
+      "tokens": [
+        220,
+        7398,
+        5728,
+        25,
+        1735,
+        656,
+        2137,
+        88,
+        26834,
+        17828,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " ảnh:",
+          "start": 56.68,
+          "end": 56.76,
+          "probability": 0.45820135627582204,
+          "tokens": [
+            220,
+            7398,
+            5728,
+            25
+          ]
+        },
+        {
+          "word": " giang",
+          "start": 56.82,
+          "end": 56.84,
+          "probability": 0.5899755656719208,
+          "tokens": [
+            1735,
+            656
+          ]
+        },
+        {
+          "word": " huy",
+          "start": 56.84,
+          "end": 57.04,
+          "probability": 0.7495453357696533,
+          "tokens": [
+            2137,
+            88
+          ]
+        },
+        {
+          "word": " từ",
+          "start": 57.04,
+          "end": 57.18,
+          "probability": 0.442504346370697,
+          "tokens": [
+            26834
+          ]
+        },
+        {
+          "word": " sau",
+          "start": 57.18,
+          "end": 57.44,
+          "probability": 0.6191660761833191,
+          "tokens": [
+            17828
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 57.44,
+          "end": 57.56,
+          "probability": 0.0018497927812859416,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 57.56,
+          "end": 57.8,
+          "probability": 0.9391627311706543,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 57.8,
+          "end": 58.0,
+          "probability": 0.6875632405281067,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 58.02,
+          "end": 58.28,
+          "probability": 0.9951859712600708,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 58.28,
+          "end": 58.38,
+          "probability": 0.7968605756759644,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi.",
+          "start": 58.38,
+          "end": 58.6,
+          "probability": 0.8406874388456345,
+          "tokens": [
+            275,
+            4228,
+            21537,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 56.24,
-      "end": 59.34,
-      "text": " chốt tuần tăng gần không.tám phần trăm lên một trăm.năm điểm."
+      "start": 58.66,
+      "end": 60.22,
+      "text": " trung tâm tài chính thủ đô sẽ hình thành hợp",
+      "seek": null,
+      "tokens": [
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        258,
+        28903,
+        2934,
+        2851,
+        17208,
+        276,
+        10116,
+        39953,
+        276,
+        27836,
+        79
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trung",
+          "start": 58.66,
+          "end": 58.72,
+          "probability": 0.8540389239788055,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 58.72,
+          "end": 58.92,
+          "probability": 0.995250940322876,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 58.92,
+          "end": 59.12,
+          "probability": 0.8371905088424683,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 59.16,
+          "end": 59.26,
+          "probability": 0.9960381984710693,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " thủ",
+          "start": 59.26,
+          "end": 59.46,
+          "probability": 0.9392326772212982,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 59.46,
+          "end": 59.62,
+          "probability": 0.9954697489738464,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " sẽ",
+          "start": 59.62,
+          "end": 59.74,
+          "probability": 0.9218980073928833,
+          "tokens": [
+            17208
+          ]
+        },
+        {
+          "word": " hình",
+          "start": 59.74,
+          "end": 59.94,
+          "probability": 0.9855930805206299,
+          "tokens": [
+            276,
+            10116
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 59.94,
+          "end": 60.02,
+          "probability": 0.9813608527183533,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " hợp",
+          "start": 60.02,
+          "end": 60.22,
+          "probability": 0.9283741116523743,
+          "tokens": [
+            276,
+            27836,
+            79
+          ]
+        }
+      ]
     },
     {
-      "start": 59.48,
-      "end": 59.9,
-      "text": " ông tai oông."
+      "start": 60.22,
+      "end": 62.44,
+      "text": " phần thứ hai tại phía bắc ở trục nhật tân nội bài",
+      "seek": null,
+      "tokens": [
+        903,
+        18241,
+        47269,
+        21822,
+        37773,
+        903,
+        2686,
+        272,
+        30838,
+        19272,
+        504,
+        37664,
+        6245,
+        25296,
+        256,
+        9667,
+        297,
+        38555,
+        272,
+        21971
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " phần",
+          "start": 60.22,
+          "end": 60.44,
+          "probability": 0.9617929756641388,
+          "tokens": [
+            903,
+            18241
+          ]
+        },
+        {
+          "word": " thứ",
+          "start": 60.44,
+          "end": 60.56,
+          "probability": 0.9896529316902161,
+          "tokens": [
+            47269
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 60.56,
+          "end": 60.72,
+          "probability": 0.9191457033157349,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " tại",
+          "start": 60.72,
+          "end": 60.9,
+          "probability": 0.8547466993331909,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " phía",
+          "start": 60.9,
+          "end": 61.1,
+          "probability": 0.9973547458648682,
+          "tokens": [
+            903,
+            2686
+          ]
+        },
+        {
+          "word": " bắc",
+          "start": 61.1,
+          "end": 61.26,
+          "probability": 0.8452396094799042,
+          "tokens": [
+            272,
+            30838
+          ]
+        },
+        {
+          "word": " ở",
+          "start": 61.26,
+          "end": 61.42,
+          "probability": 0.928533673286438,
+          "tokens": [
+            19272
+          ]
+        },
+        {
+          "word": " trục",
+          "start": 61.42,
+          "end": 61.58,
+          "probability": 0.728710412979126,
+          "tokens": [
+            504,
+            37664
+          ]
+        },
+        {
+          "word": " nhật",
+          "start": 61.68,
+          "end": 61.78,
+          "probability": 0.40097178518772125,
+          "tokens": [
+            6245,
+            25296
+          ]
+        },
+        {
+          "word": " tân",
+          "start": 61.78,
+          "end": 61.96,
+          "probability": 0.002197809488279745,
+          "tokens": [
+            256,
+            9667
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 62.02,
+          "end": 62.22,
+          "probability": 0.5359690636396408,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " bài",
+          "start": 62.22,
+          "end": 62.44,
+          "probability": 0.5946206301450729,
+          "tokens": [
+            272,
+            21971
+          ]
+        }
+      ]
     },
     {
-      "start": 60.0,
-      "end": 61.18,
-      "text": " nhà giao dịch kim loại độc lập."
+      "start": 62.44,
+      "end": 64.26,
+      "text": " cùng hệ sinh thái giao dịch hàng hóa quốc tế.",
+      "seek": null,
+      "tokens": [
+        45701,
+        276,
+        8471,
+        3343,
+        71,
+        258,
+        28249,
+        290,
+        7648,
+        274,
+        46829,
+        48373,
+        276,
+        812,
+        64,
+        421,
+        24426,
+        256,
+        6115,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " cùng",
+          "start": 62.44,
+          "end": 62.58,
+          "probability": 0.8669788241386414,
+          "tokens": [
+            45701
+          ]
+        },
+        {
+          "word": " hệ",
+          "start": 62.58,
+          "end": 62.76,
+          "probability": 0.9528921842575073,
+          "tokens": [
+            276,
+            8471
+          ]
+        },
+        {
+          "word": " sinh",
+          "start": 62.76,
+          "end": 62.92,
+          "probability": 0.9944876134395599,
+          "tokens": [
+            3343,
+            71
+          ]
+        },
+        {
+          "word": " thái",
+          "start": 62.92,
+          "end": 63.1,
+          "probability": 0.958177387714386,
+          "tokens": [
+            258,
+            28249
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 63.1,
+          "end": 63.3,
+          "probability": 0.9743265509605408,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 63.3,
+          "end": 63.46,
+          "probability": 0.973535805940628,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " hàng",
+          "start": 63.46,
+          "end": 63.64,
+          "probability": 0.9361211657524109,
+          "tokens": [
+            48373
+          ]
+        },
+        {
+          "word": " hóa",
+          "start": 63.64,
+          "end": 63.86,
+          "probability": 0.9053017099698385,
+          "tokens": [
+            276,
+            812,
+            64
+          ]
+        },
+        {
+          "word": " quốc",
+          "start": 63.86,
+          "end": 64.02,
+          "probability": 0.9689225256443024,
+          "tokens": [
+            421,
+            24426
+          ]
+        },
+        {
+          "word": " tế.",
+          "start": 64.02,
+          "end": 64.26,
+          "probability": 0.7454148828983307,
+          "tokens": [
+            256,
+            6115,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 61.26,
-      "end": 63.82,
-      "text": " cho biết nhà đầu tư vẫn lạc quan về giá vàng trong dài hạn."
+      "start": 64.36,
+      "end": 67.0,
+      "text": " khu vực này được đánh giá là địa điểm",
+      "seek": null,
+      "tokens": [
+        7168,
+        84,
+        371,
+        27951,
+        12542,
+        15832,
+        2934,
+        33434,
+        1735,
+        842,
+        3684,
+        42063,
+        64,
+        13264,
+        47119
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " khu",
+          "start": 64.36,
+          "end": 66.88,
+          "probability": 0.9219784736633301,
+          "tokens": [
+            7168,
+            84
+          ]
+        },
+        {
+          "word": " vực",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.7981651723384857,
+          "tokens": [
+            371,
+            27951
+          ]
+        },
+        {
+          "word": " này",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.018923111259937286,
+          "tokens": [
+            12542
+          ]
+        },
+        {
+          "word": " được",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.03961567208170891,
+          "tokens": [
+            15832
+          ]
+        },
+        {
+          "word": " đánh",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.07233654893934727,
+          "tokens": [
+            2934,
+            33434
+          ]
+        },
+        {
+          "word": " giá",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.8005658090114594,
+          "tokens": [
+            1735,
+            842
+          ]
+        },
+        {
+          "word": " là",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.03823273256421089,
+          "tokens": [
+            3684
+          ]
+        },
+        {
+          "word": " địa",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.33948314681765623,
+          "tokens": [
+            42063,
+            64
+          ]
+        },
+        {
+          "word": " điểm",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.5395908989012241,
+          "tokens": [
+            13264,
+            47119
+          ]
+        }
+      ]
     },
     {
-      "start": 63.9,
-      "end": 66.56,
-      "text": " kim loại quý này đã xuống thấp nhất từ khi xung đột bắt đầu."
+      "start": 67.0,
+      "end": 67.08,
+      "text": " thuận lợi cho kết nối giao thông.",
+      "seek": null,
+      "tokens": [
+        40295,
+        27410,
+        287,
+        27836,
+        72,
+        1586,
+        350,
+        13888,
+        297,
+        24273,
+        290,
+        7648,
+        258,
+        8217,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thuận",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.007710936013609171,
+          "tokens": [
+            40295,
+            27410
+          ]
+        },
+        {
+          "word": " lợi",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.8222905000050863,
+          "tokens": [
+            287,
+            27836,
+            72
+          ]
+        },
+        {
+          "word": " cho",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.2559959292411804,
+          "tokens": [
+            1586
+          ]
+        },
+        {
+          "word": " kết",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.015690648928284645,
+          "tokens": [
+            350,
+            13888
+          ]
+        },
+        {
+          "word": " nối",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.5016007460653782,
+          "tokens": [
+            297,
+            24273
+          ]
+        },
+        {
+          "word": " giao",
+          "start": 67.0,
+          "end": 67.0,
+          "probability": 0.27399583579972386,
+          "tokens": [
+            290,
+            7648
+          ]
+        },
+        {
+          "word": " thông.",
+          "start": 67.0,
+          "end": 67.08,
+          "probability": 0.57798849294583,
+          "tokens": [
+            258,
+            8217,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 66.64,
-      "end": 68.5,
-      "text": " trong bối cảnh giá u lên cao nhất bốn tháng."
+      "start": 67.14,
+      "end": 69.56,
+      "text": " cũng như có thể quy tụ trụ sở của các tổ chức tài chính.",
+      "seek": null,
+      "tokens": [
+        22747,
+        16228,
+        6333,
+        24491,
+        44088,
+        256,
+        17740,
+        504,
+        17740,
+        262,
+        13755,
+        11990,
+        13250,
+        256,
+        20950,
+        417,
+        27138,
+        256,
+        21971,
+        42178,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " cũng",
+          "start": 67.14,
+          "end": 67.14,
+          "probability": 0.07408629357814789,
+          "tokens": [
+            22747
+          ]
+        },
+        {
+          "word": " như",
+          "start": 67.14,
+          "end": 67.34,
+          "probability": 0.9628731608390808,
+          "tokens": [
+            16228
+          ]
+        },
+        {
+          "word": " có",
+          "start": 67.34,
+          "end": 67.5,
+          "probability": 0.9844697713851929,
+          "tokens": [
+            6333
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 67.5,
+          "end": 67.68,
+          "probability": 0.9994834661483765,
+          "tokens": [
+            24491
+          ]
+        },
+        {
+          "word": " quy",
+          "start": 67.72,
+          "end": 67.82,
+          "probability": 0.9959361553192139,
+          "tokens": [
+            44088
+          ]
+        },
+        {
+          "word": " tụ",
+          "start": 67.82,
+          "end": 68.06,
+          "probability": 0.9877617955207825,
+          "tokens": [
+            256,
+            17740
+          ]
+        },
+        {
+          "word": " trụ",
+          "start": 68.18,
+          "end": 68.28,
+          "probability": 0.7903084456920624,
+          "tokens": [
+            504,
+            17740
+          ]
+        },
+        {
+          "word": " sở",
+          "start": 68.28,
+          "end": 68.46,
+          "probability": 0.9995588064193726,
+          "tokens": [
+            262,
+            13755
+          ]
+        },
+        {
+          "word": " của",
+          "start": 68.46,
+          "end": 68.6,
+          "probability": 0.9980738162994385,
+          "tokens": [
+            11990
+          ]
+        },
+        {
+          "word": " các",
+          "start": 68.6,
+          "end": 68.76,
+          "probability": 0.9987998008728027,
+          "tokens": [
+            13250
+          ]
+        },
+        {
+          "word": " tổ",
+          "start": 68.88,
+          "end": 68.98,
+          "probability": 0.9994191527366638,
+          "tokens": [
+            256,
+            20950
+          ]
+        },
+        {
+          "word": " chức",
+          "start": 68.98,
+          "end": 69.12,
+          "probability": 0.9999112486839294,
+          "tokens": [
+            417,
+            27138
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 69.12,
+          "end": 69.32,
+          "probability": 0.978677362203598,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính.",
+          "start": 69.32,
+          "end": 69.56,
+          "probability": 0.509338989853859,
+          "tokens": [
+            42178,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 68.62,
-      "end": 69.14,
-      "text": " giá bạc thỏi."
+      "start": 69.64,
+      "end": 70.32,
+      "text": " tập đoàn quốc tế.",
+      "seek": null,
+      "tokens": [
+        256,
+        35148,
+        2934,
+        78,
+        22476,
+        421,
+        24426,
+        256,
+        6115,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tập",
+          "start": 69.64,
+          "end": 69.68,
+          "probability": 0.6562840789556503,
+          "tokens": [
+            256,
+            35148
+          ]
+        },
+        {
+          "word": " đoàn",
+          "start": 69.68,
+          "end": 69.86,
+          "probability": 0.7306083589792252,
+          "tokens": [
+            2934,
+            78,
+            22476
+          ]
+        },
+        {
+          "word": " quốc",
+          "start": 69.86,
+          "end": 70.16,
+          "probability": 0.9841033220291138,
+          "tokens": [
+            421,
+            24426
+          ]
+        },
+        {
+          "word": " tế.",
+          "start": 70.16,
+          "end": 70.32,
+          "probability": 0.6676413211971521,
+          "tokens": [
+            256,
+            6115,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 69.22,
-      "end": 71.82,
-      "text": " bạc miếng trong nước cũng giảm bốn.ba phần trăm hôm nay."
+      "start": 70.42,
+      "end": 72.22,
+      "text": " trung tâm tài chính phía bắc thủ đô dự kiến có",
+      "seek": null,
+      "tokens": [
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        903,
+        2686,
+        272,
+        30838,
+        258,
+        28903,
+        2934,
+        2851,
+        274,
+        14522,
+        6315,
+        16240,
+        6333
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trung",
+          "start": 70.42,
+          "end": 70.46,
+          "probability": 0.8929328918457031,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 70.46,
+          "end": 70.66,
+          "probability": 0.9993058443069458,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 70.66,
+          "end": 70.86,
+          "probability": 0.9880553483963013,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 70.86,
+          "end": 71.06,
+          "probability": 0.9994327425956726,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " phía",
+          "start": 71.06,
+          "end": 71.3,
+          "probability": 0.993167906999588,
+          "tokens": [
+            903,
+            2686
+          ]
+        },
+        {
+          "word": " bắc",
+          "start": 71.3,
+          "end": 71.42,
+          "probability": 0.5792481899261475,
+          "tokens": [
+            272,
+            30838
+          ]
+        },
+        {
+          "word": " thủ",
+          "start": 71.42,
+          "end": 71.58,
+          "probability": 0.9712692201137543,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 71.58,
+          "end": 71.72,
+          "probability": 0.9989696741104126,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " dự",
+          "start": 71.72,
+          "end": 71.86,
+          "probability": 0.97176793217659,
+          "tokens": [
+            274,
+            14522
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 71.86,
+          "end": 72.06,
+          "probability": 0.9992483556270599,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " có",
+          "start": 72.1,
+          "end": 72.22,
+          "probability": 0.9627588987350464,
+          "tokens": [
+            6333
+          ]
+        }
+      ]
     },
     {
-      "start": 71.92,
+      "start": 72.22,
       "end": 74.06,
-      "text": " công ty cổ phần đầu tư vàng phú quý niêm yết kim"
+      "text": " hệ thống hạ tầng vận hành quản lý thông minh.",
+      "seek": null,
+      "tokens": [
+        276,
+        8471,
+        258,
+        21092,
+        276,
+        5890,
+        256,
+        11161,
+        872,
+        371,
+        27410,
+        276,
+        24449,
+        421,
+        31926,
+        287,
+        11822,
+        258,
+        8217,
+        923,
+        71,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hệ",
+          "start": 72.22,
+          "end": 72.4,
+          "probability": 0.9979670345783234,
+          "tokens": [
+            276,
+            8471
+          ]
+        },
+        {
+          "word": " thống",
+          "start": 72.4,
+          "end": 72.54,
+          "probability": 0.9994140863418579,
+          "tokens": [
+            258,
+            21092
+          ]
+        },
+        {
+          "word": " hạ",
+          "start": 72.54,
+          "end": 72.72,
+          "probability": 0.9842971563339233,
+          "tokens": [
+            276,
+            5890
+          ]
+        },
+        {
+          "word": " tầng",
+          "start": 72.72,
+          "end": 72.9,
+          "probability": 0.9890951116879781,
+          "tokens": [
+            256,
+            11161,
+            872
+          ]
+        },
+        {
+          "word": " vận",
+          "start": 72.9,
+          "end": 73.1,
+          "probability": 0.9388954043388367,
+          "tokens": [
+            371,
+            27410
+          ]
+        },
+        {
+          "word": " hành",
+          "start": 73.1,
+          "end": 73.32,
+          "probability": 0.9996625483036041,
+          "tokens": [
+            276,
+            24449
+          ]
+        },
+        {
+          "word": " quản",
+          "start": 73.32,
+          "end": 73.52,
+          "probability": 0.5914983227849007,
+          "tokens": [
+            421,
+            31926
+          ]
+        },
+        {
+          "word": " lý",
+          "start": 73.52,
+          "end": 73.6,
+          "probability": 0.20835517696104944,
+          "tokens": [
+            287,
+            11822
+          ]
+        },
+        {
+          "word": " thông",
+          "start": 73.6,
+          "end": 73.86,
+          "probability": 0.9856403768062592,
+          "tokens": [
+            258,
+            8217
+          ]
+        },
+        {
+          "word": " minh.",
+          "start": 73.86,
+          "end": 74.06,
+          "probability": 0.6664621232630452,
+          "tokens": [
+            923,
+            71,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 74.06,
-      "end": 76.68,
-      "text": " loại này tại ba.hai ba.mười một triệu đồng mỗi lượng."
+      "start": 74.18,
+      "end": 76.74,
+      "text": " công ước thương mại cung cấp toàn bộ dịch vụ tài chính nền tảng số.",
+      "seek": null,
+      "tokens": [
+        35451,
+        220,
+        19578,
+        258,
+        24605,
+        275,
+        12745,
+        269,
+        1063,
+        269,
+        47176,
+        281,
+        22476,
+        272,
+        8047,
+        274,
+        46829,
+        371,
+        17740,
+        256,
+        21971,
+        42178,
+        297,
+        26871,
+        256,
+        45815,
+        44983,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " công",
+          "start": 74.18,
+          "end": 74.18,
+          "probability": 0.1711522787809372,
+          "tokens": [
+            35451
+          ]
+        },
+        {
+          "word": " ước",
+          "start": 74.18,
+          "end": 74.34,
+          "probability": 0.6361559629440308,
+          "tokens": [
+            220,
+            19578
+          ]
+        },
+        {
+          "word": " thương",
+          "start": 74.34,
+          "end": 74.56,
+          "probability": 0.9566966593265533,
+          "tokens": [
+            258,
+            24605
+          ]
+        },
+        {
+          "word": " mại",
+          "start": 74.56,
+          "end": 74.7,
+          "probability": 0.9865360856056213,
+          "tokens": [
+            275,
+            12745
+          ]
+        },
+        {
+          "word": " cung",
+          "start": 74.7,
+          "end": 74.88,
+          "probability": 0.9247903227806091,
+          "tokens": [
+            269,
+            1063
+          ]
+        },
+        {
+          "word": " cấp",
+          "start": 74.88,
+          "end": 75.08,
+          "probability": 0.9996484518051147,
+          "tokens": [
+            269,
+            47176
+          ]
+        },
+        {
+          "word": " toàn",
+          "start": 75.08,
+          "end": 75.28,
+          "probability": 0.947921484708786,
+          "tokens": [
+            281,
+            22476
+          ]
+        },
+        {
+          "word": " bộ",
+          "start": 75.28,
+          "end": 75.44,
+          "probability": 0.9989063143730164,
+          "tokens": [
+            272,
+            8047
+          ]
+        },
+        {
+          "word": " dịch",
+          "start": 75.44,
+          "end": 75.64,
+          "probability": 0.9825111627578735,
+          "tokens": [
+            274,
+            46829
+          ]
+        },
+        {
+          "word": " vụ",
+          "start": 75.64,
+          "end": 75.76,
+          "probability": 0.9994000792503357,
+          "tokens": [
+            371,
+            17740
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 75.84,
+          "end": 75.94,
+          "probability": 0.9835261404514313,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 75.94,
+          "end": 76.14,
+          "probability": 0.9976275563240051,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " nền",
+          "start": 76.14,
+          "end": 76.3,
+          "probability": 0.8790238201618195,
+          "tokens": [
+            297,
+            26871
+          ]
+        },
+        {
+          "word": " tảng",
+          "start": 76.3,
+          "end": 76.52,
+          "probability": 0.9971250295639038,
+          "tokens": [
+            256,
+            45815
+          ]
+        },
+        {
+          "word": " số.",
+          "start": 76.52,
+          "end": 76.74,
+          "probability": 0.4537482326850295,
+          "tokens": [
+            44983,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 76.76,
-      "end": 79.26,
-      "text": " tương đương tám mươi.sáu tám mươi bảy triệu một kg."
+      "start": 76.84,
+      "end": 79.54,
+      "text": " tại cuộc làm việc với ban thường vụ thành ủy hà nội giữa năm ngoái.",
+      "seek": null,
+      "tokens": [
+        37773,
+        50138,
+        22319,
+        38628,
+        18916,
+        5643,
+        258,
+        24280,
+        371,
+        17740,
+        39953,
+        220,
+        28903,
+        88,
+        276,
+        1467,
+        297,
+        38555,
+        1735,
+        26606,
+        38098,
+        45843,
+        28249,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tại",
+          "start": 76.84,
+          "end": 76.86,
+          "probability": 0.43906453251838684,
+          "tokens": [
+            37773
+          ]
+        },
+        {
+          "word": " cuộc",
+          "start": 76.94,
+          "end": 77.04,
+          "probability": 0.9021520018577576,
+          "tokens": [
+            50138
+          ]
+        },
+        {
+          "word": " làm",
+          "start": 77.04,
+          "end": 77.24,
+          "probability": 0.9926844835281372,
+          "tokens": [
+            22319
+          ]
+        },
+        {
+          "word": " việc",
+          "start": 77.24,
+          "end": 77.46,
+          "probability": 0.9973946809768677,
+          "tokens": [
+            38628
+          ]
+        },
+        {
+          "word": " với",
+          "start": 77.46,
+          "end": 77.64,
+          "probability": 0.861806333065033,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " ban",
+          "start": 77.64,
+          "end": 77.78,
+          "probability": 0.31841328740119934,
+          "tokens": [
+            5643
+          ]
+        },
+        {
+          "word": " thường",
+          "start": 77.78,
+          "end": 78.0,
+          "probability": 0.9717953205108643,
+          "tokens": [
+            258,
+            24280
+          ]
+        },
+        {
+          "word": " vụ",
+          "start": 78.0,
+          "end": 78.18,
+          "probability": 0.9807972609996796,
+          "tokens": [
+            371,
+            17740
+          ]
+        },
+        {
+          "word": " thành",
+          "start": 78.18,
+          "end": 78.34,
+          "probability": 0.44270339608192444,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " ủy",
+          "start": 78.34,
+          "end": 78.54,
+          "probability": 0.6817972920835018,
+          "tokens": [
+            220,
+            28903,
+            88
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 78.54,
+          "end": 78.72,
+          "probability": 0.5010333922691643,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 78.72,
+          "end": 78.86,
+          "probability": 0.9608260691165924,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " giữa",
+          "start": 78.86,
+          "end": 79.06,
+          "probability": 0.9055707156658173,
+          "tokens": [
+            1735,
+            26606
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 79.06,
+          "end": 79.2,
+          "probability": 0.8491176962852478,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " ngoái.",
+          "start": 79.2,
+          "end": 79.54,
+          "probability": 0.7493532598018646,
+          "tokens": [
+            45843,
+            28249,
+            13
+          ]
+        }
+      ]
     },
     {
-      "start": 79.38,
-      "end": 79.84,
-      "text": " an-ca-rát."
+      "start": 79.54,
+      "end": 82.14,
+      "text": " tổng bí thư tô lâm cũng yêu cầu thủ đô định vị thu nhập người dân",
+      "seek": null,
+      "tokens": [
+        256,
+        20950,
+        872,
+        272,
+        870,
+        258,
+        4228,
+        20683,
+        287,
+        24484,
+        22747,
+        49107,
+        269,
+        23582,
+        258,
+        28903,
+        2934,
+        2851,
+        42063,
+        5728,
+        45186,
+        40295,
+        6245,
+        35148,
+        15898,
+        274,
+        9667
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tổng",
+          "start": 79.54,
+          "end": 79.62,
+          "probability": 0.7800892988840739,
+          "tokens": [
+            256,
+            20950,
+            872
+          ]
+        },
+        {
+          "word": " bí",
+          "start": 79.62,
+          "end": 79.74,
+          "probability": 0.9602072536945343,
+          "tokens": [
+            272,
+            870
+          ]
+        },
+        {
+          "word": " thư",
+          "start": 79.74,
+          "end": 79.92,
+          "probability": 0.7762097418308258,
+          "tokens": [
+            258,
+            4228
+          ]
+        },
+        {
+          "word": " tô",
+          "start": 79.92,
+          "end": 80.02,
+          "probability": 0.020527593791484833,
+          "tokens": [
+            20683
+          ]
+        },
+        {
+          "word": " lâm",
+          "start": 80.04,
+          "end": 80.26,
+          "probability": 0.44336609821766615,
+          "tokens": [
+            287,
+            24484
+          ]
+        },
+        {
+          "word": " cũng",
+          "start": 80.26,
+          "end": 80.42,
+          "probability": 0.8685154914855957,
+          "tokens": [
+            22747
+          ]
+        },
+        {
+          "word": " yêu",
+          "start": 80.42,
+          "end": 80.62,
+          "probability": 0.9947313070297241,
+          "tokens": [
+            49107
+          ]
+        },
+        {
+          "word": " cầu",
+          "start": 80.62,
+          "end": 80.86,
+          "probability": 0.9961273968219757,
+          "tokens": [
+            269,
+            23582
+          ]
+        },
+        {
+          "word": " thủ",
+          "start": 80.86,
+          "end": 81.02,
+          "probability": 0.9857942461967468,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 81.02,
+          "end": 81.16,
+          "probability": 0.9417423903942108,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " định",
+          "start": 81.16,
+          "end": 81.34,
+          "probability": 0.9934500753879547,
+          "tokens": [
+            42063,
+            5728
+          ]
+        },
+        {
+          "word": " vị",
+          "start": 81.34,
+          "end": 81.42,
+          "probability": 0.9858944416046143,
+          "tokens": [
+            45186
+          ]
+        },
+        {
+          "word": " thu",
+          "start": 81.42,
+          "end": 81.58,
+          "probability": 0.9371852278709412,
+          "tokens": [
+            40295
+          ]
+        },
+        {
+          "word": " nhập",
+          "start": 81.6,
+          "end": 81.82,
+          "probability": 0.9935290515422821,
+          "tokens": [
+            6245,
+            35148
+          ]
+        },
+        {
+          "word": " người",
+          "start": 81.82,
+          "end": 81.96,
+          "probability": 0.9094133377075195,
+          "tokens": [
+            15898
+          ]
+        },
+        {
+          "word": " dân",
+          "start": 81.96,
+          "end": 82.14,
+          "probability": 0.9980227947235107,
+          "tokens": [
+            274,
+            9667
+          ]
+        }
+      ]
     },
     {
-      "start": 80.02,
-      "end": 83.32,
-      "text": " đo-di mua bán bạc miếng quanh ba.ba ba.mười hai triệu đồng một lượng."
+      "start": 82.14,
+      "end": 84.78,
+      "text": " hà nội so với khu vực vào năm hai nghìn không trăm ba mươi lăm đến",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        370,
+        18916,
+        7168,
+        84,
+        371,
+        27951,
+        24995,
+        38098,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        26353
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 82.14,
+          "end": 82.32,
+          "probability": 0.910883367061615,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 82.32,
+          "end": 82.46,
+          "probability": 0.9989167749881744,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " so",
+          "start": 82.46,
+          "end": 82.54,
+          "probability": 0.7141733765602112,
+          "tokens": [
+            370
+          ]
+        },
+        {
+          "word": " với",
+          "start": 82.54,
+          "end": 82.76,
+          "probability": 0.9893918037414551,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " khu",
+          "start": 82.78,
+          "end": 82.98,
+          "probability": 0.9858161211013794,
+          "tokens": [
+            7168,
+            84
+          ]
+        },
+        {
+          "word": " vực",
+          "start": 82.98,
+          "end": 83.1,
+          "probability": 0.9781846404075623,
+          "tokens": [
+            371,
+            27951
+          ]
+        },
+        {
+          "word": " vào",
+          "start": 83.1,
+          "end": 83.24,
+          "probability": 0.9778884649276733,
+          "tokens": [
+            24995
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 83.26,
+          "end": 83.4,
+          "probability": 0.9979469180107117,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 83.4,
+          "end": 83.54,
+          "probability": 2.3987153326743282e-05,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 83.54,
+          "end": 83.82,
+          "probability": 0.8416198194026947,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 83.82,
+          "end": 83.94,
+          "probability": 0.5990197658538818,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 83.94,
+          "end": 84.2,
+          "probability": 0.9951988160610199,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 84.2,
+          "end": 84.36,
+          "probability": 0.9312204718589783,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 84.36,
+          "end": 84.48,
+          "probability": 0.9978959163029989,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm",
+          "start": 84.48,
+          "end": 84.64,
+          "probability": 0.9252225160598755,
+          "tokens": [
+            287,
+            21434
+          ]
+        },
+        {
+          "word": " đến",
+          "start": 84.64,
+          "end": 84.78,
+          "probability": 0.9946476817131042,
+          "tokens": [
+            26353
+          ]
+        }
+      ]
+    },
+    {
+      "start": 84.78,
+      "end": 87.44,
+      "text": " hai nghìn không trăm bốn mươi lăm và phát triển khu công nghệ cao.",
+      "seek": null,
+      "tokens": [
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        272,
+        31754,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        10274,
+        903,
+        7656,
+        1376,
+        38197,
+        7168,
+        84,
+        35451,
+        29338,
+        8471,
+        1335,
+        78,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hai",
+          "start": 84.78,
+          "end": 84.96,
+          "probability": 0.7790288925170898,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 84.96,
+          "end": 85.26,
+          "probability": 0.9444996416568756,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 85.28,
+          "end": 85.38,
+          "probability": 0.9958245754241943,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 85.38,
+          "end": 85.6,
+          "probability": 0.9949808120727539,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " bốn",
+          "start": 85.6,
+          "end": 85.78,
+          "probability": 0.995903730392456,
+          "tokens": [
+            272,
+            31754
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 85.78,
+          "end": 85.92,
+          "probability": 0.9929448962211609,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm",
+          "start": 85.92,
+          "end": 86.16,
+          "probability": 0.9401598274707794,
+          "tokens": [
+            287,
+            21434
+          ]
+        },
+        {
+          "word": " và",
+          "start": 86.16,
+          "end": 86.3,
+          "probability": 0.9858740568161011,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " phát",
+          "start": 86.3,
+          "end": 86.5,
+          "probability": 0.9773167371749878,
+          "tokens": [
+            903,
+            7656
+          ]
+        },
+        {
+          "word": " triển",
+          "start": 86.5,
+          "end": 86.68,
+          "probability": 0.998959481716156,
+          "tokens": [
+            1376,
+            38197
+          ]
+        },
+        {
+          "word": " khu",
+          "start": 86.68,
+          "end": 86.88,
+          "probability": 0.984690397977829,
+          "tokens": [
+            7168,
+            84
+          ]
+        },
+        {
+          "word": " công",
+          "start": 86.88,
+          "end": 87.06,
+          "probability": 0.9837902188301086,
+          "tokens": [
+            35451
+          ]
+        },
+        {
+          "word": " nghệ",
+          "start": 87.06,
+          "end": 87.2,
+          "probability": 0.9883356988430023,
+          "tokens": [
+            29338,
+            8471
+          ]
+        },
+        {
+          "word": " cao.",
+          "start": 87.2,
+          "end": 87.44,
+          "probability": 0.6713719765345255,
+          "tokens": [
+            1335,
+            78,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 87.56,
+      "end": 89.1,
+      "text": " trung tâm tài chính hài hòa với hồ gươm.",
+      "seek": null,
+      "tokens": [
+        504,
+        1063,
+        256,
+        24484,
+        256,
+        21971,
+        42178,
+        276,
+        21971,
+        276,
+        4293,
+        64,
+        18916,
+        276,
+        11057,
+        290,
+        24416,
+        76,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trung",
+          "start": 87.56,
+          "end": 87.56,
+          "probability": 0.6081863343715668,
+          "tokens": [
+            504,
+            1063
+          ]
+        },
+        {
+          "word": " tâm",
+          "start": 87.56,
+          "end": 87.78,
+          "probability": 0.9989887475967407,
+          "tokens": [
+            256,
+            24484
+          ]
+        },
+        {
+          "word": " tài",
+          "start": 87.78,
+          "end": 87.98,
+          "probability": 0.9793626964092255,
+          "tokens": [
+            256,
+            21971
+          ]
+        },
+        {
+          "word": " chính",
+          "start": 87.98,
+          "end": 88.12,
+          "probability": 0.9953762292861938,
+          "tokens": [
+            42178
+          ]
+        },
+        {
+          "word": " hài",
+          "start": 88.12,
+          "end": 88.36,
+          "probability": 0.978056013584137,
+          "tokens": [
+            276,
+            21971
+          ]
+        },
+        {
+          "word": " hòa",
+          "start": 88.36,
+          "end": 88.54,
+          "probability": 0.9650940100351969,
+          "tokens": [
+            276,
+            4293,
+            64
+          ]
+        },
+        {
+          "word": " với",
+          "start": 88.54,
+          "end": 88.72,
+          "probability": 0.9571645259857178,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " hồ",
+          "start": 88.72,
+          "end": 88.86,
+          "probability": 0.46573640406131744,
+          "tokens": [
+            276,
+            11057
+          ]
+        },
+        {
+          "word": " gươm.",
+          "start": 88.86,
+          "end": 89.1,
+          "probability": 0.3185639518778771,
+          "tokens": [
+            290,
+            24416,
+            76,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 89.18,
+      "end": 89.42,
+      "text": " phố cổ.",
+      "seek": null,
+      "tokens": [
+        903,
+        7863,
+        9613,
+        243,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " phố",
+          "start": 89.18,
+          "end": 89.24,
+          "probability": 0.7141237854957581,
+          "tokens": [
+            903,
+            7863
+          ]
+        },
+        {
+          "word": " cổ.",
+          "start": 89.24,
+          "end": 89.42,
+          "probability": 0.6048850584775209,
+          "tokens": [
+            9613,
+            243,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 89.58,
+      "end": 91.24,
+      "text": " trong quy hoạch tổng thể tầm nhìn một trăm năm.",
+      "seek": null,
+      "tokens": [
+        18826,
+        44088,
+        1106,
+        5890,
+        339,
+        256,
+        20950,
+        872,
+        24491,
+        256,
+        11161,
+        76,
+        6245,
+        41320,
+        15486,
+        504,
+        21434,
+        38098,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trong",
+          "start": 89.58,
+          "end": 89.64,
+          "probability": 0.907420814037323,
+          "tokens": [
+            18826
+          ]
+        },
+        {
+          "word": " quy",
+          "start": 89.66,
+          "end": 89.76,
+          "probability": 0.9610102772712708,
+          "tokens": [
+            44088
+          ]
+        },
+        {
+          "word": " hoạch",
+          "start": 89.76,
+          "end": 90.02,
+          "probability": 0.9987600247065226,
+          "tokens": [
+            1106,
+            5890,
+            339
+          ]
+        },
+        {
+          "word": " tổng",
+          "start": 90.08,
+          "end": 90.18,
+          "probability": 0.9492018818855286,
+          "tokens": [
+            256,
+            20950,
+            872
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 90.18,
+          "end": 90.3,
+          "probability": 0.9965689182281494,
+          "tokens": [
+            24491
+          ]
+        },
+        {
+          "word": " tầm",
+          "start": 90.42,
+          "end": 90.52,
+          "probability": 0.9581044514973959,
+          "tokens": [
+            256,
+            11161,
+            76
+          ]
+        },
+        {
+          "word": " nhìn",
+          "start": 90.52,
+          "end": 90.64,
+          "probability": 0.9160663783550262,
+          "tokens": [
+            6245,
+            41320
+          ]
+        },
+        {
+          "word": " một",
+          "start": 90.64,
+          "end": 90.8,
+          "probability": 0.40178626775741577,
+          "tokens": [
+            15486
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 90.8,
+          "end": 91.02,
+          "probability": 0.9965356588363647,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " năm.",
+          "start": 91.02,
+          "end": 91.24,
+          "probability": 0.5290432162582874,
+          "tokens": [
+            38098,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 91.32,
+      "end": 94.54,
+      "text": " thành phố hà nội đặt mục tiêu tăng trưởng kinh tế trên mười",
+      "seek": null,
+      "tokens": [
+        39953,
+        903,
+        7863,
+        276,
+        1467,
+        297,
+        38555,
+        2934,
+        38248,
+        275,
+        37664,
+        8757,
+        28310,
+        256,
+        34705,
+        504,
+        49301,
+        350,
+        10085,
+        256,
+        6115,
+        33187,
+        275,
+        14531
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thành",
+          "start": 91.32,
+          "end": 93.58,
+          "probability": 0.9124816656112671,
+          "tokens": [
+            39953
+          ]
+        },
+        {
+          "word": " phố",
+          "start": 93.58,
+          "end": 94.36,
+          "probability": 0.9987381100654602,
+          "tokens": [
+            903,
+            7863
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 94.36,
+          "end": 94.44,
+          "probability": 0.5003631901927292,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.8805295825004578,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " đặt",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.03619663184508681,
+          "tokens": [
+            2934,
+            38248
+          ]
+        },
+        {
+          "word": " mục",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.05507119791582227,
+          "tokens": [
+            275,
+            37664
+          ]
+        },
+        {
+          "word": " tiêu",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.5526992902159691,
+          "tokens": [
+            8757,
+            28310
+          ]
+        },
+        {
+          "word": " tăng",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.05248861014842987,
+          "tokens": [
+            256,
+            34705
+          ]
+        },
+        {
+          "word": " trưởng",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.36218126118183136,
+          "tokens": [
+            504,
+            49301
+          ]
+        },
+        {
+          "word": " kinh",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.0235963185550645,
+          "tokens": [
+            350,
+            10085
+          ]
+        },
+        {
+          "word": " tế",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.7275867164134979,
+          "tokens": [
+            256,
+            6115
+          ]
+        },
+        {
+          "word": " trên",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.003799299942329526,
+          "tokens": [
+            33187
+          ]
+        },
+        {
+          "word": " mười",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.02197055972646922,
+          "tokens": [
+            275,
+            14531
+          ]
+        }
+      ]
+    },
+    {
+      "start": 94.54,
+      "end": 96.18,
+      "text": " một phần trăm mỗi năm từ nay đến hai nghìn không trăm ba mươi.",
+      "seek": null,
+      "tokens": [
+        15486,
+        903,
+        18241,
+        504,
+        21434,
+        275,
+        49572,
+        38098,
+        26834,
+        34227,
+        26353,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " một",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.001731158117763698,
+          "tokens": [
+            15486
+          ]
+        },
+        {
+          "word": " phần",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.30352501408196986,
+          "tokens": [
+            903,
+            18241
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.47467908449470997,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " mỗi",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.04857032373547554,
+          "tokens": [
+            275,
+            49572
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 94.54,
+          "end": 94.54,
+          "probability": 0.9261016845703125,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " từ",
+          "start": 94.54,
+          "end": 94.72,
+          "probability": 0.9410626292228699,
+          "tokens": [
+            26834
+          ]
+        },
+        {
+          "word": " nay",
+          "start": 94.72,
+          "end": 94.88,
+          "probability": 0.9968212842941284,
+          "tokens": [
+            34227
+          ]
+        },
+        {
+          "word": " đến",
+          "start": 94.88,
+          "end": 95.04,
+          "probability": 0.9964380264282227,
+          "tokens": [
+            26353
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 95.04,
+          "end": 95.2,
+          "probability": 0.13461698591709137,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 95.2,
+          "end": 95.48,
+          "probability": 0.8987094759941101,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 95.5,
+          "end": 95.6,
+          "probability": 0.8592920303344727,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 95.6,
+          "end": 95.9,
+          "probability": 0.941795289516449,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 95.9,
+          "end": 96.0,
+          "probability": 0.9361433386802673,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi.",
+          "start": 96.0,
+          "end": 96.18,
+          "probability": 0.7486130795441568,
+          "tokens": [
+            275,
+            4228,
+            21537,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 96.28,
+      "end": 96.52,
+      "text": " qua đó.",
+      "seek": null,
+      "tokens": [
+        24159,
+        17647,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " qua",
+          "start": 96.28,
+          "end": 96.28,
+          "probability": 0.06786541640758514,
+          "tokens": [
+            24159
+          ]
+        },
+        {
+          "word": " đó.",
+          "start": 96.28,
+          "end": 96.52,
+          "probability": 0.44901815499179065,
+          "tokens": [
+            17647,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 96.6,
+      "end": 99.7,
+      "text": " rdp của hà nội có thể đạt một trăm mười ba tỷ u vào hai nghìn không",
+      "seek": null,
+      "tokens": [
+        367,
+        67,
+        79,
+        11990,
+        276,
+        1467,
+        297,
+        38555,
+        6333,
+        24491,
+        2934,
+        44664,
+        15486,
+        504,
+        21434,
+        275,
+        14531,
+        4773,
+        256,
+        1297,
+        115,
+        344,
+        24995,
+        21822,
+        29338,
+        41320,
+        11415
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " rdp",
+          "start": 96.6,
+          "end": 97.0,
+          "probability": 0.36973578299027093,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " của",
+          "start": 97.0,
+          "end": 97.2,
+          "probability": 0.9142885804176331,
+          "tokens": [
+            11990
+          ]
+        },
+        {
+          "word": " hà",
+          "start": 97.24,
+          "end": 97.4,
+          "probability": 0.8112512826919556,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 97.4,
+          "end": 97.58,
+          "probability": 0.9959150850772858,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " có",
+          "start": 97.58,
+          "end": 97.66,
+          "probability": 0.9715951681137085,
+          "tokens": [
+            6333
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 97.68,
+          "end": 97.84,
+          "probability": 0.9994682669639587,
+          "tokens": [
+            24491
+          ]
+        },
+        {
+          "word": " đạt",
+          "start": 97.84,
+          "end": 98.08,
+          "probability": 0.8889088332653046,
+          "tokens": [
+            2934,
+            44664
+          ]
+        },
+        {
+          "word": " một",
+          "start": 98.08,
+          "end": 98.2,
+          "probability": 0.5436198115348816,
+          "tokens": [
+            15486
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 98.2,
+          "end": 98.4,
+          "probability": 0.9907218515872955,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " mười",
+          "start": 98.4,
+          "end": 98.56,
+          "probability": 0.9875789284706116,
+          "tokens": [
+            275,
+            14531
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 98.56,
+          "end": 98.68,
+          "probability": 0.9914891719818115,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " tỷ",
+          "start": 98.68,
+          "end": 98.84,
+          "probability": 0.9608778158823649,
+          "tokens": [
+            256,
+            1297,
+            115
+          ]
+        },
+        {
+          "word": " u",
+          "start": 98.84,
+          "end": 98.96,
+          "probability": 0.3834647834300995,
+          "tokens": [
+            344
+          ]
+        },
+        {
+          "word": " vào",
+          "start": 98.96,
+          "end": 99.12,
+          "probability": 0.8515774011611938,
+          "tokens": [
+            24995
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 99.14,
+          "end": 99.28,
+          "probability": 0.4933064579963684,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 99.28,
+          "end": 99.56,
+          "probability": 0.9330829083919525,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 99.6,
+          "end": 99.7,
+          "probability": 0.9844501614570618,
+          "tokens": [
+            11415
+          ]
+        }
+      ]
+    },
+    {
+      "start": 99.7,
+      "end": 102.62,
+      "text": " trăm ba mươi và rdp bình quân đầu người hơn mười hai nghìn đô la.",
+      "seek": null,
+      "tokens": [
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        10274,
+        367,
+        67,
+        79,
+        272,
+        10116,
+        421,
+        9667,
+        32573,
+        15898,
+        34335,
+        275,
+        14531,
+        21822,
+        29338,
+        41320,
+        2934,
+        2851,
+        635,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trăm",
+          "start": 99.7,
+          "end": 99.98,
+          "probability": 0.9944008588790894,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 99.98,
+          "end": 100.12,
+          "probability": 0.9830402731895447,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 100.12,
+          "end": 100.26,
+          "probability": 0.9947717587153116,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " và",
+          "start": 100.3,
+          "end": 100.4,
+          "probability": 0.6906350255012512,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " rdp",
+          "start": 100.4,
+          "end": 100.9,
+          "probability": 0.8508692781130472,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " bình",
+          "start": 100.9,
+          "end": 101.08,
+          "probability": 0.8969458341598511,
+          "tokens": [
+            272,
+            10116
+          ]
+        },
+        {
+          "word": " quân",
+          "start": 101.08,
+          "end": 101.32,
+          "probability": 0.8953792452812195,
+          "tokens": [
+            421,
+            9667
+          ]
+        },
+        {
+          "word": " đầu",
+          "start": 101.32,
+          "end": 101.46,
+          "probability": 0.2727801203727722,
+          "tokens": [
+            32573
+          ]
+        },
+        {
+          "word": " người",
+          "start": 101.46,
+          "end": 101.62,
+          "probability": 0.9797550439834595,
+          "tokens": [
+            15898
+          ]
+        },
+        {
+          "word": " hơn",
+          "start": 101.62,
+          "end": 101.78,
+          "probability": 0.9737889766693115,
+          "tokens": [
+            34335
+          ]
+        },
+        {
+          "word": " mười",
+          "start": 101.78,
+          "end": 101.98,
+          "probability": 0.924046516418457,
+          "tokens": [
+            275,
+            14531
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 101.98,
+          "end": 102.12,
+          "probability": 0.31422799825668335,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 102.12,
+          "end": 102.32,
+          "probability": 0.9853825867176056,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 102.32,
+          "end": 102.46,
+          "probability": 0.9799590110778809,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " la.",
+          "start": 102.46,
+          "end": 102.62,
+          "probability": 0.00726334354840219,
+          "tokens": [
+            635,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 102.7,
+      "end": 105.12,
+      "text": " thủ đô dự kiến duy trì tốc độ tăng trưởng rdp hai",
+      "seek": null,
+      "tokens": [
+        258,
+        28903,
+        2934,
+        2851,
+        274,
+        14522,
+        6315,
+        16240,
+        37385,
+        504,
+        4749,
+        256,
+        24426,
+        29075,
+        256,
+        34705,
+        504,
+        49301,
+        367,
+        67,
+        79,
+        21822
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " thủ",
+          "start": 102.7,
+          "end": 102.78,
+          "probability": 0.5364870727062225,
+          "tokens": [
+            258,
+            28903
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 102.78,
+          "end": 102.94,
+          "probability": 0.9975908398628235,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " dự",
+          "start": 102.94,
+          "end": 103.1,
+          "probability": 0.9912964701652527,
+          "tokens": [
+            274,
+            14522
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 103.1,
+          "end": 103.32,
+          "probability": 0.9983268678188324,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " duy",
+          "start": 103.32,
+          "end": 103.44,
+          "probability": 0.9980719089508057,
+          "tokens": [
+            37385
+          ]
+        },
+        {
+          "word": " trì",
+          "start": 103.44,
+          "end": 103.74,
+          "probability": 0.999870240688324,
+          "tokens": [
+            504,
+            4749
+          ]
+        },
+        {
+          "word": " tốc",
+          "start": 103.74,
+          "end": 103.9,
+          "probability": 0.9960867464542389,
+          "tokens": [
+            256,
+            24426
+          ]
+        },
+        {
+          "word": " độ",
+          "start": 103.9,
+          "end": 104.0,
+          "probability": 0.9981751441955566,
+          "tokens": [
+            29075
+          ]
+        },
+        {
+          "word": " tăng",
+          "start": 104.0,
+          "end": 104.26,
+          "probability": 0.9981864392757416,
+          "tokens": [
+            256,
+            34705
+          ]
+        },
+        {
+          "word": " trưởng",
+          "start": 104.26,
+          "end": 104.52,
+          "probability": 0.9452225267887115,
+          "tokens": [
+            504,
+            49301
+          ]
+        },
+        {
+          "word": " rdp",
+          "start": 104.52,
+          "end": 104.9,
+          "probability": 0.3289503509343679,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 104.9,
+          "end": 105.12,
+          "probability": 0.022976253181695938,
+          "tokens": [
+            21822
+          ]
+        }
+      ]
+    },
+    {
+      "start": 105.2,
+      "end": 107.14,
+      "text": " con số này đến hai nghìn không trăm bốn mươi lăm.",
+      "seek": null,
+      "tokens": [
+        416,
+        44983,
+        12542,
+        26353,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        272,
+        31754,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " con",
+          "start": 105.2,
+          "end": 105.3,
+          "probability": 0.8431092500686646,
+          "tokens": [
+            416
+          ]
+        },
+        {
+          "word": " số",
+          "start": 105.3,
+          "end": 105.52,
+          "probability": 0.9947595000267029,
+          "tokens": [
+            44983
+          ]
+        },
+        {
+          "word": " này",
+          "start": 105.52,
+          "end": 105.66,
+          "probability": 0.9329869747161865,
+          "tokens": [
+            12542
+          ]
+        },
+        {
+          "word": " đến",
+          "start": 105.66,
+          "end": 105.84,
+          "probability": 0.9735926985740662,
+          "tokens": [
+            26353
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 105.84,
+          "end": 105.98,
+          "probability": 0.073708675801754,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 105.98,
+          "end": 106.32,
+          "probability": 0.9137628972530365,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 106.32,
+          "end": 106.38,
+          "probability": 0.7514614462852478,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 106.38,
+          "end": 106.64,
+          "probability": 0.9757091403007507,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " bốn",
+          "start": 106.64,
+          "end": 106.82,
+          "probability": 0.9847863614559174,
+          "tokens": [
+            272,
+            31754
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 106.82,
+          "end": 106.98,
+          "probability": 0.9908773899078369,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm.",
+          "start": 106.98,
+          "end": 107.14,
+          "probability": 0.5721099252502123,
+          "tokens": [
+            287,
+            21434,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 107.24,
+      "end": 109.48,
+      "text": " quy mô rdp có thể lần lượt đạt hai trăm tỷ u.",
+      "seek": null,
+      "tokens": [
+        44088,
+        275,
+        2851,
+        367,
+        67,
+        79,
+        6333,
+        24491,
+        287,
+        18241,
+        287,
+        12725,
+        83,
+        2934,
+        44664,
+        21822,
+        504,
+        21434,
+        256,
+        1297,
+        115,
+        344,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " quy",
+          "start": 107.24,
+          "end": 107.26,
+          "probability": 0.82816481590271,
+          "tokens": [
+            44088
+          ]
+        },
+        {
+          "word": " mô",
+          "start": 107.26,
+          "end": 107.46,
+          "probability": 0.9537652432918549,
+          "tokens": [
+            275,
+            2851
+          ]
+        },
+        {
+          "word": " rdp",
+          "start": 107.46,
+          "end": 107.86,
+          "probability": 0.9438591599464417,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " có",
+          "start": 107.98,
+          "end": 108.08,
+          "probability": 0.9584766626358032,
+          "tokens": [
+            6333
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 108.08,
+          "end": 108.22,
+          "probability": 0.9989423155784607,
+          "tokens": [
+            24491
+          ]
+        },
+        {
+          "word": " lần",
+          "start": 108.22,
+          "end": 108.44,
+          "probability": 0.9860776960849762,
+          "tokens": [
+            287,
+            18241
+          ]
+        },
+        {
+          "word": " lượt",
+          "start": 108.44,
+          "end": 108.62,
+          "probability": 0.9932736754417419,
+          "tokens": [
+            287,
+            12725,
+            83
+          ]
+        },
+        {
+          "word": " đạt",
+          "start": 108.62,
+          "end": 108.78,
+          "probability": 0.9801829159259796,
+          "tokens": [
+            2934,
+            44664
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 108.78,
+          "end": 108.94,
+          "probability": 0.7376163601875305,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 108.94,
+          "end": 109.2,
+          "probability": 0.9991675317287445,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " tỷ",
+          "start": 109.2,
+          "end": 109.34,
+          "probability": 0.9620374639829,
+          "tokens": [
+            256,
+            1297,
+            115
+          ]
+        },
+        {
+          "word": " u.",
+          "start": 109.34,
+          "end": 109.48,
+          "probability": 0.3562747249379754,
+          "tokens": [
+            344,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 109.58,
+      "end": 111.62,
+      "text": " sáu trăm bốn mươi tỷ u vào các năm hai nghìn không",
+      "seek": null,
+      "tokens": [
+        262,
+        842,
+        84,
+        504,
+        21434,
+        272,
+        31754,
+        275,
+        4228,
+        21537,
+        256,
+        1297,
+        115,
+        344,
+        24995,
+        13250,
+        38098,
+        21822,
+        29338,
+        41320,
+        11415
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " sáu",
+          "start": 109.58,
+          "end": 109.72,
+          "probability": 0.9377094308535258,
+          "tokens": [
+            262,
+            842,
+            84
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 109.72,
+          "end": 109.88,
+          "probability": 0.9953067600727081,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " bốn",
+          "start": 109.88,
+          "end": 110.12,
+          "probability": 0.9976213574409485,
+          "tokens": [
+            272,
+            31754
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 110.12,
+          "end": 110.22,
+          "probability": 0.9962330063184103,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " tỷ",
+          "start": 110.22,
+          "end": 110.44,
+          "probability": 0.9753309885660807,
+          "tokens": [
+            256,
+            1297,
+            115
+          ]
+        },
+        {
+          "word": " u",
+          "start": 110.44,
+          "end": 110.52,
+          "probability": 0.9518746137619019,
+          "tokens": [
+            344
+          ]
+        },
+        {
+          "word": " vào",
+          "start": 110.52,
+          "end": 110.72,
+          "probability": 0.4091199040412903,
+          "tokens": [
+            24995
+          ]
+        },
+        {
+          "word": " các",
+          "start": 110.72,
+          "end": 110.82,
+          "probability": 0.8190433382987976,
+          "tokens": [
+            13250
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 110.88,
+          "end": 111.02,
+          "probability": 0.9956478476524353,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 111.02,
+          "end": 111.2,
+          "probability": 0.3956310451030731,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 111.2,
+          "end": 111.5,
+          "probability": 0.9731716811656952,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 111.5,
+          "end": 111.62,
+          "probability": 0.9930490255355835,
+          "tokens": [
+            11415
+          ]
+        }
+      ]
+    },
+    {
+      "start": 111.62,
+      "end": 113.8,
+      "text": " trăm ba mươi lăm và hai nghìn không trăm bốn mươi lăm.",
+      "seek": null,
+      "tokens": [
+        504,
+        21434,
+        4773,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        10274,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        272,
+        31754,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " trăm",
+          "start": 111.62,
+          "end": 111.88,
+          "probability": 0.9934728443622589,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " ba",
+          "start": 111.88,
+          "end": 112.02,
+          "probability": 0.3989394009113312,
+          "tokens": [
+            4773
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 112.02,
+          "end": 112.18,
+          "probability": 0.9984135826428732,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm",
+          "start": 112.18,
+          "end": 112.4,
+          "probability": 0.9679835438728333,
+          "tokens": [
+            287,
+            21434
+          ]
+        },
+        {
+          "word": " và",
+          "start": 112.4,
+          "end": 112.54,
+          "probability": 0.6780831813812256,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 112.54,
+          "end": 112.66,
+          "probability": 0.7996029853820801,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 112.66,
+          "end": 112.8,
+          "probability": 0.47973310308589134,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 112.92,
+          "end": 113.02,
+          "probability": 0.07761120796203613,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 113.02,
+          "end": 113.28,
+          "probability": 0.9763675630092621,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " bốn",
+          "start": 113.28,
+          "end": 113.42,
+          "probability": 0.9840375185012817,
+          "tokens": [
+            272,
+            31754
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 113.42,
+          "end": 113.6,
+          "probability": 0.991698682308197,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm.",
+          "start": 113.6,
+          "end": 113.8,
+          "probability": 0.617499211182197,
+          "tokens": [
+            287,
+            21434,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 113.88,
+      "end": 114.44,
+      "text": " tương ứng với đó.",
+      "seek": null,
+      "tokens": [
+        256,
+        24605,
+        220,
+        44555,
+        18916,
+        17647,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " tương",
+          "start": 113.88,
+          "end": 113.98,
+          "probability": 0.5882006660103798,
+          "tokens": [
+            256,
+            24605
+          ]
+        },
+        {
+          "word": " ứng",
+          "start": 113.98,
+          "end": 114.2,
+          "probability": 0.9974008202552795,
+          "tokens": [
+            220,
+            44555
+          ]
+        },
+        {
+          "word": " với",
+          "start": 114.2,
+          "end": 114.34,
+          "probability": 0.9746866822242737,
+          "tokens": [
+            18916
+          ]
+        },
+        {
+          "word": " đó.",
+          "start": 114.34,
+          "end": 114.44,
+          "probability": 0.3395466832444072,
+          "tokens": [
+            17647,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 114.6,
+      "end": 116.6,
+      "text": " rdp bình quân đầu người có thể đạt mười tám",
+      "seek": null,
+      "tokens": [
+        367,
+        67,
+        79,
+        272,
+        10116,
+        421,
+        9667,
+        32573,
+        15898,
+        6333,
+        24491,
+        2934,
+        44664,
+        275,
+        14531,
+        7737,
+        76
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " rdp",
+          "start": 114.6,
+          "end": 115.0,
+          "probability": 0.30863919449742144,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " bình",
+          "start": 115.0,
+          "end": 115.16,
+          "probability": 0.8369605541229248,
+          "tokens": [
+            272,
+            10116
+          ]
+        },
+        {
+          "word": " quân",
+          "start": 115.16,
+          "end": 115.4,
+          "probability": 0.9375106692314148,
+          "tokens": [
+            421,
+            9667
+          ]
+        },
+        {
+          "word": " đầu",
+          "start": 115.4,
+          "end": 115.5,
+          "probability": 0.14201541244983673,
+          "tokens": [
+            32573
+          ]
+        },
+        {
+          "word": " người",
+          "start": 115.5,
+          "end": 115.7,
+          "probability": 0.9707111120223999,
+          "tokens": [
+            15898
+          ]
+        },
+        {
+          "word": " có",
+          "start": 115.7,
+          "end": 115.8,
+          "probability": 0.9363932609558105,
+          "tokens": [
+            6333
+          ]
+        },
+        {
+          "word": " thể",
+          "start": 115.8,
+          "end": 115.98,
+          "probability": 0.9984160661697388,
+          "tokens": [
+            24491
+          ]
+        },
+        {
+          "word": " đạt",
+          "start": 115.98,
+          "end": 116.22,
+          "probability": 0.9705156981945038,
+          "tokens": [
+            2934,
+            44664
+          ]
+        },
+        {
+          "word": " mười",
+          "start": 116.22,
+          "end": 116.38,
+          "probability": 0.5545507706701756,
+          "tokens": [
+            275,
+            14531
+          ]
+        },
+        {
+          "word": " tám",
+          "start": 116.38,
+          "end": 116.6,
+          "probability": 0.987330973148346,
+          "tokens": [
+            7737,
+            76
+          ]
+        }
+      ]
+    },
+    {
+      "start": 116.6,
+      "end": 118.52,
+      "text": " nghìn tám trăm đô la và bốn mươi hai nghìn đô la.",
+      "seek": null,
+      "tokens": [
+        29338,
+        41320,
+        7737,
+        76,
+        504,
+        21434,
+        2934,
+        2851,
+        635,
+        10274,
+        272,
+        31754,
+        275,
+        4228,
+        21537,
+        21822,
+        29338,
+        41320,
+        2934,
+        2851,
+        635,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " nghìn",
+          "start": 116.6,
+          "end": 116.7,
+          "probability": 0.8836988210678101,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " tám",
+          "start": 116.7,
+          "end": 116.92,
+          "probability": 0.9825106859207153,
+          "tokens": [
+            7737,
+            76
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 116.92,
+          "end": 117.1,
+          "probability": 0.9992800354957581,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 117.1,
+          "end": 117.28,
+          "probability": 0.9679223895072937,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " la",
+          "start": 117.28,
+          "end": 117.34,
+          "probability": 0.9388297200202942,
+          "tokens": [
+            635
+          ]
+        },
+        {
+          "word": " và",
+          "start": 117.34,
+          "end": 117.56,
+          "probability": 0.8445346355438232,
+          "tokens": [
+            10274
+          ]
+        },
+        {
+          "word": " bốn",
+          "start": 117.56,
+          "end": 117.74,
+          "probability": 0.8805505931377411,
+          "tokens": [
+            272,
+            31754
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 117.74,
+          "end": 117.94,
+          "probability": 0.7592189908027649,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 117.94,
+          "end": 118.02,
+          "probability": 0.5544615387916565,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 118.02,
+          "end": 118.22,
+          "probability": 0.9830214977264404,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 118.22,
+          "end": 118.36,
+          "probability": 0.9889736771583557,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " la.",
+          "start": 118.36,
+          "end": 118.52,
+          "probability": 0.5210842080414295,
+          "tokens": [
+            635,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 118.58,
+      "end": 120.26,
+      "text": " đến năm hai nghìn không trăm sáu mươi lăm.",
+      "seek": null,
+      "tokens": [
+        26353,
+        38098,
+        21822,
+        29338,
+        41320,
+        11415,
+        504,
+        21434,
+        262,
+        842,
+        84,
+        275,
+        4228,
+        21537,
+        287,
+        21434,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " đến",
+          "start": 118.58,
+          "end": 118.68,
+          "probability": 0.8064785003662109,
+          "tokens": [
+            26353
+          ]
+        },
+        {
+          "word": " năm",
+          "start": 118.68,
+          "end": 118.84,
+          "probability": 0.9905315041542053,
+          "tokens": [
+            38098
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 118.84,
+          "end": 119.0,
+          "probability": 0.27026641368865967,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 119.0,
+          "end": 119.32,
+          "probability": 0.9609328806400299,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " không",
+          "start": 119.32,
+          "end": 119.4,
+          "probability": 0.9899839162826538,
+          "tokens": [
+            11415
+          ]
+        },
+        {
+          "word": " trăm",
+          "start": 119.4,
+          "end": 119.66,
+          "probability": 0.990850180387497,
+          "tokens": [
+            504,
+            21434
+          ]
+        },
+        {
+          "word": " sáu",
+          "start": 119.66,
+          "end": 119.92,
+          "probability": 0.9885612924893697,
+          "tokens": [
+            262,
+            842,
+            84
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 119.92,
+          "end": 120.08,
+          "probability": 0.9931445519129435,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " lăm.",
+          "start": 120.08,
+          "end": 120.26,
+          "probability": 0.8662808338801066,
+          "tokens": [
+            287,
+            21434,
+            13
+          ]
+        }
+      ]
+    },
+    {
+      "start": 120.32,
+      "end": 122.06,
+      "text": " hà nội dự kiến rdp bình quân đầu người",
+      "seek": null,
+      "tokens": [
+        276,
+        1467,
+        297,
+        38555,
+        274,
+        14522,
+        6315,
+        16240,
+        367,
+        67,
+        79,
+        272,
+        10116,
+        421,
+        9667,
+        32573,
+        15898
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " hà",
+          "start": 120.32,
+          "end": 120.4,
+          "probability": 0.5468054190278053,
+          "tokens": [
+            276,
+            1467
+          ]
+        },
+        {
+          "word": " nội",
+          "start": 120.4,
+          "end": 120.52,
+          "probability": 0.9934172928333282,
+          "tokens": [
+            297,
+            38555
+          ]
+        },
+        {
+          "word": " dự",
+          "start": 120.52,
+          "end": 120.7,
+          "probability": 0.9764018058776855,
+          "tokens": [
+            274,
+            14522
+          ]
+        },
+        {
+          "word": " kiến",
+          "start": 120.7,
+          "end": 120.88,
+          "probability": 0.9961228668689728,
+          "tokens": [
+            6315,
+            16240
+          ]
+        },
+        {
+          "word": " rdp",
+          "start": 120.88,
+          "end": 121.34,
+          "probability": 0.7426542341709137,
+          "tokens": [
+            367,
+            67,
+            79
+          ]
+        },
+        {
+          "word": " bình",
+          "start": 121.34,
+          "end": 121.56,
+          "probability": 0.9646552503108978,
+          "tokens": [
+            272,
+            10116
+          ]
+        },
+        {
+          "word": " quân",
+          "start": 121.56,
+          "end": 121.78,
+          "probability": 0.9910462498664856,
+          "tokens": [
+            421,
+            9667
+          ]
+        },
+        {
+          "word": " đầu",
+          "start": 121.78,
+          "end": 121.9,
+          "probability": 0.952556848526001,
+          "tokens": [
+            32573
+          ]
+        },
+        {
+          "word": " người",
+          "start": 121.9,
+          "end": 122.06,
+          "probability": 0.9459684491157532,
+          "tokens": [
+            15898
+          ]
+        }
+      ]
+    },
+    {
+      "start": 122.06,
+      "end": 123.48,
+      "text": " đạt khoảng chín mươi hai nghìn đô la.",
+      "seek": null,
+      "tokens": [
+        2934,
+        44664,
+        49627,
+        45815,
+        417,
+        10973,
+        275,
+        4228,
+        21537,
+        21822,
+        29338,
+        41320,
+        2934,
+        2851,
+        635,
+        13
+      ],
+      "temperature": null,
+      "avg_logprob": null,
+      "compression_ratio": null,
+      "no_speech_prob": null,
+      "words": [
+        {
+          "word": " đạt",
+          "start": 122.06,
+          "end": 122.24,
+          "probability": 0.9675343930721283,
+          "tokens": [
+            2934,
+            44664
+          ]
+        },
+        {
+          "word": " khoảng",
+          "start": 122.4,
+          "end": 122.5,
+          "probability": 0.7809625566005707,
+          "tokens": [
+            49627,
+            45815
+          ]
+        },
+        {
+          "word": " chín",
+          "start": 122.5,
+          "end": 122.68,
+          "probability": 0.43985383422113955,
+          "tokens": [
+            417,
+            10973
+          ]
+        },
+        {
+          "word": " mươi",
+          "start": 122.68,
+          "end": 122.88,
+          "probability": 0.34553131957848865,
+          "tokens": [
+            275,
+            4228,
+            21537
+          ]
+        },
+        {
+          "word": " hai",
+          "start": 122.88,
+          "end": 122.98,
+          "probability": 0.892781138420105,
+          "tokens": [
+            21822
+          ]
+        },
+        {
+          "word": " nghìn",
+          "start": 122.98,
+          "end": 123.22,
+          "probability": 0.993966668844223,
+          "tokens": [
+            29338,
+            41320
+          ]
+        },
+        {
+          "word": " đô",
+          "start": 123.22,
+          "end": 123.34,
+          "probability": 0.984110414981842,
+          "tokens": [
+            2934,
+            2851
+          ]
+        },
+        {
+          "word": " la.",
+          "start": 123.34,
+          "end": 123.48,
+          "probability": 0.9294897317886353,
+          "tokens": [
+            635,
+            13
+          ]
+        }
+      ]
     }
   ]
 }

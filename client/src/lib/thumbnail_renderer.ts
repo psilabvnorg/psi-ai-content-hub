@@ -234,9 +234,21 @@ const a_preload_fonts_data = async (a_template_data: TemplateData): Promise<void
       if (a_font_data) a_font_families_data.add(a_font_data);
     }
   }
-  // Wait for @font-face rules (incl. Google Fonts stylesheet) to be processed
-  // before requesting specific font weights; otherwise document.fonts.load
-  // silently resolves with an empty set and the canvas falls back to system fonts.
+  // In a hidden Electron window the Google Fonts <link> stylesheet may still be
+  // fetching when the first render request arrives. document.fonts.load() only
+  // finds fonts whose @font-face rule is already registered, so we must wait for
+  // every stylesheet <link> to finish loading first; then document.fonts.ready
+  // ensures all registered @font-face rules have been processed.
+  await Promise.all(
+    Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(
+      (el) => new Promise<void>((resolve) => {
+        const link = el as HTMLLinkElement;
+        if (link.sheet) { resolve(); return; }
+        link.addEventListener("load", () => resolve(), { once: true });
+        link.addEventListener("error", () => resolve(), { once: true });
+      }),
+    ),
+  ).catch(() => {});
   await document.fonts.ready.catch(() => {});
   await Promise.all(
     Array.from(a_font_families_data).map((a_font_name_data) =>

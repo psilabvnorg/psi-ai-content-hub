@@ -4,7 +4,7 @@ import httpx
 from pathlib import Path
 
 BASE = "http://127.0.0.1:6901"
-TEMPLATE_NAME = "DFF"
+TEMPLATE_NAME = "THE ANH 28"
 TEMPLATE_DIR = Path(r"D:\AI\psi-ai-content-hub\client\public\templates") / TEMPLATE_NAME
 CONFIG_PATH = Path(r"D:\AI\psi-ai-content-hub\temp\thumbnail_config.json")
 
