@@ -1,19 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "overlayImage": "templates/news-overlay/vertical-logo-only1.png",
+  "overlayImage": "http://localhost:6901/user-assets/thumbnail_307c127c.png",
   "introProps": {
-    "image1": "templates/news-intro-vertical/top.png",
-    "image2": "templates/news-intro-vertical/bottom.png",
-    "heroImage": "templates/news-intro-vertical/hero.png"
+    "image1": "http://localhost:6901/user-assets/652326173_924512013282955_6236140732922376726_n_d5563479.jpg",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_27fbdff7.png",
+    "heroImage": "http://localhost:6901/user-assets/thl4_de9dd81a.png"
   },
-  "audioSrc": "main/news/audio/narration.wav",
-  "backgroundMusic": "",
-  "backgroundMusicVolume": 0.2,
-  "images": [
-    "main/news/image/01.png",
-    "main/news/image/02.png",
-    "main/news/image/image-finder-3.jpg",
-    "main/news/image/xx.webp"
-  ]
+  "backgroundMusicVolume": 0.27,
+  "backgroundMusic": "background-music/review-film.mp3"
 }

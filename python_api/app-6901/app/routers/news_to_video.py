@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
 
 from python_api.common.jobs import JobStore
 
@@ -17,8 +18,11 @@ from ..services.news_to_video import (
     get_render_result,
     get_remotion_setup_status,
     get_studio_status,
+    load_file_from_path,
+    load_images_from_folder,
     render_progress_store,
     stage_preview,
+    stage_preview_from_paths,
     start_render_pipeline,
     start_studio,
     stop_studio,
@@ -27,6 +31,46 @@ from ..services.news_to_video import (
 
 
 router = APIRouter(prefix="/api/v1/news-to-video", tags=["news-to-video"])
+
+
+class RenderFromConfigRequest(BaseModel):
+    """JSON-only render request — all files are referenced by server-side paths.
+
+    This is intended for automation / scripting workflows where the audio,
+    transcript and images are already present on the server running this API.
+
+    Example::
+
+        {
+            "template": "NewsVerticalBackground",
+            "render_profile": "tiktok",
+            "audio_path": "D:/path/to/narration.wav",
+            "transcript_path": "D:/path/to/narration.json",
+            "slider_image_paths": "D:/path/to/images/",
+            "hero_image_path": null,
+            "config": {
+                "introDurationInFrames": 150,
+                "imageDurationInFrames": 170,
+                "backgroundMusicVolume": 0.2,
+                "backgroundMusic": "background-music/news1.mp3"
+            }
+        }
+
+    ``slider_image_paths`` is a folder path — all supported images inside
+    (jpg/png/webp/etc.) are loaded in sorted filename order, up to 10.
+
+    The response is identical to ``POST /render``: ``{"task_id": "..."}``
+    which can then be polled via ``GET /render/stream/{task_id}`` and
+    ``GET /render/result/{task_id}``.
+    """
+
+    template: str
+    render_profile: str = "tiktok"
+    audio_path: str
+    transcript_path: str
+    slider_image_paths: str
+    hero_image_path: str | None = None
+    config: dict = {}
 
 
 def _to_file(upload: UploadFile | None, field_name: str) -> UploadedFileData:
@@ -104,6 +148,51 @@ def create_render_task(
     return {"task_id": task_id}
 
 
+@router.post("/render-from-config")
+def render_from_config_endpoint(
+    req: RenderFromConfigRequest,
+    job_store: JobStore = Depends(get_job_store),
+) -> dict:
+    """Start a render from a pure JSON config — no file uploads needed.
+
+    Useful for automation and scripting: pass file paths on the server filesystem
+    together with all config options in one JSON body.
+    """
+    if req.template not in TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown template '{req.template}'. Valid templates: {list(TEMPLATES.keys())}",
+        )
+    if req.render_profile not in RENDER_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown render_profile '{req.render_profile}'. Valid profiles: {list(RENDER_PROFILES.keys())}",
+        )
+    try:
+        audio = load_file_from_path(req.audio_path, "audio_path")
+        transcript = load_file_from_path(req.transcript_path, "transcript_path")
+        image_list = load_images_from_folder(req.slider_image_paths)
+        hero = load_file_from_path(req.hero_image_path, "hero_image_path") if req.hero_image_path else None
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        task_id = start_render_pipeline(
+            job_store=job_store,
+            template_key=req.template,
+            audio=audio,
+            transcript=transcript,
+            images=image_list,
+            hero_image=hero,
+            overrides=req.config,
+            render_profile=req.render_profile,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {"task_id": task_id}
+
+
 @router.get("/render/stream/{task_id}")
 def render_progress_stream(task_id: str) -> StreamingResponse:
     return StreamingResponse(render_progress_store.sse_stream(task_id), media_type="text/event-stream")
@@ -153,6 +242,36 @@ def stage_preview_endpoint(
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    return result
+
+
+class StageFromConfigRequest(BaseModel):
+    """JSON-only preview-stage request — mirrors RenderFromConfigRequest."""
+
+    template: str
+    audio_path: str
+    transcript_path: str
+    slider_image_paths: str
+    hero_image_path: str | None = None
+    config: dict = {}
+
+
+@router.post("/preview/stage-from-config")
+def stage_from_config_endpoint(req: StageFromConfigRequest) -> dict:
+    """Stage a preview from a pure JSON config (no file uploads needed)."""
+    if req.template not in TEMPLATES:
+        raise HTTPException(status_code=400, detail=f"Unknown template '{req.template}'")
+    try:
+        result = stage_preview_from_paths(
+            template_key=req.template,
+            audio_path=req.audio_path,
+            transcript_path=req.transcript_path,
+            slider_image_paths=req.slider_image_paths,
+            hero_image_path=req.hero_image_path,
+            overrides=req.config,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return result
 
 

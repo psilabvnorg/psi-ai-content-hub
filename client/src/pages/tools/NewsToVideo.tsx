@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -253,12 +253,65 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // ── Config mode: "ui" uses UI fields, "json" uses textarea directly ──
+  const [configMode, setConfigMode] = useState<"ui" | "json">("ui");
+
+  // ── JSON Config (independent from UI fields) ──
+  const [jsonConfigText, setJsonConfigText] = useState(() => {
+    const tpl = TEMPLATES[0];
+    return JSON.stringify({
+      template: tpl.id,
+      audio_path: "",
+      transcript_path: "",
+      slider_image_paths: "",
+      introDurationInFrames: tpl.introDurationInFrames,
+      imageDurationInFrames: tpl.imageDurationInFrames,
+      introProps: tpl.introProps,
+      backgroundOverlayImage: tpl.backgroundOverlayImage,
+      backgroundMusicVolume: 0.2,
+      backgroundMusic: "background-music/review-film.mp3",
+    }, null, 2);
+  });
+  const [jsonConfigError, setJsonConfigError] = useState<string | null>(null);
+
   // ── Background music ──
   const [backgroundMusic, setBackgroundMusic] = useState<string>("background-music/review-film.mp3");
   const [backgroundMusicVolume, setBackgroundMusicVolume] = useState<number>(0.2);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [musicError, setMusicError] = useState<string | null>(null);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  // ── Derived JSON from UI fields (used for display + copy-on-toggle) ──
+  const uiConfigJson = useMemo(() => {
+    const tpl = TEMPLATES.find((t) => t.id === template)!;
+    const config: Record<string, unknown> = {
+      template,
+      introDurationInFrames: introDuration,
+      imageDurationInFrames: imageDuration,
+      introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+      backgroundMusicVolume,
+    };
+    if (tpl.backgroundOverlayImage !== undefined) config.backgroundOverlayImage = bgOverlay;
+    else config.overlayImage = bgOverlay;
+    if (captionBottom !== "") config.captionBottomPercent = captionBottom;
+    if (backgroundMusic) config.backgroundMusic = backgroundMusic;
+    return JSON.stringify(config, null, 2);
+  }, [template, introDuration, imageDuration, bgOverlay, captionBottom, introImage1, introImage2, introHeroImage, backgroundMusic, backgroundMusicVolume]);
+
+  // ── Parsed JSON fields for JSON mode routing ──
+  const parsedJson = useMemo(() => {
+    if (configMode !== "json" || jsonConfigError || !jsonConfigText.trim()) return null;
+    try { return JSON.parse(jsonConfigText) as Record<string, unknown>; } catch { return null; }
+  }, [configMode, jsonConfigText, jsonConfigError]);
+
+  const jsonHasFilePaths = useMemo(() => {
+    if (!parsedJson) return false;
+    return (
+      typeof parsedJson.audio_path === "string" && parsedJson.audio_path !== "" &&
+      typeof parsedJson.transcript_path === "string" && parsedJson.transcript_path !== "" &&
+      typeof parsedJson.slider_image_paths === "string" && parsedJson.slider_image_paths !== ""
+    );
+  }, [parsedJson]);
 
   // Ensure we have an Audio instance (created once)
   const getMusicPlayer = (): HTMLAudioElement => {
@@ -291,6 +344,46 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     } finally {
       setUploadingField(null);
     }
+  };
+
+  const updateJsonField = (key: string, value: unknown) => {
+    try {
+      const parsed = JSON.parse(jsonConfigText) as Record<string, unknown>;
+      parsed[key] = value;
+      setJsonConfigText(JSON.stringify(parsed, null, 2));
+      setJsonConfigError(null);
+    } catch { /* JSON currently invalid — leave it for user to fix */ }
+  };
+
+  const handleJsonConfigChange = (text: string) => {
+    setJsonConfigText(text);
+    try {
+      JSON.parse(text);
+      setJsonConfigError(null);
+    } catch (e) {
+      setJsonConfigError(e instanceof Error ? e.message : "Invalid JSON");
+    }
+  };
+
+  const handleSwitchToJsonMode = () => {
+    try {
+      const base = JSON.parse(uiConfigJson) as Record<string, unknown>;
+      // Preserve existing file paths if the textarea already has them
+      let existing: Record<string, unknown> = {};
+      try { existing = JSON.parse(jsonConfigText) as Record<string, unknown>; } catch { /* ignore */ }
+      const merged = {
+        ...base,
+        audio_path: existing.audio_path ?? "",
+        transcript_path: existing.transcript_path ?? "",
+        slider_image_paths: existing.slider_image_paths ?? "",
+        ...(existing.hero_image_path !== undefined ? { hero_image_path: existing.hero_image_path } : {}),
+      };
+      setJsonConfigText(JSON.stringify(merged, null, 2));
+    } catch {
+      setJsonConfigText(uiConfigJson);
+    }
+    setJsonConfigError(null);
+    setConfigMode("json");
   };
 
   const toggleMusicPreview = () => {
@@ -418,16 +511,18 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   };
 
   // ── Render ──
+  const filesReady = audioFile !== null && transcriptFile !== null && images.length >= 1;
   const canRender =
     appServerReachable &&
-    audioFile !== null &&
-    transcriptFile !== null &&
-    images.length >= 1 &&
     !isRendering &&
-    !isStaging;
+    !isStaging &&
+    (configMode === "ui"
+      ? filesReady
+      : !jsonConfigError && jsonConfigText.trim() !== "" && (jsonHasFilePaths || filesReady));
 
   const handleRender = async (renderProfile: "tiktok" | "youtube") => {
-    if (!canRender || !audioFile || !transcriptFile) return;
+    if (!canRender) return;
+    if (!jsonHasFilePaths && (!audioFile || !transcriptFile)) return;
     setIsRendering(true);
     setRenderProgress({ status: "starting", percent: 0, message: "Submitting render job..." });
     setRenderLogs([]);
@@ -435,27 +530,56 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
     setVideoDownloadName(null);
 
     try {
-      const configOverrides: Record<string, unknown> = {
-        introDurationInFrames: introDuration,
-        imageDurationInFrames: imageDuration,
-        introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
-        backgroundMusicVolume,
-      };
-      if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
-      else configOverrides.overlayImage = bgOverlay;
-      if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
-      if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
+      let renderTemplate = template;
+      let configOverrides: Record<string, unknown>;
+      if (configMode === "json") {
+        const parsed = JSON.parse(jsonConfigText) as Record<string, unknown>;
+        renderTemplate = (typeof parsed.template === "string" ? parsed.template : template) as TemplateId;
+        const { template: _t, ...rest } = parsed;
+        configOverrides = rest;
+      } else {
+        configOverrides = {
+          introDurationInFrames: introDuration,
+          imageDurationInFrames: imageDuration,
+          introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+          backgroundMusicVolume,
+        };
+        if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
+        else configOverrides.overlayImage = bgOverlay;
+        if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
+        if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
+      }
 
-      const form = new FormData();
-      form.append("template", template);
-      form.append("config_overrides", JSON.stringify(configOverrides));
-      form.append("render_profile", renderProfile);
-      form.append("audio_file", audioFile);
-      form.append("transcript_file", transcriptFile);
-      for (const img of images) form.append("images", img);
-      if (heroImage) form.append("hero_image", heroImage);
+      let createRes: Response;
+      if (configMode === "json" && jsonHasFilePaths && parsedJson) {
+        // JSON mode with file paths → POST JSON to render-from-config
+        const { template: _t, render_profile: _rp, audio_path, transcript_path, slider_image_paths, hero_image_path, ...configFields } = parsedJson;
+        createRes = await fetch(`${N2V_BASE}/render-from-config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            template: renderTemplate,
+            render_profile: renderProfile,
+            audio_path,
+            transcript_path,
+            slider_image_paths,
+            hero_image_path: hero_image_path ?? null,
+            config: configFields,
+          }),
+        });
+      } else {
+        // UI mode or JSON mode with uploaded files → FormData upload
+        const form = new FormData();
+        form.append("template", renderTemplate);
+        form.append("config_overrides", JSON.stringify(configOverrides));
+        form.append("render_profile", renderProfile);
+        form.append("audio_file", audioFile!);
+        form.append("transcript_file", transcriptFile!);
+        for (const img of images) form.append("images", img);
+        if (heroImage) form.append("hero_image", heroImage);
+        createRes = await fetch(`${N2V_BASE}/render`, { method: "POST", body: form });
+      }
 
-      const createRes = await fetch(`${N2V_BASE}/render`, { method: "POST", body: form });
       if (!createRes.ok) {
         const err = (await createRes.json().catch(() => ({}))) as { detail?: string };
         throw new Error(err.detail || "Failed to create render task");
@@ -483,32 +607,58 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
   };
 
   const handlePreview = async () => {
-    if (!canRender || !audioFile || !transcriptFile) return;
+    if (!canRender) return;
     setIsStaging(true);
     try {
       await fetch(`${APP_API_URL}/api/v1/news-to-video/preview/studio/start`, { method: "POST" });
       await new Promise((r) => setTimeout(r, 3000));
 
-      const configOverrides: Record<string, unknown> = {
-        introDurationInFrames: introDuration,
-        imageDurationInFrames: imageDuration,
-        introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
-        backgroundMusicVolume,
-      };
-      if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
-      else configOverrides.overlayImage = bgOverlay;
-      if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
-      if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
+      let res: Response;
+      if (configMode === "json" && jsonHasFilePaths && parsedJson) {
+        // JSON mode with file paths → POST JSON to stage-from-config
+        const { template: jsonTpl, render_profile: _rp, audio_path, transcript_path, slider_image_paths, hero_image_path, ...configFields } = parsedJson;
+        res = await fetch(`${N2V_BASE}/preview/stage-from-config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            template: (typeof jsonTpl === "string" ? jsonTpl : template),
+            audio_path,
+            transcript_path,
+            slider_image_paths,
+            hero_image_path: hero_image_path ?? null,
+            config: configFields,
+          }),
+        });
+      } else {
+        // UI mode or JSON mode with uploaded files
+        let previewTemplate = template;
+        let configOverrides: Record<string, unknown>;
+        if (configMode === "json" && parsedJson) {
+          previewTemplate = (typeof parsedJson.template === "string" ? parsedJson.template : template) as TemplateId;
+          const { template: _t, ...rest } = parsedJson;
+          configOverrides = rest;
+        } else {
+          configOverrides = {
+            introDurationInFrames: introDuration,
+            imageDurationInFrames: imageDuration,
+            introProps: { image1: introImage1, image2: introImage2, heroImage: introHeroImage },
+            backgroundMusicVolume,
+          };
+          if (selectedTemplate.backgroundOverlayImage !== undefined) configOverrides.backgroundOverlayImage = bgOverlay;
+          else configOverrides.overlayImage = bgOverlay;
+          if (captionBottom !== "") configOverrides.captionBottomPercent = captionBottom;
+          if (backgroundMusic) configOverrides.backgroundMusic = backgroundMusic;
+        }
+        const form = new FormData();
+        form.append("template", previewTemplate);
+        form.append("config_overrides", JSON.stringify(configOverrides));
+        form.append("audio_file", audioFile!);
+        form.append("transcript_file", transcriptFile!);
+        for (const img of images) form.append("images", img);
+        if (heroImage) form.append("hero_image", heroImage);
+        res = await fetch(`${N2V_BASE}/preview/stage`, { method: "POST", body: form });
+      }
 
-      const form = new FormData();
-      form.append("template", template);
-      form.append("config_overrides", JSON.stringify(configOverrides));
-      form.append("audio_file", audioFile);
-      form.append("transcript_file", transcriptFile);
-      for (const img of images) form.append("images", img);
-      if (heroImage) form.append("hero_image", heroImage);
-
-      const res = await fetch(`${N2V_BASE}/preview/stage`, { method: "POST", body: form });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { detail?: string };
         throw new Error(err.detail || "Failed to stage preview");
@@ -842,45 +992,105 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
         <div className="space-y-3">
           <h3 className="text-sm font-bold uppercase">
             Step 3 — Slideshow Images{" "}
-            <span className="text-muted-foreground font-normal normal-case">
-              ({images.length}/10)
-            </span>
+            {configMode === "ui" && (
+              <span className="text-muted-foreground font-normal normal-case">
+                ({images.length}/10)
+              </span>
+            )}
           </h3>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => void handleImagesUpload(e)}
-          />
-          <div className="grid grid-cols-5 gap-2">
-            {imagePreviews.map((preview, idx) => (
-              <div
-                key={idx}
-                className="relative group aspect-video rounded-lg overflow-hidden border border-border"
-              >
-                <img src={preview} alt={`slide-${idx + 1}`} className="w-full h-full object-cover" />
+
+          {configMode === "json" ? (
+            /* JSON mode — folder path input */
+            <>
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  placeholder="D:\path\to\images\folder"
+                  value={(parsedJson?.slider_image_paths as string) ?? ""}
+                  onChange={(e) => updateJsonField("slider_image_paths", e.target.value)}
+                  className="flex-1 h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                All supported images in this folder are used as slides, sorted by filename (max 10).
+              </p>
+            </>
+          ) : (
+            /* UI mode — file upload grid */
+            <>
+              {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+              {/* @ts-ignore – webkitdirectory is not in React's type defs */}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                // eslint-disable-next-line react/no-unknown-property
+                webkitdirectory=""
+                className="hidden"
+                onChange={(e) => void handleImagesUpload(e)}
+              />
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-5 gap-2">
+                  {imagePreviews.map((preview, idx) => (
+                    <div
+                      key={idx}
+                      className="relative group aspect-video rounded-lg overflow-hidden border border-border"
+                    >
+                      <img src={preview} alt={`slide-${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => void removeImage(idx)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-center">
                 <button
-                  onClick={() => void removeImage(idx)}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                  onClick={() => { setImages([]); setImagePreviews([]); imageInputRef.current?.click(); }}
+                  className="flex flex-col items-center justify-center gap-2 px-8 py-5 rounded-xl border-2 border-dashed border-border hover:border-accent transition-colors"
                 >
-                  <X className="w-3 h-3" />
+                  <FolderOpen className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {images.length > 0 ? `${images.length} image${images.length > 1 ? "s" : ""} loaded — click to change folder` : "Select folder"}
+                  </span>
                 </button>
               </div>
-            ))}
-            {images.length < 10 && (
-              <button
-                onClick={() => imageInputRef.current?.click()}
-                className="aspect-video rounded-lg border-2 border-dashed border-border flex items-center justify-center hover:border-accent transition-colors"
-              >
-                <ImagePlus className="w-5 h-5 text-muted-foreground" />
-              </button>
-            )}
+              <p className="text-xs text-muted-foreground">
+                Select a folder — all images inside are loaded as slides (max 10, sorted by filename).
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* JSON Config */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase">JSON Config</h3>
+            <span className="text-xs text-muted-foreground">Independent from UI — select below to use for render</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            1–10 images. Sorted by upload order and named 01, 02, … in the config.
+            Edit this JSON directly. Add{" "}
+            <code className="font-mono bg-muted px-1 rounded">audio_path</code>,{" "}
+            <code className="font-mono bg-muted px-1 rounded">transcript_path</code>, and{" "}
+            <code className="font-mono bg-muted px-1 rounded">slider_image_paths</code>{" "}
+            to skip the file upload steps — local absolute paths (e.g.{" "}
+            <code className="font-mono bg-muted px-1 rounded">D:\...\file.wav</code>) are resolved server-side.
           </p>
+          <textarea
+            className={`w-full min-h-[220px] font-mono text-xs p-3 rounded-lg border bg-muted/30 text-foreground resize-y focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors ${
+              jsonConfigError ? "border-red-500" : "border-border"
+            }`}
+            value={jsonConfigText}
+            onChange={(e) => handleJsonConfigChange(e.target.value)}
+            spellCheck={false}
+          />
+          {jsonConfigError && (
+            <p className="text-xs text-red-400 -mt-1">{jsonConfigError}</p>
+          )}
         </div>
 
         {/* Step 4 — Hero Image (only for NewsHorizontalBackground) */}
@@ -922,6 +1132,47 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
             )}
           </div>
         )}
+
+        {/* Config mode toggle */}
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+          <span className="text-xs font-semibold text-muted-foreground shrink-0">Config source:</span>
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setConfigMode("ui")}
+              className={`px-4 py-1.5 transition-colors ${
+                configMode === "ui"
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-background hover:bg-muted text-muted-foreground"
+              }`}
+            >
+              UI Config
+            </button>
+            <button
+              type="button"
+              onClick={handleSwitchToJsonMode}
+              className={`px-4 py-1.5 transition-colors border-l border-border ${
+                configMode === "json"
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-background hover:bg-muted text-muted-foreground"
+              }`}
+            >
+              JSON Config
+            </button>
+          </div>
+          {configMode === "ui" && (
+            <span className="text-xs text-muted-foreground">Using UI fields above for render &amp; preview</span>
+          )}
+          {configMode === "json" && (
+            <span className={`text-xs ${jsonConfigError ? "text-red-400" : jsonHasFilePaths ? "text-emerald-400" : "text-muted-foreground"}`}>
+              {jsonConfigError
+                ? `JSON error: ${jsonConfigError}`
+                : jsonHasFilePaths
+                  ? "File paths detected — Steps 2 & 3 will use JSON paths"
+                  : "No file paths in JSON — upload files via Steps 2 & 3"}
+            </span>
+          )}
+        </div>
 
         {/* Step 5 — Render */}
         <div className="space-y-3">

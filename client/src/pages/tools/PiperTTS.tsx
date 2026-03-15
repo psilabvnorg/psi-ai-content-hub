@@ -8,7 +8,6 @@ import { APP_API_URL } from "@/lib/api";
 import { ServiceStatusTable, ProgressDisplay, AudioResult } from "@/components/common/tool-page-ui";
 import type { ProgressData, StatusRowConfig } from "@/components/common/tool-page-ui";
 
-const MAX_CHARS = 3000;
 
 const LANGUAGES = [
   { id: "vi", label: "Tiếng Việt" },
@@ -46,7 +45,6 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   const [selectedVoice, setSelectedVoice] = useState("");
   const [text, setText] = useState("");
   const [speed, setSpeed] = useState(1.0);
-  const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -59,7 +57,6 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   const demoAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const charCount = text.length;
-  const overLimit = charLimitEnabled && charCount > MAX_CHARS;
 
   const fetchStatus = async () => {
     try {
@@ -76,7 +73,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   };
 
   const DEFAULT_VOICE: Record<string, string> = {
-    vi: "vi/tranthanh3870",
+    vi: "vi/ngochuyen",
     en: "en/mattheo",
   };
 
@@ -145,7 +142,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
   };
 
   const handleGenerate = async () => {
-    if (!text.trim() || !selectedVoice || overLimit) return;
+    if (!text.trim() || !selectedVoice) return;
     setIsGenerating(true);
     setProgress({ status: "starting", percent: 10, message: t("tool.piper_tts.starting") });
     setLogs(["Submitting Piper TTS request..."]);
@@ -292,21 +289,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[120px] bg-card border-border resize-none"
           />
-          <div className="flex items-center justify-between">
-            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-              {charLimitEnabled
-                ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })
-                : `${charCount} characters`}
-            </p>
-            <Button
-              size="sm"
-              variant={charLimitEnabled ? "outline" : "secondary"}
-              onClick={() => setCharLimitEnabled(!charLimitEnabled)}
-              className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
-            >
-              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">{`${charCount} characters`}</p>
           <div className="flex justify-center pt-1">
             <Button
               size="sm"
@@ -348,7 +331,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
         <Button
           className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleGenerate}
-          disabled={isGenerating || !text.trim() || overLimit || !selectedVoice}
+          disabled={isGenerating || !text.trim() || !selectedVoice}
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Volume2 className="w-5 h-5 mr-2" />}
           {t("tool.piper_tts.generate")}

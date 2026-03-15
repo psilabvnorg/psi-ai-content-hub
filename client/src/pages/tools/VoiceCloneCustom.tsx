@@ -12,7 +12,6 @@ import { Download, Loader2, Mic, RefreshCw, Upload } from "lucide-react";
 import { ServiceStatusTable } from "@/components/common/tool-page-ui";
 import type { StatusRowConfig } from "@/components/common/tool-page-ui";
 
-const MAX_CHARS = 500;
 
 type Voice = {
   id: string;
@@ -96,7 +95,6 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
   const [cfgStrength, setCfgStrength] = useState(2.0);
   const [nfeStep, setNfeStep] = useState(32);
   const [removeSilence, setRemoveSilence] = useState(false);
-  const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateProgress, setGenerateProgress] = useState<ProgressData | null>(null);
@@ -111,7 +109,6 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
   const serviceStatus = servicesById.f5;
 
   const charCount = text.length;
-  const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const serverUnreachable = status?.server_unreachable === true;
   const depsReady = status?.env?.installed === true;
   const modelReady = status?.models?.[language]?.installed === true;
@@ -399,7 +396,7 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
   };
 
   const handleGenerate = async () => {
-    if (!text.trim() || !selectedVoice || overLimit) return;
+    if (!text.trim() || !selectedVoice) return;
     setIsGenerating(true);
     setGenerateProgress({ status: "starting", percent: 0, message: t("tool.voice_clone.processing") });
     setGenerateLogs([]);
@@ -651,21 +648,7 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
             onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setText(event.target.value)}
             className="min-h-[100px] bg-card border-border resize-none"
           />
-          <div className="flex items-center justify-between">
-            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-              {charLimitEnabled
-                ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })
-                : `${charCount} characters`}
-            </p>
-            <Button
-              size="sm"
-              variant={charLimitEnabled ? "outline" : "secondary"}
-              onClick={() => setCharLimitEnabled(!charLimitEnabled)}
-              className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
-            >
-              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">{`${charCount} characters`}</p>
           <div className="flex justify-center pt-1">
             <Button
               size="sm"
@@ -734,7 +717,7 @@ export default function VoiceCloneCustom({ onOpenSettings }: { onOpenSettings?: 
         <Button
           className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={() => { void handleGenerate(); }}
-          disabled={isGenerating || !text.trim() || !selectedVoice || overLimit || !statusReady}
+          disabled={isGenerating || !text.trim() || !selectedVoice || !statusReady}
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Mic className="w-5 h-5 mr-2" />}
           {t("tool.voice_clone.clone_voice")}

@@ -28,7 +28,7 @@ if _ESPEAK_DIR.exists():
 # display name + demo filename for each voice
 _VOICE_META: Dict[str, Dict[str, str]] = {
     # Vietnamese
-    "vi/banmai":         {"name": "Ban Mai",          "demo": "ban_mai_demo.wav"},
+    "vi/banmai":         {"name": "Ban Mai - Thời Sự",          "demo": "ban_mai_demo.wav"},
     "vi/calmwoman3688":  {"name": "Calm Woman",        "demo": ""},
     "vi/chieuthanh":     {"name": "Chiều Thanh",       "demo": "chieu_thanh_demo.wav"},
     "vi/deepman3909":    {"name": "Deep Man",           "demo": ""},
@@ -36,12 +36,11 @@ _VOICE_META: Dict[str, Dict[str, str]] = {
     "vi/lacphi":         {"name": "Lạc Phi",           "demo": "lac_phi_demo.wav"},
     "vi/maiphuong":      {"name": "Mai Phương",        "demo": "mai_phuong_demo.wav"},
     "vi/manhdung":       {"name": "Mạnh Dũng",         "demo": "manh_dung_demo.wav"},
-    "vi/minhkhang":      {"name": "Minh Khang",        "demo": "minh_khang_demo.wav"},
+    "vi/minhkhang":      {"name": "Minh Khang - Thời Sự",        "demo": "minh_khang_demo.wav"},
     "vi/minhquang":      {"name": "Minh Quang",        "demo": "minh_quang_demo.wav"},
     "vi/mytam2":         {"name": "Mỹ Tâm",            "demo": "my_tam_demo.wav"},
     "vi/mytam2794":      {"name": "Mỹ Tâm Real",       "demo": "my_tam_real_demo.wav"},
-    "vi/ngochuyen":      {"name": "Ngọc Huyền",        "demo": ""},
-    "vi/ngochuyennew":   {"name": "Ngọc Huyền Mới",   "demo": "ngoc_huyen_moi_demo.wav"},
+    "vi/ngochuyen":      {"name": "Ngọc Huyền - Review Phim",        "demo": ""},    
     "vi/ngocngan3701":   {"name": "Ngọc Ngân",         "demo": "ngoc_ngan_demo.wav"},
     "vi/phuongtrang":    {"name": "Phương Trang",      "demo": "phuong_trang_demo.wav"},
     "vi/taian2":         {"name": "Tài An",            "demo": "tai_an_demo.wav"},
@@ -54,6 +53,7 @@ _VOICE_META: Dict[str, Dict[str, str]] = {
     "en/john":           {"name": "John",              "demo": ""},
     "en/mattheo":        {"name": "Mattheo",           "demo": ""},
     "en/mattheo1":       {"name": "Mattheo Alt",       "demo": ""},
+    "vi/ngochuyennew":   {"name": "Ngọc Huyền - English",   "demo": "ngoc_huyen_moi_demo.wav"},    
     # Indonesian
     "id/indo_goreng":    {"name": "Indo Goreng",       "demo": ""},
     "id/yannew":         {"name": "Yannew",            "demo": ""},

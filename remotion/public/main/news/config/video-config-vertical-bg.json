@@ -1,12 +1,12 @@
 {
   "introDurationInFrames": 150,
   "imageDurationInFrames": 170,
-  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_79966e62.png",
+  "backgroundOverlayImage": "http://localhost:6901/user-assets/thumbnail_8290e805.png",
   "introProps": {
-    "image1": "http://localhost:6901/user-assets/gold-oil-trade-world-map-hands-p-17724198240621436977036_1a0b53c4.webp",
-    "image2": "http://localhost:6901/user-assets/intro_bottom_5062b546.png",
-    "heroImage": "http://localhost:6901/user-assets/kha_banh_2eba44e9.png"
+    "image1": "http://localhost:6901/user-assets/cats-1760799269-8684-176079949-7585-7968-1773330653_5ba4f510.webp",
+    "image2": "http://localhost:6901/user-assets/intro_bottom_f131f483.png",
+    "heroImage": "http://localhost:6901/user-assets/thl2_85001d40.png"
   },
-  "backgroundMusicVolume": 0.38,
-  "backgroundMusic": "background-music/news4.mp3"
+  "backgroundMusicVolume": 0.36,
+  "backgroundMusic": "background-music/news2.mp3"
 }

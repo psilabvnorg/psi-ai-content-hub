@@ -192,6 +192,30 @@ class UploadedFileData:
     data: bytes
 
 
+def load_file_from_path(path: str, field_name: str) -> UploadedFileData:
+    """Load a local file into UploadedFileData (for server-side automation)."""
+    p = Path(path)
+    if not p.exists() or not p.is_file():
+        raise RuntimeError(f"{field_name}: file not found at '{path}'")
+    return UploadedFileData(filename=p.name, content_type=None, data=p.read_bytes())
+
+
+def load_images_from_folder(folder_path: str, field_name: str = "slider_image_paths") -> list[UploadedFileData]:
+    """Load all supported images from a folder, sorted by filename, max 10."""
+    p = Path(folder_path)
+    if not p.exists() or not p.is_dir():
+        raise RuntimeError(f"{field_name}: folder not found at '{folder_path}'")
+    files = sorted(
+        f for f in p.iterdir()
+        if f.is_file() and f.suffix.lower() in ALLOWED_IMAGE_SUFFIXES
+    )
+    if not files:
+        raise RuntimeError(f"{field_name}: no supported images found in '{folder_path}'")
+    if len(files) > 10:
+        files = files[:10]
+    return [UploadedFileData(filename=f.name, content_type=None, data=f.read_bytes()) for f in files]
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _new_id(prefix: str) -> str:
@@ -230,49 +254,56 @@ def _build_staging_config(template_key: str, overrides: dict | None = None) -> d
     return config
 
 
-def _normalize_asset_path(path: str, staging_root: Path) -> str:
-    """Convert an absolute filesystem path to a Remotion-public-relative path.
+def _normalize_asset_path(path: str) -> str:
+    """Resolve an asset path to a form Remotion can access.
 
-    - If already relative, return as-is.
-    - If absolute and within remotion/public, compute the relative path from there.
-    - If absolute and outside remotion/public, copy the file into staging_root/assets/
-      and return the Remotion-public-relative path to the copy.
+    Resolution order:
+    1. HTTP/HTTPS URL → return as-is (Remotion fetches it directly).
+    2. Relative path → return as-is (resolved against remotion/public at runtime).
+    3. Absolute path within remotion/public → return the public-relative path.
+    4. Absolute local path outside remotion/public → copy the file into
+       USER_ASSETS_DIR and return its HTTP URL so Remotion can fetch it.
     """
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+
     p = Path(path)
     if not p.is_absolute():
         return path
 
     public_root = REMOTION_ROOT / "public"
     try:
-        rel = p.relative_to(public_root)
-        return rel.as_posix()
+        return p.relative_to(public_root).as_posix()
     except ValueError:
         pass
 
     if not p.exists():
-        raise RuntimeError(f"Asset file not found: {path}")
+        raise RuntimeError(f"Asset file not found: '{path}'")
 
-    assets_dir = staging_root / "assets"
-    assets_dir.mkdir(parents=True, exist_ok=True)
-    dest = assets_dir / p.name
-    shutil.copy2(str(p), str(dest))
-    staging_rel = staging_root.relative_to(public_root)
-    return (staging_rel / "assets" / p.name).as_posix()
+    suffix = p.suffix.lower() or ".jpg"
+    dest_name = f"{p.stem}_{uuid.uuid4().hex[:8]}{suffix}"
+    USER_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(str(p), str(USER_ASSETS_DIR / dest_name))
+    return f"{USER_ASSETS_BASE_URL}/{dest_name}"
 
 
-def _normalize_config_paths(config: dict, staging_root: Path) -> dict:
-    """Walk config dict and normalize any absolute paths in asset fields."""
+def _normalize_config_paths(config: dict) -> dict:
+    """Walk config dict and normalize any local/absolute paths in asset fields.
+
+    Handles ``backgroundOverlayImage``, ``overlayImage``, and all ``introProps``
+    image keys.  HTTP URLs and remotion-public-relative paths are left unchanged.
+    """
     result = dict(config)
 
     for field in ("backgroundOverlayImage", "overlayImage"):
         if field in result and isinstance(result[field], str):
-            result[field] = _normalize_asset_path(result[field], staging_root)
+            result[field] = _normalize_asset_path(result[field])
 
     if "introProps" in result and isinstance(result["introProps"], dict):
         intro = dict(result["introProps"])
         for key in ("image1", "image2", "heroImage"):
             if key in intro and isinstance(intro[key], str):
-                intro[key] = _normalize_asset_path(intro[key], staging_root)
+                intro[key] = _normalize_asset_path(intro[key])
         result["introProps"] = intro
 
     return result
@@ -325,7 +356,7 @@ def _stage_files(
 
     # Video config — built from the TEMPLATES dict, merged with any user overrides
     config = _build_staging_config(template_key, overrides)
-    config = _normalize_config_paths(config, staging_root)
+    config = _normalize_config_paths(config)
     (config_dir / template["_config_filename"]).write_text(
         json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -372,6 +403,22 @@ def upload_user_asset(upload: UploadedFileData) -> str:
 
 
 # ── Preview staging ───────────────────────────────────────────────────────────
+
+def stage_preview_from_paths(
+    template_key: str,
+    audio_path: str,
+    transcript_path: str,
+    slider_image_paths: str,
+    hero_image_path: str | None,
+    overrides: dict | None = None,
+) -> dict[str, object]:
+    """Stage a preview from server-side file paths (JSON config mode)."""
+    audio = load_file_from_path(audio_path, "audio_path")
+    transcript = load_file_from_path(transcript_path, "transcript_path")
+    image_list = load_images_from_folder(slider_image_paths)
+    hero = load_file_from_path(hero_image_path, "hero_image_path") if hero_image_path else None
+    return stage_preview(template_key, audio, transcript, image_list, hero, overrides)
+
 
 def stage_preview(
     template_key: str,

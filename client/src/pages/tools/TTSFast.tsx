@@ -11,7 +11,6 @@ import type { ProgressData, StatusRowConfig } from "@/components/common/tool-pag
 import { useManagedServices } from "@/hooks/useManagedServices";
 import { useAppStatus } from "@/context/AppStatusContext";
 
-const MAX_CHARS = 3000;
 
 const LOCALE_DISPLAY_NAMES: Record<string, string> = {
   "af-ZA": "Afrikaans (South Africa)",
@@ -203,9 +202,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   const [downloadName, setDownloadName] = useState<string | null>(null);
 
   const [serverUnreachable, setServerUnreachable] = useState(false);
-  const [charLimitEnabled, setCharLimitEnabled] = useState(true);
   const charCount = text.length;
-  const overLimit = charLimitEnabled && charCount > MAX_CHARS;
   const statusReady = !serverUnreachable;
 
   const { servicesById } = useManagedServices();
@@ -280,7 +277,7 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
   }, [selectedLanguage]);
 
   const handleGenerate = async () => {
-    if (!text.trim() || overLimit || !selectedVoice || !selectedLanguage || !statusReady) return;
+    if (!text.trim() || !selectedVoice || !selectedLanguage || !statusReady) return;
 
     setIsGenerating(true);
     setProgress({ status: "starting", percent: 10, message: t("tool.tts_fast.starting_generation") });
@@ -420,27 +417,13 @@ export default function TTSFast({ onOpenSettings }: { onOpenSettings?: () => voi
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
             className="min-h-[120px] bg-card border-border resize-none"
           />
-          <div className="flex items-center justify-between">
-            <p className={`text-xs ${overLimit ? "text-red-500" : "text-muted-foreground"}`}>
-              {charLimitEnabled
-                ? t("tool.voice_clone.characters", { count: charCount, max: MAX_CHARS })
-                : `${charCount} characters`}
-            </p>
-            <Button
-              size="sm"
-              variant={charLimitEnabled ? "outline" : "secondary"}
-              onClick={() => setCharLimitEnabled(!charLimitEnabled)}
-              className={`h-8 text-sm font-semibold px-3 ${charLimitEnabled ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" : ""}`}
-            >
-              {charLimitEnabled ? t("tool.common.char_limit_on") : t("tool.common.char_limit_off")}
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">{`${charCount} characters`}</p>
         </div>
 
         <Button
           className="w-full h-12 bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-bold"
           onClick={handleGenerate}
-          disabled={isGenerating || !text.trim() || overLimit || !statusReady || !selectedLanguage || !selectedVoice}
+          disabled={isGenerating || !text.trim() || !statusReady || !selectedLanguage || !selectedVoice}
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Volume2 className="w-5 h-5 mr-2" />}
           {t("tool.tts_fast.generate")}
