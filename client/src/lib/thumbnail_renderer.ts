@@ -199,6 +199,7 @@ const a_draw_text_placeholder_data = (
     horizontalPadding: a_padding_data,
     verticalPadding: a_padding_data,
     fontFamily: a_placeholder_data.fontFamily ?? "Impact",
+    isBold: true,
     maxSize: 160,
     minSize: 10,
     step: 2,
@@ -208,7 +209,7 @@ const a_draw_text_placeholder_data = (
   a_canvas_context_data.save();
   a_canvas_context_data.fillStyle = a_placeholder_data.textColor ?? "#000000";
   a_canvas_context_data.textBaseline = "top";
-  a_canvas_context_data.font = `${a_layout_data.fontSize}px ${a_placeholder_data.fontFamily ?? "Impact"}`;
+  a_canvas_context_data.font = `bold ${a_layout_data.fontSize}px ${a_placeholder_data.fontFamily ?? "Impact"}`;
   a_canvas_context_data.textAlign = a_placeholder_data.textAlign ?? "left";
 
   const a_draw_x_data =
@@ -233,6 +234,10 @@ const a_preload_fonts_data = async (a_template_data: TemplateData): Promise<void
       if (a_font_data) a_font_families_data.add(a_font_data);
     }
   }
+  // Wait for @font-face rules (incl. Google Fonts stylesheet) to be processed
+  // before requesting specific font weights; otherwise document.fonts.load
+  // silently resolves with an empty set and the canvas falls back to system fonts.
+  await document.fonts.ready.catch(() => {});
   await Promise.all(
     Array.from(a_font_families_data).map((a_font_name_data) =>
       document.fonts.load(`bold 40px "${a_font_name_data}"`).catch(() => {})

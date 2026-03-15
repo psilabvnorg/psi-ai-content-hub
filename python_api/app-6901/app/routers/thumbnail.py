@@ -47,16 +47,16 @@ def a_thumbnail_batch_start_endpoint_data(
 
 
 @router.get("/batch/stream/{job_id}")
-def a_thumbnail_batch_stream_endpoint_data(a_job_id_data: str) -> StreamingResponse:
-    return StreamingResponse(a_thumbnail_batch_progress_store_data.sse_stream(a_job_id_data), media_type="text/event-stream")
+def a_thumbnail_batch_stream_endpoint_data(job_id: str) -> StreamingResponse:
+    return StreamingResponse(a_thumbnail_batch_progress_store_data.sse_stream(job_id), media_type="text/event-stream")
 
 
 @router.get("/batch/status/{job_id}")
 def a_thumbnail_batch_status_endpoint_data(
-    a_job_id_data: str,
+    job_id: str,
     a_job_store_data: JobStore = Depends(get_job_store),
 ) -> dict[str, Any]:
-    a_status_payload_data = a_get_thumbnail_batch_status_data(a_job_store_data, a_job_id_data)
+    a_status_payload_data = a_get_thumbnail_batch_status_data(a_job_store_data, job_id)
     if not a_status_payload_data:
         raise HTTPException(status_code=404, detail="job not found")
     return a_status_payload_data

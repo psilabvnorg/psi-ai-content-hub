@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Download,
+  Link,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -139,6 +140,49 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
   const [categoryUrl, setCategoryUrl] = useState(VNEXPRESS_CATEGORIES[0].url);
   const [limit, setLimit] = useState(10);
   const [outDir, setOutDir] = useState("");
+
+  // ----- Single article scrape -----
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<Record<string, unknown> | null>(null);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+
+  const handleScrapeUrl = async () => {
+    if (!scrapeUrl.trim()) return;
+    setScrapeLoading(true);
+    setScrapeResult(null);
+    setScrapeError(null);
+    try {
+      const res = await fetch(`${APP_API_URL}/api/v1/news-scraper/scrape`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: scrapeUrl.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { detail?: string };
+        throw new Error(err.detail ?? "Scrape failed");
+      }
+      const data = await res.json() as Record<string, unknown>;
+      setScrapeResult(data);
+    } catch (err: unknown) {
+      setScrapeError(err instanceof Error ? err.message : "Scrape failed");
+    } finally {
+      setScrapeLoading(false);
+    }
+  };
+
+  const handleDownloadScrapeJson = () => {
+    if (!scrapeResult) return;
+    const blob = new Blob([JSON.stringify(scrapeResult, null, 2)], { type: "application/json" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "article.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  };
 
   // ----- Crawl state -----
   const [crawlJobId, setCrawlJobId] = useState<string | null>(null);
@@ -460,6 +504,54 @@ export default function NewsScraper({ onOpenSettings }: { onOpenSettings?: () =>
           </CardContent>
         </Card>
       )}
+
+      {/* ---- Single URL Scraper ---- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link className="w-5 h-5" />
+            Scrape Single Article
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              value={scrapeUrl}
+              onChange={(e) => setScrapeUrl(e.target.value)}
+              placeholder="https://vnexpress.net/..."
+              disabled={scrapeLoading}
+              className="font-mono text-xs"
+              onKeyDown={(e) => { if (e.key === "Enter") void handleScrapeUrl(); }}
+            />
+            <Button onClick={() => void handleScrapeUrl()} disabled={scrapeLoading || !scrapeUrl.trim()}>
+              {scrapeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Scrape"}
+            </Button>
+          </div>
+
+          {scrapeError && (
+            <div className="flex items-start gap-2 p-3 bg-destructive/12 border border-destructive/45 rounded-lg">
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+              <p className="text-xs text-destructive/90">{scrapeError}</p>
+            </div>
+          )}
+
+          {scrapeResult && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-xs text-green-500 font-medium">
+                  <CheckCircle2 className="w-4 h-4" /> Scraped successfully
+                </span>
+                <Button size="sm" variant="outline" onClick={handleDownloadScrapeJson}>
+                  <Download className="w-3.5 h-3.5 mr-1" /> Download JSON
+                </Button>
+              </div>
+              <pre className="max-h-64 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-[11px] font-mono text-foreground whitespace-pre-wrap break-all">
+                {JSON.stringify(scrapeResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

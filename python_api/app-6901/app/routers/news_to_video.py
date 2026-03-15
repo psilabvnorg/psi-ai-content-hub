@@ -11,18 +11,22 @@ from python_api.common.jobs import JobStore
 
 from ..deps import get_job_store
 from ..services.news_to_video import (
+    QUICK_TEMPLATES,
     REMOTION_ROOT,
     RENDER_PROFILES,
     TEMPLATES,
     UploadedFileData,
+    get_quick_generate_result,
     get_render_result,
     get_remotion_setup_status,
     get_studio_status,
     load_file_from_path,
     load_images_from_folder,
+    quick_generate_progress_store,
     render_progress_store,
     stage_preview,
     stage_preview_from_paths,
+    start_quick_generate,
     start_render_pipeline,
     start_studio,
     stop_studio,
@@ -285,6 +289,19 @@ def upload_asset_endpoint(file: UploadFile = File(...)) -> dict:
     return {"path": path}
 
 
+@router.get("/public/{file_path:path}")
+def serve_remotion_public(file_path: str) -> FileResponse:
+    """Serve any file from remotion/public/ (e.g. template hero images)."""
+    safe = Path(file_path)
+    # Reject path traversal attempts
+    if ".." in safe.parts:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    full = REMOTION_ROOT / "public" / safe
+    if not full.exists() or not full.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(str(full))
+
+
 @router.get("/background-music/{filename}")
 def serve_background_music(filename: str) -> FileResponse:
     """Serve a background music file from remotion/public/background-music/ for preview."""
@@ -317,3 +334,55 @@ def studio_start() -> dict:
 @router.post("/preview/studio/stop")
 def studio_stop() -> dict:
     return stop_studio()
+
+
+# ── Quick Generate ─────────────────────────────────────────────────────────────
+
+
+class QuickGenerateRequest(BaseModel):
+    url: str
+    template_id: str
+    voice_id: str
+    render_profile: str = "tiktok"
+
+
+@router.post("/quick-generate")
+def create_quick_generate_task(req: QuickGenerateRequest) -> dict:
+    if not req.url.strip():
+        raise HTTPException(status_code=400, detail="url is required")
+    if req.template_id not in QUICK_TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown template_id '{req.template_id}'. Valid: {list(QUICK_TEMPLATES.keys())}",
+        )
+    if req.render_profile not in RENDER_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown render_profile '{req.render_profile}'. Valid: {list(RENDER_PROFILES.keys())}",
+        )
+    try:
+        task_id = start_quick_generate(
+            url=req.url.strip(),
+            template_id=req.template_id,
+            voice_id=req.voice_id,
+            render_profile=req.render_profile,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"task_id": task_id}
+
+
+@router.get("/quick-generate/stream/{task_id}")
+def quick_generate_progress_stream(task_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        quick_generate_progress_store.sse_stream(task_id),
+        media_type="text/event-stream",
+    )
+
+
+@router.get("/quick-generate/result/{task_id}")
+def quick_generate_result_endpoint(task_id: str) -> dict:
+    payload = get_quick_generate_result(task_id)
+    if not payload:
+        raise HTTPException(status_code=404, detail="result not found")
+    return payload

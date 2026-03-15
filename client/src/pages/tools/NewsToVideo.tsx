@@ -15,6 +15,18 @@ type StreamPayload = { status?: string; percent?: number; message?: string; logs
 type RenderCreateResponse = { task_id: string };
 type RenderResultResponse = { video: { filename: string; download_url: string }; preview_url: string };
 
+type QuickTemplateId = "dff" | "theanh-28" | "youtube-news1" | "youtube-news2";
+type QuickTemplateMeta = { id: QuickTemplateId; label: string; heroPath: string };
+type QuickGenerateResult = {
+  status: string;
+  config: Record<string, unknown>;
+  audio_path: string;
+  transcript_path: string;
+  slider_image_paths: string;
+  hero_image_path: string | null;
+};
+type PiperVoice = { id?: string; name?: string; [k: string]: unknown };
+
 const N2V_BASE = `${APP_API_URL}/api/v1/news-to-video`;
 
 // ── Templates ─────────────────────────────────────────────────────────────────
@@ -114,6 +126,27 @@ const TEMPLATES: TemplateMeta[] = [
     },
   },
 ];
+
+// ── Quick Templates ───────────────────────────────────────────────────────────
+
+const QUICK_TEMPLATE_LIST: QuickTemplateMeta[] = [
+  { id: "dff",          label: "DFF",           heroPath: "main/news/template-vertical-background/dff/hero.png" },
+  { id: "theanh-28",    label: "The Anh 28",    heroPath: "main/news/template-vertical-background/theanh-28/hero.png" },
+  { id: "youtube-news1",label: "YT News 1",     heroPath: "main/news/template-vertical-background/youtube-news1/hero.png" },
+  { id: "youtube-news2",label: "YT News 2",     heroPath: "main/news/template-vertical-background/youtube-news2/hero.png" },
+];
+
+const QUICK_STEP_LABELS: Record<string, { index: number; label: string }> = {
+  scraping:              { index: 0, label: "Scraping" },
+  generating_thumbnail:  { index: 1, label: "Thumbnail" },
+  normalizing:           { index: 2, label: "Normalize" },
+  tts:                   { index: 3, label: "TTS" },
+  transcribing:          { index: 4, label: "Transcribe" },
+  searching_images:      { index: 5, label: "Search Images" },
+  downloading_images:    { index: 6, label: "Download Images" },
+  building_config:       { index: 7, label: "Build Config" },
+  complete:              { index: 8, label: "Done" },
+};
 
 // ── Background music list ──────────────────────────────────────────────────────
 
@@ -405,6 +438,119 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           setIsMusicPlaying(false);
           setMusicError("Playback failed — check the app server is running.");
         });
+    }
+  };
+
+  // ── Quick Generate state ──
+  const [quickTemplate, setQuickTemplate] = useState<QuickTemplateId>("dff");
+  const [quickUrl, setQuickUrl] = useState("");
+  const [quickVoiceId, setQuickVoiceId] = useState("");
+  const [quickVoices, setQuickVoices] = useState<PiperVoice[]>([]);
+  const [isQuickGenerating, setIsQuickGenerating] = useState(false);
+  const [quickCurrentStep, setQuickCurrentStep] = useState<string | null>(null);
+  const [quickPercent, setQuickPercent] = useState(0);
+  const [quickMessage, setQuickMessage] = useState("");
+  const [quickResult, setQuickResult] = useState<QuickGenerateResult | null>(null);
+  const [quickError, setQuickError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=vi`)
+      .then((r) => r.json())
+      .then((data: { voices?: PiperVoice[] }) => {
+        const voices = data.voices ?? [];
+        setQuickVoices(voices);
+        if (voices.length > 0) {
+          const first = voices[0];
+          setQuickVoiceId((typeof first === "string" ? first : first.id ?? "") as string);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleQuickGenerate = async () => {
+    if (!quickUrl.trim() || !quickVoiceId || isQuickGenerating) return;
+    setIsQuickGenerating(true);
+    setQuickError(null);
+    setQuickResult(null);
+    setQuickCurrentStep("scraping");
+    setQuickPercent(0);
+    setQuickMessage("Starting...");
+    try {
+      const createRes = await fetch(`${N2V_BASE}/quick-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: quickUrl.trim(), template_id: quickTemplate, voice_id: quickVoiceId }),
+      });
+      if (!createRes.ok) {
+        const err = (await createRes.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(err.detail ?? "Failed to start quick generate");
+      }
+      const { task_id } = (await createRes.json()) as { task_id: string };
+
+      await streamTask(
+        `${N2V_BASE}/quick-generate/stream/${task_id}`,
+        (p) => {
+          setQuickCurrentStep(p.status ?? null);
+          setQuickPercent(p.percent ?? 0);
+          setQuickMessage(p.message ?? "");
+        },
+        () => {},
+      );
+
+      const resultRes = await fetch(`${N2V_BASE}/quick-generate/result/${task_id}`);
+      if (!resultRes.ok) throw new Error("Failed to fetch quick generate result");
+      const result = (await resultRes.json()) as QuickGenerateResult;
+      setQuickResult(result);
+      setQuickCurrentStep("complete");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Quick generate failed";
+      setQuickError(message);
+      setQuickCurrentStep("error");
+    } finally {
+      setIsQuickGenerating(false);
+    }
+  };
+
+  const handleQuickRenderVideo = async (renderProfile: "tiktok" | "youtube") => {
+    if (!quickResult) return;
+    setIsRendering(true);
+    setRenderProgress({ status: "starting", percent: 0, message: "Submitting render job..." });
+    setRenderLogs([]);
+    setVideoUrl(null);
+    setVideoDownloadName(null);
+    try {
+      const { config, audio_path, transcript_path, slider_image_paths, hero_image_path } = quickResult;
+      const createRes = await fetch(`${N2V_BASE}/render-from-config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template: "NewsVerticalBackground",
+          render_profile: renderProfile,
+          audio_path,
+          transcript_path,
+          slider_image_paths,
+          hero_image_path: hero_image_path ?? null,
+          config,
+        }),
+      });
+      if (!createRes.ok) {
+        const err = (await createRes.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(err.detail ?? "Failed to create render task");
+      }
+      const { task_id } = (await createRes.json()) as RenderCreateResponse;
+      await streamTask(`${N2V_BASE}/render/stream/${task_id}`, setRenderProgress, setRenderLogs);
+      const resultRes = await fetch(`${N2V_BASE}/render/result/${task_id}`);
+      if (!resultRes.ok) throw new Error("Failed to fetch render result");
+      const result = (await resultRes.json()) as RenderResultResponse;
+      setVideoUrl(toAbsoluteApiUrl(result.preview_url));
+      setVideoDownloadName(result.video.filename);
+      setRenderProgress({ status: "complete", percent: 100, message: "Video render complete." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Render failed";
+      setRenderProgress({ status: "error", percent: 0, message });
+      setRenderLogs((prev) => [...prev, `[ERROR] ${message}`]);
+    } finally {
+      setIsRendering(false);
     }
   };
 
@@ -728,6 +874,171 @@ export default function NewsToVideo({ onOpenSettings }: { onOpenSettings?: () =>
           serverWarning={hasMissingDeps}
           onOpenSettings={onOpenSettings}
         />
+
+        {/* ── Quick Template ─────────────────────────────────────────── */}
+        <div className="space-y-4 rounded-xl border border-border bg-muted/10 p-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-bold uppercase tracking-wide">Quick Template</h3>
+            <p className="text-xs text-muted-foreground">
+              Paste a VNExpress URL — auto-scrapes, generates TTS, transcript, and images.
+            </p>
+          </div>
+
+          {/* Template picker */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {QUICK_TEMPLATE_LIST.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => setQuickTemplate(tpl.id)}
+                className={`relative h-20 overflow-hidden rounded-lg border-2 transition-all ${
+                  quickTemplate === tpl.id
+                    ? "border-accent ring-1 ring-accent"
+                    : "border-border hover:border-muted-foreground"
+                }`}
+                style={{
+                  backgroundImage: `url(${APP_API_URL}/api/v1/news-to-video/public/${tpl.heroPath})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center top",
+                }}
+              >
+                <div className="absolute inset-0 flex items-end bg-black/50 p-1.5">
+                  <span className="text-[10px] font-bold leading-tight text-white">{tpl.label}</span>
+                </div>
+                {quickTemplate === tpl.id && (
+                  <div className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent">
+                    <span className="text-[8px] font-bold text-accent-foreground">✓</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* URL input */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">News URL</label>
+            <input
+              type="url"
+              placeholder="https://vnexpress.net/..."
+              value={quickUrl}
+              onChange={(e) => setQuickUrl(e.target.value)}
+              disabled={isQuickGenerating}
+              onKeyDown={(e) => { if (e.key === "Enter") void handleQuickGenerate(); }}
+              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50"
+            />
+          </div>
+
+          {/* Voice selector */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase text-muted-foreground">Piper TTS Voice</label>
+            {quickVoices.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Loading voices...</p>
+            ) : (
+              <Select value={quickVoiceId} onValueChange={setQuickVoiceId} disabled={isQuickGenerating}>
+                <SelectTrigger className="border-border bg-card">
+                  <SelectValue placeholder="Select a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {quickVoices.map((v, i) => {
+                    const vid = (typeof v === "string" ? v : v.id ?? String(i)) as string;
+                    const vname = (typeof v === "string" ? v : v.name ?? vid) as string;
+                    return <SelectItem key={vid} value={vid}>{vname}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Generate button */}
+          <Button
+            className="h-10 w-full rounded-xl font-bold"
+            style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+            onClick={() => void handleQuickGenerate()}
+            disabled={!appServerReachable || isQuickGenerating || !quickUrl.trim() || !quickVoiceId}
+          >
+            {isQuickGenerating ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>
+            ) : (
+              <><Video className="mr-2 h-4 w-4" />Quick Generate</>
+            )}
+          </Button>
+
+          {/* Step progress */}
+          {(isQuickGenerating || (quickCurrentStep && quickCurrentStep !== "error")) && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(QUICK_STEP_LABELS).map(([key, { index, label }]) => {
+                  const currentIndex = quickCurrentStep ? (QUICK_STEP_LABELS[quickCurrentStep]?.index ?? -1) : -1;
+                  const isDone = index < currentIndex || quickCurrentStep === "complete";
+                  const isActive = key === quickCurrentStep && quickCurrentStep !== "complete";
+                  return (
+                    <span
+                      key={key}
+                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+                        isDone ? "bg-emerald-500/20 text-emerald-400"
+                          : isActive ? "bg-accent/20 text-accent"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {isActive && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
+                      {isDone && "✓ "}
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+              {quickMessage && <p className="text-xs text-muted-foreground">{quickMessage}</p>}
+              {quickPercent > 0 && (
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-accent transition-all duration-500"
+                    style={{ width: `${quickPercent}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Error */}
+          {quickError && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+              <p className="text-xs font-semibold text-red-400">Generation failed</p>
+              <p className="mt-1 text-xs text-red-300">{quickError}</p>
+              <button
+                className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => { setQuickError(null); setQuickCurrentStep(null); }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Result */}
+          {quickResult && !quickError && (
+            <div className="space-y-3 rounded-lg border border-emerald-500/40 bg-emerald-500/8 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400">Config ready — all assets generated</span>
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => { setQuickResult(null); setQuickCurrentStep(null); }}
+                >
+                  Clear
+                </button>
+              </div>
+              <pre className="max-h-48 overflow-auto rounded-md bg-muted/40 p-2 text-[10px] font-mono text-muted-foreground">
+                {JSON.stringify(quickResult.config, null, 2)}
+              </pre>
+              <Button
+                size="sm"
+                className="w-full text-xs font-bold"
+                style={{ background: "#FF9900", borderColor: "#FF9900", color: "#000" }}
+                onClick={() => void navigator.clipboard.writeText(JSON.stringify(quickResult.config, null, 2))}
+              >
+                Copy JSON
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Step 1 — Template */}
         <div className="space-y-3">

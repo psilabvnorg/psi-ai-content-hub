@@ -11,6 +11,8 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+import httpx
+
 from python_api.common.jobs import JobStore
 from python_api.common.logging import log
 from python_api.common.paths import TEMP_DIR
@@ -175,12 +177,48 @@ TEMPLATES: dict[str, dict] = {
 # Internal-only keys — excluded when writing the staged video-config JSON
 _INTERNAL_KEYS = {"_composition", "_config_filename", "_uses_hero"}
 
+# ── Quick-template definitions ─────────────────────────────────────────────────
+# Each entry maps a short template ID to the Remotion-relative paths for its
+# pre-made hero image, background overlay, and default background music.
+
+QUICK_TEMPLATES: dict[str, dict[str, str | None]] = {
+    "dff": {
+        "hero":               "main/news/template-vertical-background/dff/hero.png",
+        "bg":                 "main/news/template-vertical-background/dff/bg-overlay.png",
+        "music":              "background-music/review-film.mp3",
+        "thumbnail_template": "DFF",
+    },
+    "theanh-28": {
+        "hero":               "main/news/template-vertical-background/theanh-28/hero.png",
+        "bg":                 "main/news/template-vertical-background/theanh-28/bg-overlay.png",
+        "music":              "background-music/review-film.mp3",
+        "thumbnail_template": "THE ANH 28",
+    },
+    "youtube-news1": {
+        "hero":               "main/news/template-vertical-background/youtube-news1/hero.png",
+        "bg":                 "main/news/template-vertical-background/youtube-news1/bg-overlay.png",
+        "music":              "background-music/review-film.mp3",
+        "thumbnail_template": "YOUTUBE CNN NEWS",
+    },
+    "youtube-news2": {
+        "hero":               "main/news/template-vertical-background/youtube-news2/hero.png",
+        "bg":                 "main/news/template-vertical-background/youtube-news2/bg-overlay.png",
+        "music":              "background-music/review-film.mp3",
+        "thumbnail_template": "YOUTUBE NEWS2",
+    },
+}
+
 # ── In-memory state ───────────────────────────────────────────────────────────
 
 render_progress_store = ProgressStore()
 
 _render_results: dict[str, dict[str, object]] = {}
 _state_lock = threading.Lock()
+
+quick_generate_progress_store = ProgressStore()
+
+_quick_generate_results: dict[str, dict[str, object]] = {}
+_quick_state_lock = threading.Lock()
 
 
 # ── Data types ────────────────────────────────────────────────────────────────
@@ -387,6 +425,14 @@ def _cleanup_expired() -> None:
 
 def cleanup_news_to_video_state() -> None:
     _cleanup_expired()
+    cutoff = time.time() - RETENTION_SECONDS
+    with _quick_state_lock:
+        expired = [
+            tid for tid, p in _quick_generate_results.items()
+            if isinstance(p.get("created_at"), (int, float)) and float(p["created_at"]) < cutoff
+        ]
+        for tid in expired:
+            _quick_generate_results.pop(tid, None)
 
 
 # ── User-asset upload ─────────────────────────────────────────────────────────
@@ -568,6 +614,300 @@ def start_render_pipeline(
         finally:
             if staging_root.exists():
                 shutil.rmtree(staging_root, ignore_errors=True)
+
+    threading.Thread(target=runner, daemon=True).start()
+    return task_id
+
+
+# ── Quick Generate ─────────────────────────────────────────────────────────────
+
+def _set_quick_generate_result(task_id: str, payload: dict[str, object]) -> None:
+    with _quick_state_lock:
+        _quick_generate_results[task_id] = payload
+
+
+def get_quick_generate_result(task_id: str) -> dict[str, object] | None:
+    with _quick_state_lock:
+        return _quick_generate_results.get(task_id)
+
+
+def start_quick_generate(
+    url: str,
+    template_id: str,
+    voice_id: str,
+    render_profile: str = "tiktok",
+) -> str:
+    """Orchestrate scrape → normalize → TTS → transcribe → image search/download → config.
+
+    Returns a task_id immediately; the work runs in a background thread.
+    Progress events are emitted on ``quick_generate_progress_store``.
+    The final config (and file paths) is stored via ``get_quick_generate_result``.
+    """
+    if template_id not in QUICK_TEMPLATES:
+        raise RuntimeError(f"Unknown template_id '{template_id}'")
+
+    task_id = _new_id("n2v_quick")
+    quick_generate_progress_store.set_progress(task_id, "starting", 0, "Initializing...")
+
+    work_dir = TEMP_DIR / "quick_generate" / task_id
+    BASE = "http://127.0.0.1:6901"
+
+    def runner() -> None:
+        try:
+            work_dir.mkdir(parents=True, exist_ok=True)
+
+            # ── Step 1: Scrape ───────────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "scraping", 5, "Scraping news article...")
+            resp = httpx.post(f"{BASE}/api/v1/news-scraper/scrape", json={"url": url}, timeout=30.0)
+            resp.raise_for_status()
+            article = resp.json()
+            meta = article.get("meta") or {}
+            title = meta.get("title") or ""
+            tags = " ".join(meta.get("tags") or [])
+            image1 = meta.get("image") or ""
+            paragraphs = (article.get("body") or {}).get("paragraphs") or []
+            if not paragraphs:
+                raise RuntimeError("Article body is empty")
+            raw_text = "\n".join(paragraphs)
+            quick_generate_progress_store.set_progress(task_id, "scraping", 10, f"Scraped: {title[:60]}")
+
+            # ── Step 2: Generate thumbnail ───────────────────────────────────
+            tmpl = QUICK_TEMPLATES[template_id]
+            thumbnail_template_name = tmpl.get("thumbnail_template")
+            image2 = ""
+            if thumbnail_template_name:
+                quick_generate_progress_store.set_progress(
+                    task_id, "generating_thumbnail", 11, "Generating thumbnail image..."
+                )
+                try:
+                    client_templates_dir = REPO_ROOT / "client" / "public" / "templates"
+                    template_dir = client_templates_dir / str(thumbnail_template_name)
+                    template_data: dict = json.loads(
+                        (template_dir / "template.json").read_text(encoding="utf-8")
+                    )
+                    for el in template_data.get("elements", []):
+                        if el.get("type") != "placeholder" and el.get("file"):
+                            el["src"] = str((template_dir / el["file"]).resolve())
+                            del el["file"]
+
+                    thumb_resp = httpx.post(
+                        f"{BASE}/api/v1/thumbnail/batch",
+                        json={"template": template_data, "rows": [{"title": title}], "label_column": "title"},
+                        timeout=30.0,
+                    )
+                    thumb_resp.raise_for_status()
+                    thumb_job_id = thumb_resp.json().get("job_id")
+
+                    if thumb_job_id:
+                        THUMB_TIMEOUT = 120
+                        thumb_elapsed = 0
+                        THUMB_POLL = 2
+                        while thumb_elapsed < THUMB_TIMEOUT:
+                            time.sleep(THUMB_POLL)
+                            thumb_elapsed += THUMB_POLL
+                            thumb_status = httpx.get(
+                                f"{BASE}/api/v1/thumbnail/batch/status/{thumb_job_id}",
+                                timeout=15.0,
+                            ).json()
+                            if thumb_status.get("status") == "complete":
+                                dl_url = (thumb_status.get("result") or {}).get("sample", {}).get("download_url", "")
+                                if dl_url:
+                                    image2 = f"{BASE}{dl_url}"
+                                break
+                            if thumb_status.get("status") == "error":
+                                break
+                    quick_generate_progress_store.set_progress(
+                        task_id, "generating_thumbnail", 18, "Thumbnail generated."
+                    )
+                except Exception as thumb_exc:
+                    log(f"Thumbnail generation skipped: {thumb_exc}", "warn", log_name="app-service.log")
+
+            # ── Step 3: Normalize ────────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "normalizing", 20, "Normalizing text...")
+            resp = httpx.post(
+                f"{BASE}/api/v1/text/normalize",
+                json={"text": raw_text, "language": "vi"},
+                timeout=60.0,
+            )
+            resp.raise_for_status()
+            normalized_text = resp.json().get("normalized_text") or ""
+            if not normalized_text.strip():
+                raise RuntimeError("Text normalization produced empty result")
+            quick_generate_progress_store.set_progress(task_id, "normalizing", 20, "Text normalized.")
+
+            # ── Step 3: TTS ──────────────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "tts", 25, "Generating TTS audio...")
+            resp = httpx.post(
+                f"{BASE}/api/v1/piper-tts/generate",
+                json={"text": normalized_text, "voice_id": voice_id, "language": "vi", "normalize": False},
+                timeout=300.0,
+            )
+            resp.raise_for_status()
+            tts_data = resp.json()
+            file_id = tts_data.get("file_id")
+            if not file_id:
+                raise RuntimeError("TTS did not return a file_id")
+
+            quick_generate_progress_store.set_progress(task_id, "tts", 35, "Downloading TTS audio...")
+            wav_resp = httpx.get(f"{BASE}/api/v1/files/{file_id}", timeout=120.0)
+            wav_resp.raise_for_status()
+            audio_path = work_dir / "tts.wav"
+            audio_path.write_bytes(wav_resp.content)
+            quick_generate_progress_store.set_progress(task_id, "tts", 40, "TTS audio saved.")
+
+            # ── Step 4: Transcribe ───────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "transcribing", 42, "Submitting transcription job...")
+            with open(audio_path, "rb") as f:
+                transcribe_resp = httpx.post(
+                    f"{BASE}/api/v1/whisper/transcribe",
+                    files={"file": ("tts.wav", f, "audio/wav")},
+                    data={"language": "vi", "add_punctuation": "true", "word_timestamps": "true", "script_text": normalized_text},
+                    timeout=60.0,
+                )
+            transcribe_resp.raise_for_status()
+            whisper_task_id = transcribe_resp.json().get("task_id")
+            if not whisper_task_id:
+                raise RuntimeError("Whisper did not return a task_id")
+
+            WHISPER_TIMEOUT = 300
+            POLL_INTERVAL = 2
+            elapsed = 0
+            result_data: dict = {}
+            while elapsed < WHISPER_TIMEOUT:
+                time.sleep(POLL_INTERVAL)
+                elapsed += POLL_INTERVAL
+                result_resp = httpx.get(
+                    f"{BASE}/api/v1/whisper/transcribe/result/{whisper_task_id}",
+                    timeout=15.0,
+                )
+                if result_resp.status_code == 404:
+                    # Result not stored yet — still transcribing, keep polling
+                    fraction = min(elapsed / WHISPER_TIMEOUT, 1.0)
+                    mapped_pct = 42 + int(fraction * 21)
+                    quick_generate_progress_store.set_progress(
+                        task_id, "transcribing", mapped_pct, "Transcribing audio..."
+                    )
+                    continue
+                result_resp.raise_for_status()
+                result_data = result_resp.json()
+                if result_data.get("status") == "complete":
+                    break
+            else:
+                raise RuntimeError("Whisper transcription timed out after 5 minutes")
+
+            segments = result_data.get("segments") or []
+            transcript_path = work_dir / "transcript.json"
+            transcript_path.write_text(
+                json.dumps({"segments": segments}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            quick_generate_progress_store.set_progress(task_id, "transcribing", 65, "Transcript saved.")
+
+            # ── Step 5: Image search ─────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "searching_images", 68, "Searching for images...")
+            search_query = f"{title} {tags}".strip() or title
+            search_resp = httpx.post(
+                f"{BASE}/api/v1/image-search/image-finder/search",
+                json={"text": search_query, "number_of_images": 10, "sources": ["bing"], "use_llm": False},
+                timeout=120.0,
+            )
+            search_resp.raise_for_status()
+            image_urls = [
+                item["url"] for item in (search_resp.json().get("images") or [])
+                if isinstance(item, dict) and item.get("url")
+            ]
+            if not image_urls:
+                raise RuntimeError("No images found. Check Google search availability.")
+            quick_generate_progress_store.set_progress(
+                task_id, "searching_images", 75, f"Found {len(image_urls)} images."
+            )
+
+            # ── Step 6: Download images ──────────────────────────────────────
+            images_dir = work_dir / "images"
+            images_dir.mkdir(parents=True, exist_ok=True)
+
+            quick_generate_progress_store.set_progress(task_id, "downloading_images", 76, "Downloading images...")
+            dl_resp = httpx.post(
+                f"{BASE}/api/v1/image-search/image-finder/download-all",
+                json={"urls": image_urls, "save_dir": str(images_dir)},
+                timeout=30.0,
+            )
+            dl_resp.raise_for_status()
+            dl_task_id = dl_resp.json().get("task_id")
+            if not dl_task_id:
+                raise RuntimeError("Image download did not return a task_id")
+
+            with httpx.stream(
+                "GET",
+                f"{BASE}/api/v1/image-search/image-finder/download-all/stream/{dl_task_id}",
+                timeout=300.0,
+            ) as stream_resp:
+                for line in stream_resp.iter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    try:
+                        evt = json.loads(line[5:].strip())
+                    except json.JSONDecodeError:
+                        continue
+                    evt_status = evt.get("status", "")
+                    if evt_status == "complete":
+                        break
+                    if evt_status == "error":
+                        raise RuntimeError(f"Image download failed: {evt.get('message', '')}")
+                    pct_inner = int(evt.get("percent") or 0)
+                    mapped = 76 + int(pct_inner * 0.11)
+                    quick_generate_progress_store.set_progress(
+                        task_id, "downloading_images", mapped, f"Downloading images... {pct_inner}%"
+                    )
+
+            saved_images = sorted(
+                f for f in images_dir.iterdir()
+                if f.is_file() and f.suffix.lower() in ALLOWED_IMAGE_SUFFIXES
+            )
+            if not saved_images:
+                raise RuntimeError("Image download completed but no images were saved.")
+            quick_generate_progress_store.set_progress(
+                task_id, "downloading_images", 88, f"Downloaded {len(saved_images)} images."
+            )
+
+            # ── Step 8: Build config ─────────────────────────────────────────
+            quick_generate_progress_store.set_progress(task_id, "building_config", 93, "Building video config...")
+            intro_props: dict[str, str] = {
+                "image1": image1,
+                "heroImage": tmpl["hero"],
+            }
+            if image2:
+                intro_props["image2"] = image2
+            config: dict[str, object] = {
+                "template": "NewsVerticalBackground",
+                "audio_path": str(audio_path),
+                "transcript_path": str(transcript_path),
+                "slider_image_paths": str(images_dir),
+                "introDurationInFrames": 150,
+                "imageDurationInFrames": 170,
+                "introProps": intro_props,
+                "backgroundOverlayImage": tmpl["bg"],
+                "backgroundMusicVolume": 0.36,
+                "backgroundMusic": tmpl["music"],
+            }
+            quick_generate_progress_store.set_progress(task_id, "building_config", 97, "Config assembled.")
+
+            # ── Step 8: Store result ─────────────────────────────────────────
+            _set_quick_generate_result(task_id, {
+                "status": "complete",
+                "created_at": time.time(),
+                "config": config,
+                "audio_path": str(audio_path),
+                "transcript_path": str(transcript_path),
+                "slider_image_paths": str(images_dir),
+                "hero_image_path": None,
+            })
+            quick_generate_progress_store.set_progress(task_id, "complete", 100, "Quick generate complete!")
+
+        except Exception as exc:
+            quick_generate_progress_store.add_log(task_id, f"[ERROR] {exc}")
+            quick_generate_progress_store.set_progress(task_id, "error", 0, str(exc))
+            log(f"Quick generate failed: {exc}", "error", log_name="app-service.log")
 
     threading.Thread(target=runner, daemon=True).start()
     return task_id

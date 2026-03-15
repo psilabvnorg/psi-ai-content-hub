@@ -1,34 +1,22 @@
 from __future__ import annotations
 
+import json
 import logging
-import re
-import time
-from urllib.parse import quote_plus
+import os
+import subprocess
+import sys
 
 from ..models import ImageResult
 
 
 LOGGER = logging.getLogger(__name__)
 
-# Image URL extensions considered valid for extraction from page source.
-_IMAGE_URL_RE = re.compile(r'https://[^"\'\\<>\s]+\.(?:jpg|jpeg|png|webp)', re.IGNORECASE)
+# Worker script path (same directory as this file).
+_WORKER_SCRIPT = os.path.join(os.path.dirname(__file__), "_google_worker.py")
 
-_DISALLOWED_HOSTS = (
-    "google.com",
-    "gstatic.com",
-    "googleapis.com",
-    "googleusercontent.com",
-    "schema.org",
-    "w3.org",
-)
-
-
-def _is_valid_image_url(url: str) -> bool:
-    """Return True if *url* looks like a genuine third-party image."""
-    if not url.startswith("https://"):
-        return False
-    lower = url.lower()
-    return not any(host in lower for host in _DISALLOWED_HOSTS)
+# Windows: CREATE_BREAKAWAY_FROM_JOB lets the subprocess escape Electron's
+# Job Object so Chrome can create its own child processes without crashing.
+_CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 
 
 def search_google_images(
@@ -36,173 +24,72 @@ def search_google_images(
     max_results: int = 10,
     timeout_seconds: int = 30,
 ) -> list[ImageResult]:
-    """Search Google Images via Selenium and return candidate full image URLs.
+    """Search Google Images via a detached subprocess running undetected_chromedriver.
 
-    Uses multiple strategies in order:
-    1. Click ``div.H8Rx8c`` containers to open the preview panel and extract
-       the full-size image from ``img.sFlh5c.FyHeAf.iPVvYb``.
-    2. Regex-scrape the raw page source for image URLs (jpg/png/webp).
-
-    @param query The image search query string.
-    @param max_results Maximum number of image results to return.
-    @param timeout_seconds Timeout in seconds for page loads and element waits.
+    Chrome is launched in a separate process with CREATE_BREAKAWAY_FROM_JOB so it
+    escapes Electron's Windows Job Object restrictions that cause the GPU/renderer
+    child processes to crash when Chrome is spawned directly from the app server.
     """
+    LOGGER.warning(
+        "[GoogleSearch] Starting: query=%r, max_results=%d, timeout=%ds",
+        query, max_results, timeout_seconds,
+    )
+
+    cmd = [
+        sys.executable,
+        _WORKER_SCRIPT,
+        query,
+        str(max_results),
+        str(timeout_seconds),
+    ]
+
+    # Allow extra time for ChromeDriver startup on top of the search timeout.
+    proc_timeout = timeout_seconds + 30
+
     try:
-        import undetected_chromedriver as uc
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.common.exceptions import TimeoutException, WebDriverException
-    except ImportError as exc:
-        LOGGER.warning("[GoogleSearch] Missing dependencies (undetected_chromedriver or selenium): %s", exc)
+        creation_flags = _CREATE_BREAKAWAY_FROM_JOB if sys.platform == "win32" else 0
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=proc_timeout,
+            creationflags=creation_flags,
+        )
+    except subprocess.TimeoutExpired:
+        LOGGER.warning("[GoogleSearch] Worker timed out after %ds", proc_timeout)
+        return []
+    except Exception as exc:
+        LOGGER.warning("[GoogleSearch] Failed to launch worker: %s", exc)
         return []
 
-    options = uc.ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    if proc.returncode != 0:
+        LOGGER.warning(
+            "[GoogleSearch] Worker exited with code %d. stderr: %s",
+            proc.returncode,
+            proc.stderr[:300] if proc.stderr else "",
+        )
 
-    results: list[ImageResult] = []
-    seen: set[str] = set()
-    driver = None
-
-    # Detect installed Chrome major version to avoid ChromeDriver mismatch.
-    def _get_chrome_major_version() -> int | None:
-        import re as _re
-
-        # 1. Try Windows registry (most reliable on Windows)
-        try:
-            import winreg
-            for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
-                for key_path in (
-                    r"Software\Google\Chrome\BLBeacon",
-                    r"Software\Chromium\BLBeacon",
-                ):
-                    try:
-                        with winreg.OpenKey(hive, key_path) as k:
-                            version_str, _ = winreg.QueryValueEx(k, "version")
-                            m = _re.search(r"^(\d+)\.", str(version_str))
-                            if m:
-                                return int(m.group(1))
-                    except OSError:
-                        continue
-        except ImportError:
-            pass
-
-        # 2. Try reading file version info from chrome.exe (Windows)
-        chrome_paths = [
-            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-        ]
-        try:
-            import win32api  # type: ignore
-            for path in chrome_paths:
-                try:
-                    info = win32api.GetFileVersionInfo(path, "\\")
-                    ms = info["FileVersionMS"]
-                    major = ms >> 16
-                    if major:
-                        return major
-                except Exception:
-                    continue
-        except ImportError:
-            pass
-
-        # 3. Fallback: read version from chrome.exe parent directory (VERSION file)
-        import os
-        for path in chrome_paths:
+    # Parse the last JSON line from stdout (worker may print warnings before it).
+    output = proc.stdout.strip()
+    payload: dict = {}
+    for line in reversed(output.splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
             try:
-                exe_dir = os.path.dirname(path)
-                # Chrome stores versions as sub-directories, e.g. 145.0.7632.160\
-                dirs = [d for d in os.listdir(exe_dir) if _re.match(r"^\d+\.\d+\.\d+\.\d+$", d)]
-                if dirs:
-                    m = _re.search(r"^(\d+)\.", sorted(dirs)[-1])
-                    if m:
-                        return int(m.group(1))
-            except Exception:
-                continue
-
-        return None
-
-    try:
-        LOGGER.warning("[GoogleSearch] Starting: query=%r, max_results=%d, timeout=%ds", query, max_results, timeout_seconds)
-        chrome_version = _get_chrome_major_version()
-        if chrome_version is None:
-            LOGGER.warning(
-                "[GoogleSearch] Could not detect Chrome version. "
-                "Google Chrome may not be installed. "
-                "Please install Google Chrome from https://www.google.com/chrome/ "
-                "to enable Google Image search."
-            )
-        else:
-            LOGGER.warning("[GoogleSearch] Detected Chrome major version: %s", chrome_version)
-        driver = uc.Chrome(options=options, version_main=chrome_version)
-
-        encoded_query = quote_plus(query)
-        driver.get(f"https://www.google.com/search?tbm=isch&q={encoded_query}")
-
-        wait = WebDriverWait(driver, timeout_seconds)
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "img")))
-
-        for _ in range(4):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(0.8)
-
-        # --- Strategy 1: click container → preview panel → full-size URL ---
-        containers = driver.find_elements(By.CSS_SELECTOR, "div.H8Rx8c")
-
-        for container in containers:
-            if len(results) >= max_results:
+                payload = json.loads(line)
                 break
-            try:
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", container)
-                driver.execute_script("arguments[0].click();", container)
-                time.sleep(0.8)
-            except WebDriverException:
+            except json.JSONDecodeError:
                 continue
 
-            # Try current preview selectors (may change over time)
-            for sel in ("img.sFlh5c.FyHeAf.iPVvYb", "img.sFlh5c", "img.iPVvYb", "img.n3VNCb"):
-                candidates = driver.find_elements(By.CSS_SELECTOR, sel)
-                for candidate in candidates:
-                    src = candidate.get_attribute("src") or ""
-                    if src and _is_valid_image_url(src) and src not in seen:
-                        seen.add(src)
-                        results.append(ImageResult(source="google", url=src))
-                        break
-                if len(results) > 0 and results[-1].url in seen:
-                    break  # found one for this container, move on
+    if not payload:
+        LOGGER.warning("[GoogleSearch] No JSON output from worker. stdout=%r", output[:300])
+        return []
 
-        # --- Strategy 2: regex extraction from page source ---
-        if len(results) < max_results:
-            page_source = driver.page_source
-            for match in _IMAGE_URL_RE.finditer(page_source):
-                if len(results) >= max_results:
-                    break
-                url = match.group(0)
-                if _is_valid_image_url(url) and url not in seen:
-                    seen.add(url)
-                    results.append(ImageResult(source="google", url=url))
+    if "error" in payload:
+        LOGGER.warning("[GoogleSearch] Worker error: %s", payload["error"])
 
-    except (TimeoutException, WebDriverException) as exc:
-        exc_msg = str(exc)
-        if "cannot find Chrome binary" in exc_msg or "chrome not reachable" in exc_msg.lower():
-            LOGGER.warning(
-                "[GoogleSearch] Chrome browser not found. "
-                "Please install Google Chrome from https://www.google.com/chrome/ "
-                "to enable Google Image search."
-            )
-        else:
-            LOGGER.warning("[GoogleSearch] Failed: %s", exc)
-    except Exception as exc:
-        LOGGER.warning("[GoogleSearch] Unexpected error: %s", exc)
-    finally:
-        if driver is not None:
-            try:
-                driver.quit()
-            except Exception:
-                pass
+    urls: list[str] = payload.get("urls") or []
+    results = [ImageResult(source="google", url=url) for url in urls]
 
     LOGGER.warning("[GoogleSearch] Complete: returning %d results", len(results))
-    return results[:max_results]
-
+    return results

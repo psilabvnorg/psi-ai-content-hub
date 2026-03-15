@@ -144,17 +144,15 @@ const a_ensure_hidden_renderer_window_data = async () => {
 
 const a_render_thumbnail_data_url_via_hidden_window_data = async (a_template_data, a_placeholder_map_data) => {
   const a_hidden_window_data = await a_ensure_hidden_renderer_window_data();
-  const a_payload_base64_text_data = Buffer.from(
+  const a_payload_encoded_text_data = encodeURIComponent(
     JSON.stringify({ template: a_template_data, placeholderMap: a_placeholder_map_data }),
-    'utf8',
-  ).toString('base64');
+  );
   const a_render_script_text_data = `
 (async () => {
   if (!window.__thumbnail_renderer_data || typeof window.__thumbnail_renderer_data.renderThumbnail !== "function") {
     throw new Error("window.__thumbnail_renderer_data.renderThumbnail is unavailable");
   }
-  const a_payload_json_text_data = atob("${a_payload_base64_text_data}");
-  const a_payload_data = JSON.parse(a_payload_json_text_data);
+  const a_payload_data = JSON.parse(decodeURIComponent("${a_payload_encoded_text_data}"));
   return window.__thumbnail_renderer_data.renderThumbnail(a_payload_data.template, a_payload_data.placeholderMap || {});
 })()
 `;

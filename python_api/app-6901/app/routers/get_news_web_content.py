@@ -23,6 +23,7 @@ import json
 import os
 import queue
 import shutil
+import tempfile
 import threading
 import time
 import uuid

@@ -41,7 +41,16 @@
       "Bash(sed -i 's|main/preview/|main/news/|g' \"$f\")",
       "Bash(echo \"Updated: $f\")",
       "Bash(done)",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(grep -r httpx d:/AI/psi-ai-content-hub/python_api/ --include=*.txt --include=*.toml -l)",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import undetected_chromedriver as uc; print\\(''uc version:'', uc.__version__\\)\")",
+      "Bash(python -c \"import selenium; print\\(''selenium:'', selenium.__version__\\)\")",
+      "Bash(where python:*)",
+      "Bash(\"/C/Users/ADMIN/AppData/Local/Programs/Python/Python312/python.exe\" -c \"import undetected_chromedriver as uc; print\\(''uc:'', uc.__version__\\)\")",
+      "Bash(\"/C/Users/ADMIN/AppData/Local/Programs/Python/Python312/python.exe\" -c \"import selenium; print\\(''selenium:'', selenium.__version__\\)\")",
+      "Bash(reg query:*)",
+      "Bash(powershell -Command \"Get-ItemProperty ''HKCU:\\\\Software\\\\Google\\\\Chrome\\\\BLBeacon'' -Name version -ErrorAction SilentlyContinue | Select-Object -ExpandProperty version\")"
     ]
   }
 }

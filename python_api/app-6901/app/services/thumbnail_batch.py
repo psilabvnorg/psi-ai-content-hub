@@ -5,6 +5,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+import json as _json
+
 import requests
 
 from python_api.common.jobs import JobStore
@@ -23,11 +25,11 @@ def a_call_thumbnail_bridge_render_batch_data(
     a_bridge_url_text_data = f"{a_thumbnail_bridge_base_url_text_data}/thumbnail/render-batch"
     a_response_data = requests.post(
         a_bridge_url_text_data,
-        json={
-            "template": a_template_data,
-            "rows": a_row_list_data,
-            "label_column": a_label_column_text_data,
-        },
+        data=_json.dumps(
+            {"template": a_template_data, "rows": a_row_list_data, "label_column": a_label_column_text_data},
+            ensure_ascii=False,
+        ).encode("utf-8"),
+        headers={"Content-Type": "application/json; charset=utf-8"},
         timeout=600,
     )
     if a_response_data.status_code >= 400:
