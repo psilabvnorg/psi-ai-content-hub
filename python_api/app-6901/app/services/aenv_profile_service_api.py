@@ -24,75 +24,77 @@ aenv_venv_dir_path = Path(__file__).resolve().parents[2] / "venv"
 
 aprofile_module_to_package_map_data: Dict[str, Dict[str, str]] = {
     "app": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "yt_dlp": "yt-dlp",
-        "edge_tts": "edge-tts",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "yt_dlp": "yt-dlp==2026.2.21",
+        "edge_tts": "edge-tts==7.2.7",
     },
     "piper-tts": {
-        "onnxruntime": "onnxruntime",
-        "numpy": "numpy",
+        "onnxruntime": "onnxruntime==1.24.3",
+        "numpy": "numpy==2.4.2",
     },
     "whisper": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "whisper": "openai-whisper",
-        "torch": "torch==2.4.0+cu124",
-        "numpy": "numpy",
-        "stable_whisper": "stable-ts",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "whisper": "openai-whisper==20250625",
+        "torch": "torch==2.6.0+cu124",
+        "torchaudio": "torchaudio==2.6.0+cu124",
+        "numpy": "numpy==2.4.2",
+        "stable_whisper": "stable-ts==2.19.1",
     },
     "translation": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "transformers": "transformers>=4.40.0",
-        "torch": "torch==2.4.0+cu124",
-        "accelerate": "accelerate>=0.27.0",
-        "tokenizers": "tokenizers>=0.22.0",
-        "safetensors": "safetensors>=0.4.3",
-        "huggingface_hub": "huggingface_hub>=0.23.0",
-        "sentencepiece": "sentencepiece>=0.2.0",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "transformers": "transformers==5.2.0",
+        "torch": "torch==2.6.0+cu124",
+        "numpy": "numpy==2.4.2",
+        "accelerate": "accelerate==1.12.0",
+        "tokenizers": "tokenizers==0.22.2",
+        "safetensors": "safetensors==0.7.0",
+        "huggingface_hub": "huggingface_hub==1.4.1",
+        "sentencepiece": "sentencepiece==0.2.1",
     },
     "image-search": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "requests": "requests>=2.31.0",
-        "selenium": "selenium",
-        "undetected_chromedriver": "undetected-chromedriver>=3.5.5",
-        "PIL": "pillow",
-        "ddgs": "ddgs",
-        "dotenv": "python-dotenv",
-        "bs4": "beautifulsoup4",
-        "lxml": "lxml",
-        "webdriver_manager": "webdriver_manager",
-        "setuptools": "setuptools",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "requests": "requests==2.32.5",
+        "selenium": "selenium==4.41.0",
+        "undetected_chromedriver": "undetected-chromedriver==3.5.5",
+        "PIL": "pillow==12.1.1",
+        "ddgs": "ddgs==9.10.0",
+        "dotenv": "python-dotenv==1.2.1",
+        "bs4": "beautifulsoup4==4.14.3",
+        "lxml": "lxml==6.0.2",
+        "webdriver_manager": "webdriver-manager==4.0.2",
+        "setuptools": "setuptools==82.0.0",
     },
     "bg-remove-overlay": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "torch": "torch==2.4.0+cu124",
-        "torchvision": "torchvision",
-        "PIL": "pillow",
-        "numpy": "numpy",
-        "timm": "timm",
-        "kornia": "kornia",
-        "skimage": "scikit-image",
-        "huggingface_hub": "huggingface_hub",
-        "transformers": "transformers>=4.39.1",
-        "einops": "einops",
-        "cv2": "opencv-python",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "torch": "torch==2.6.0+cu124",
+        "torchvision": "torchvision==0.21.0+cu124",
+        "PIL": "pillow==12.1.1",
+        "numpy": "numpy==2.4.2",
+        "timm": "timm==1.0.25",
+        "kornia": "kornia==0.8.2",
+        "skimage": "scikit-image==0.26.0",
+        "huggingface_hub": "huggingface_hub==1.4.1",
+        "transformers": "transformers==5.2.0",
+        "einops": "einops==0.8.2",
+        "cv2": "opencv-python==4.13.0.92",
     },
     "thumbnail-simple": {
-        "fastapi": "fastapi",
-        "uvicorn": "uvicorn",
-        "multipart": "python-multipart",
-        "numpy": "numpy",
-        "PIL": "pillow",
-        "sklearn": "scikit-learn",
+        "fastapi": "fastapi==0.133.0",
+        "uvicorn": "uvicorn==0.41.0",
+        "multipart": "python-multipart==0.0.22",
+        "numpy": "numpy==2.4.2",
+        "PIL": "pillow==12.1.1",
+        "sklearn": "scikit-learn==1.8.0",
     },
 }
 
@@ -157,6 +159,19 @@ def aenv_install_profile_data(profile_id: str, packages: list[str] | None = None
 
     aenv_ensure_venv_ready_data()
     venv_python = aenv_get_venv_python_path_data()
+
+    # Remove corrupted/partial torch distributions (pip marks them as "~orch")
+    # left behind by interrupted installs — they override the new install's files.
+    if any("torch" in pkg for pkg in packages_to_install):
+        site_packages = aenv_venv_dir_path / "Lib" / "site-packages"
+        for broken in site_packages.glob("~orch*"):
+            try:
+                if broken.is_dir():
+                    shutil.rmtree(broken)
+                else:
+                    broken.unlink()
+            except Exception:
+                pass
 
     # Add PyTorch CUDA index URL when any package requires a +cu build.
     # If the CUDA install fails (e.g. no NVIDIA GPU), fall back to CPU-only packages.

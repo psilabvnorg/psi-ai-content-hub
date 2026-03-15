@@ -48,7 +48,6 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         repo_id="psilab/whisper-large-v3",
         local_dir=MODEL_WHISPER_DIR,
         display_name="Whisper Large V3 (STT)",
-        allow_patterns=["large-v3.pt"],
     ),
     "f5-tts-en": ModelEntry(
         repo_id="psilab/f5-tts-en-original",
@@ -131,7 +130,6 @@ def download_model(
         kwargs: dict = {
             "repo_id": entry.repo_id,
             "local_dir": str(entry.local_dir),
-            "local_dir_use_symlinks": False,
         }
         if entry.allow_patterns:
             kwargs["allow_patterns"] = entry.allow_patterns

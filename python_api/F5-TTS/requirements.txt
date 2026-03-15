@@ -1,10 +1,9 @@
 # FastAPI server
-fastapi
-uvicorn
-python-multipart
+fastapi==0.135.1
+uvicorn==0.41.0
+python-multipart==0.0.22
 
 # numpy
-
 numpy==1.26.4
 
 # torch
@@ -12,7 +11,5 @@ numpy==1.26.4
 torch==2.4.0+cu124
 torchaudio==2.4.0+cu124
 
-
 # F5-TTS core (pulls in all sub-dependencies)
-f5-tts
-
+f5-tts==1.1.17
