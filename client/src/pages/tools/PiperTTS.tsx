@@ -75,6 +75,11 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
     }
   };
 
+  const DEFAULT_VOICE: Record<string, string> = {
+    vi: "vi/tranthanh3870",
+    en: "en/mattheo",
+  };
+
   const fetchVoices = async (lang: string) => {
     try {
       const res = await fetch(`${APP_API_URL}/api/v1/piper-tts/voices?language=${lang}`);
@@ -82,7 +87,9 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
       const data = await res.json();
       const list = (data.voices || []) as Voice[];
       setVoices(list);
-      setSelectedVoice(list.length > 0 ? list[0].id : "");
+      const preferred = DEFAULT_VOICE[lang];
+      const match = preferred && list.find((v) => v.id === preferred);
+      setSelectedVoice(match ? match.id : list.length > 0 ? list[0].id : "");
       setServerUnreachable(false);
     } catch {
       setVoices([]);
@@ -236,7 +243,7 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
           </div>
         </div>
 
-        {/* Voice grid */}
+        {/* Voice dropdown */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-muted-foreground uppercase">{t("tool.piper_tts.select_voice")}</label>
           {voices.length === 0 ? (
@@ -244,33 +251,34 @@ export default function PiperTTS({ onOpenSettings }: { onOpenSettings?: () => vo
               {serverUnreachable ? t("tool.piper_tts.server_not_reachable") : t("tool.piper_tts.no_voices")}
             </p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {voices.map((voice) => (
-                <div
-                  key={voice.id}
-                  onClick={() => setSelectedVoice(voice.id)}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedVoice === voice.id
-                      ? "border-accent bg-accent/10 text-foreground"
-                      : "border-border bg-card hover:border-accent/50"
-                  }`}
-                >
-                  <span className="text-sm font-medium truncate pr-1">{voice.name}</span>
-                  {voice.demo_url && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handlePlayDemo(voice); }}
-                      className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-full border transition-colors ${
-                        playingDemo === voice.id
-                          ? "bg-accent text-accent-foreground border-accent"
-                          : "border-border hover:border-accent/50 text-muted-foreground hover:text-foreground"
-                      }`}
-                      title={t("tool.piper_tts.play_demo")}
-                    >
-                      <Play className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                className="flex-1 h-10 px-3 rounded-lg border border-border bg-card text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
+              >
+                {voices.map((voice) => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.name}
+                  </option>
+                ))}
+              </select>
+              {(() => {
+                const activeVoice = voices.find((v) => v.id === selectedVoice);
+                return activeVoice?.demo_url ? (
+                  <button
+                    onClick={() => handlePlayDemo(activeVoice)}
+                    className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-lg border transition-colors ${
+                      playingDemo === activeVoice.id
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "border-border bg-card hover:border-accent/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                    title={t("tool.piper_tts.play_demo")}
+                  >
+                    <Play className="w-4 h-4" />
+                  </button>
+                ) : null;
+              })()}
             </div>
           )}
         </div>
